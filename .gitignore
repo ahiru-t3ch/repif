@@ -22,6 +22,9 @@ npm-debug.log*
 *.pkl
 *.joblib
 
+# Exception : while phase 1 of the project
+!backend/model.pkl
+
 # OS / IDE
 .DS_Store
 .vscode/
