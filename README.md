@@ -1,28 +1,8 @@
-# Secrets / env
-.env
-.env.local
-*.env
-!.env.example
+# Tuto
 
-# Python
-__pycache__/
-*.py[cod]
-.venv/
-venv/
-*.egg-info/
-.pytest_cache/
-
-# Node / Next.js
-node_modules/
-.next/
-out/
-npm-debug.log*
-
-# ML artifacts
-*.pkl
-*.joblib
-
-# OS / IDE
-.DS_Store
-.vscode/
-.idea/
+## ml (Machine Learning)
+**ml** project has python version 3.14.3  
+```
+py -m venv .venv
+pip install -r requirements.txt
+```
