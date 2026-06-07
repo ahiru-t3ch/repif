@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -10,8 +11,16 @@ from app import models
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
-    title="Flat Price Prediction API in Haute Garonne, France.",
-    description="API for predicting flat prices in Haute Garonne, France."
+    title="REPIF API",
+    description="Real Estate Prices In France — apartment price estimation API (beta).",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    #allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 @app.get("/")
