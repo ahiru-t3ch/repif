@@ -86,6 +86,32 @@ DATABASE_URL=postgresql://user:password@localhost:5432/dbname
 DATABASE_URL=postgresql://user:password@host.docker.internal:5432/dbname
 ```
 
+## Database (PostgreSQL)
+
+The API expects a running PostgreSQL instance. In development, run it in Docker using the same `.env` (credentials are read by the official `postgres` image):
+
+```bash
+cd backend
+docker run -d \
+  --name immo-pg \
+  --env-file .env \
+  -p 5432:5432 \
+  postgres:16
+```
+
+Useful commands:
+
+```bash
+docker ps                          # check immo-pg is Up
+docker start immo-pg               # start if stopped
+docker logs immo-pg                # wait for "ready to accept connections"
+docker exec -it immo-pg psql -U YOUR_USER -d YOUR_DB -c "SELECT COUNT(*) FROM predictions;"
+```
+
+(`YOUR_USER` / `YOUR_DB` = values from `.env`)
+
+Tables are created automatically on API startup (`Base.metadata.create_all`).
+
 ## Run locally
 
 ```bash
