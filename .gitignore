@@ -31,7 +31,7 @@ npm-debug.log*
 .idea/
 
 # Other
-data/*.csv
+*.csv
 
 ml/db_dvf_plus/dumps/*
 !ml/db_dvf_plus/dumps/.gitkeep
