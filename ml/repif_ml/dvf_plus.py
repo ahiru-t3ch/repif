@@ -1,7 +1,12 @@
+import logging
 import os
+import time
+
 import pandas as pd
-from pyproj import Transformer
-from functools import lru_cache
+
+from repif_ml.geo import add_lat_lon
+
+logger = logging.getLogger(__name__)
 
 READ_COLS = [
     "idmutation",
@@ -58,41 +63,7 @@ DTYPES = {
     "nblocact": "int8",
 }
 
-DOM_EPSG = {
-    "971": "EPSG:5490",
-    "972": "EPSG:5490",
-    "973": "EPSG:2972",
-    "974": "EPSG:2975",
-}
-
 STRING_COLS = ["datemut", "l_codinsee", "coddep"]
-
-def _get_source_epsg(coddep: str) -> str:
-    if coddep in DOM_EPSG:
-        return DOM_EPSG[coddep]
-    if coddep in ("2A", "2B") or (coddep.isdigit() and len(coddep) == 2):
-        return "EPSG:2154"
-    raise ValueError(f"Unknown coddep for CRS mapping: {coddep!r}")
-
-@lru_cache
-def _get_transformer(source_epsg: str) -> Transformer:
-    return Transformer.from_crs(source_epsg, "EPSG:4326", always_xy=True)
-
-def _add_lat_lon(df: pd.DataFrame) -> pd.DataFrame:
-    df = df.copy()
-    lon = pd.Series(index=df.index, dtype="float64")
-    lat = pd.Series(index=df.index, dtype="float64")
-    for coddep, group in df.groupby("coddep", sort=False):
-        transformer = _get_transformer(_get_source_epsg(coddep))
-        group_lon, group_lat = transformer.transform(
-            group["geompar_x"].to_numpy(),
-            group["geompar_y"].to_numpy(),
-        )
-        lon.loc[group.index] = group_lon
-        lat.loc[group.index] = group_lat
-    df["lon"] = lon
-    df["lat"] = lat
-    return df
 
 def process_dvf_plus_csv(csv_dir_path: str) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Load and filter DVF+ mutation CSV files, then split by property type.
@@ -127,9 +98,13 @@ def process_dvf_plus_csv(csv_dir_path: str) -> tuple[pd.DataFrame, pd.DataFrame]
     if not csv_files:
         raise FileNotFoundError(f"No CSV files in {csv_dir_path}")
 
+    logger.info("Loading DVF+ from %s (%d CSV files)", csv_dir_path, len(csv_files))
+    started = time.perf_counter()
+
     chunks: list[pd.DataFrame] = []
-    for csv_file in csv_files:
+    for index, csv_file in enumerate(csv_files, start=1):
         path = os.path.join(csv_dir_path, csv_file)
+        logger.info("[%d/%d] Reading %s", index, len(csv_files), csv_file)
         try:
             chunk = (
                 pd.read_csv(
@@ -147,17 +122,22 @@ def process_dvf_plus_csv(csv_dir_path: str) -> tuple[pd.DataFrame, pd.DataFrame]
         if chunk.empty:
             raise ValueError(f"{csv_file}: 0 rows after filters")
 
+        logger.info("[%d/%d] %s -> %d rows after filters", index, len(csv_files), csv_file, len(chunk))
         chunks.append(chunk)
 
     df = pd.concat(chunks, ignore_index=True)
     if df.empty:
         raise ValueError(f"No rows loaded from {csv_dir_path}")
 
-    df = _add_lat_lon(df)
+    logger.info("Concatenated DVF+ rows: %d", len(df))
+
+    logger.info("Converting parcel coordinates to WGS84 lat/lon")
+    df = add_lat_lon(df, "geompar_x", "geompar_y")
 
     for col in STRING_COLS:
         df[col] = df[col].astype("string").str.strip()
-    
+
+    before_clean = len(df)
     df.dropna(subset=["valeurfonc", "sbati", "lat", "lon"])
 
     df.drop_duplicates(subset=["idmutation"])
@@ -167,5 +147,14 @@ def process_dvf_plus_csv(csv_dir_path: str) -> tuple[pd.DataFrame, pd.DataFrame]
 
     if df_house.empty and df_apartment.empty:
         raise ValueError("No house or apartment rows after split")
+
+    elapsed = time.perf_counter() - started
+    logger.info(
+        "DVF+ ready in %.1fs: %d houses, %d apartments (from %d rows before split)",
+        elapsed,
+        len(df_house),
+        len(df_apartment),
+        before_clean,
+    )
 
     return df_house, df_apartment
