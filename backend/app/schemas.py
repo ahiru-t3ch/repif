@@ -1,21 +1,32 @@
 from operator import gt
 from pydantic import BaseModel, Field
 from datetime import datetime
+from typing import Literal
 
 class PredictionRecord(BaseModel):
     id: int
-    postal_code: str
-    room_count: int
-    living_area: float
+    property_type: Literal["APARTMENT", "HOUSE"]
+    sbati: float
+    nblocdep: int
+    lat: float
+    lon: float
+    l_codinsee: str
+    dpe_median: int
+    annee_construction: int
     predicted_price: float
     created_at: datetime
 
     model_config = {"from_attributes": True}
 
 class PredictInput(BaseModel):
-    postal_code: str = Field(..., min_length=5, max_length=5)
-    room_count: int = Field(..., gt=0)
-    living_area: float = Field(..., gt=0)
+    property_type: Literal["APARTMENT", "HOUSE"]
+    sbati: float = Field(..., gt=10)
+    nblocdep: int = Field(..., ge=0)
+    lat: float = Field(..., ge=-90, le=90)
+    lon: float = Field(..., ge=-180, le=180)
+    l_codinsee: str = Field(..., min_length=5, max_length=5)
+    dpe_median: int = Field(..., gt=0, lt=8)
+    annee_construction: int = Field(..., gt=1500, le=datetime.now().year)
 
 class PredictOutput(BaseModel):
     price: float

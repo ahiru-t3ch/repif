@@ -1,12 +1,15 @@
 # Backend — REPIF API
 
-**REPIF** (Real Estate Prices In France) — REST API for apartment price predictions. Beta POC, starting with Haute-Garonne (department 31).
+**REPIF** (Real Estate Prices In France) — REST API for apartment and house price estimates.
+
+Beta POC: XGBoost models trained locally in `ml/`, copied into this service for inference.
 
 ## Role in the product
 
-- Receives prediction requests from the frontend
-- Runs the ML model and returns an estimated price in euros
-- Persists every prediction in PostgreSQL (history, analytics, future improvements)
+- Receives prediction requests (property features as JSON)
+- Runs the appropriate XGBoost model (apartment or house)
+- Returns an estimated price in euros
+- Persists every prediction in PostgreSQL
 
 ## Stack
 
@@ -14,8 +17,8 @@
 |---|---|
 | Framework | FastAPI |
 | ORM | SQLAlchemy |
-| Database driver | psycopg2-binary |
-| ML inference | scikit-learn + joblib |
+| Database | PostgreSQL (`psycopg2-binary`) |
+| ML inference | XGBoost + joblib + pandas |
 | Server | Uvicorn |
 
 ## Project structure
@@ -23,58 +26,95 @@
 ```
 backend/
 ├── app/
-│   ├── main.py        # Routes, CORS, app bootstrap
+│   ├── main.py        # Routes, CORS, DB bootstrap
 │   ├── schemas.py     # Pydantic request/response models
-│   ├── predictor.py   # Loads model.pkl and runs predictions
-│   ├── database.py    # DB engine, session, get_db dependency
+│   ├── predictor.py   # Loads .joblib models, runs inference
+│   ├── database.py    # Engine, session, get_db
 │   └── models.py      # SQLAlchemy Prediction table
-├── model.pkl          # Serialized ML pipeline (committed for beta)
+├── models_back/       # Serialized XGBoost models (not committed by default)
 ├── requirements.txt
 ├── Dockerfile
 ├── .dockerignore
-├── .env.sample        # Template for secrets (copy to .env)
+├── .env.sample
 └── README_backend.md
 ```
+
+## Models
+
+Inference uses two files in `models_back/` (paths set in `predictor.py`):
+
+```
+models_back/apartment_dev_YYYYMMDD_HHMMSS.joblib
+models_back/house_dev_YYYYMMDD_HHMMSS.joblib
+```
+
+**Deploy a new model version**
+
+1. Train and save in `ml/` → `ml/models/`
+2. Copy the `.joblib` files into `backend/models_back/`
+3. Update filenames in `predictor.py` if the timestamp changed
+4. Restart the API (or rebuild the Docker image)
+
+Predictions are in **log-price** inside the model; `predictor.py` applies `exp()` before returning euros.
+
+> Use `float(...)` on the result before SQL insert — psycopg2 does not accept `numpy.float32`.
 
 ## API endpoints
 
 | Method | Path | Description |
 |---|---|---|
 | `GET` | `/` | Health check |
-| `POST` | `/predict` | Predict price from `postal_code`, `room_count`, `living_area` |
-| `GET` | `/predictions` | List saved predictions (newest first) |
-| `GET` | `/docs` | Swagger UI (auto-generated) |
+| `POST` | `/predict/apartment` | Apartment price estimate |
+| `POST` | `/predict/house` | House price estimate |
+| `GET` | `/predictions` | Saved predictions (newest first) |
+| `GET` | `/docs` | Swagger UI |
 
-### POST /predict — request body
+### Request body (`PredictInput`)
+
+Same schema for both routes. `property_type` must match the endpoint (`APARTMENT` vs `HOUSE`).
 
 ```json
 {
-  "postal_code": "31000",
-  "room_count": 3,
-  "living_area": 65
+  "property_type": "APARTMENT",
+  "sbati": 102.55,
+  "nblocdep": 0,
+  "lat": 43.60396,
+  "lon": 1.44575,
+  "l_codinsee": "31555",
+  "dpe_median": 4,
+  "annee_construction": 1980
 }
 ```
+
+| Field | Meaning |
+|---|---|
+| `sbati` | Built area (m²) — DVF+ field name |
+| `nblocdep` | Number of outbuildings / dependencies (not room count) |
+| `lat`, `lon` | WGS84 coordinates |
+| `l_codinsee` | INSEE commune code (5 chars) |
+| `dpe_median` | Energy class as integer 1–7 (A=1 … G=7) |
+| `annee_construction` | Construction year |
 
 ### Response
 
 ```json
 {
-  "price": 148404.57
+  "price": 450637.0
 }
 ```
 
 ## Configuration
 
-Copy `.env.sample` to `.env` and fill in values. **Never commit `.env`.**
+Copy `.env.sample` to `.env`. **Never commit `.env`.**
 
 | Variable | Purpose |
 |---|---|
 | `POSTGRES_USER` | PostgreSQL username |
 | `POSTGRES_PASSWORD` | PostgreSQL password |
 | `POSTGRES_DB` | Database name |
-| `DATABASE_URL` | Full connection string for SQLAlchemy |
+| `DATABASE_URL` | Full SQLAlchemy connection string |
 
-**Local dev** (uvicorn on host, Postgres in Docker):
+**Local dev** (Uvicorn on host, Postgres in Docker):
 
 ```
 DATABASE_URL=postgresql://user:password@localhost:5432/dbname
@@ -88,7 +128,7 @@ DATABASE_URL=postgresql://user:password@host.docker.internal:5432/dbname
 
 ## Database (PostgreSQL)
 
-The API expects a running PostgreSQL instance. In development, run it in Docker using the same `.env` (credentials are read by the official `postgres` image):
+Start Postgres in Docker (credentials from `.env`):
 
 ```bash
 cd backend
@@ -102,15 +142,20 @@ docker run -d \
 Useful commands:
 
 ```bash
-docker ps                          # check immo-pg is Up
-docker start immo-pg               # start if stopped
-docker logs immo-pg                # wait for "ready to accept connections"
+docker ps
+docker start immo-pg
+docker logs immo-pg
+docker exec -it immo-pg psql -U YOUR_USER -d YOUR_DB -c "\dt"
 docker exec -it immo-pg psql -U YOUR_USER -d YOUR_DB -c "SELECT COUNT(*) FROM predictions;"
 ```
 
-(`YOUR_USER` / `YOUR_DB` = values from `.env`)
+The `predictions` table is created on API startup via `Base.metadata.create_all()`.
 
-Tables are created automatically on API startup (`Base.metadata.create_all`).
+If you change column definitions, drop the table (or recreate the database) — `create_all` does not migrate existing tables:
+
+```sql
+DROP TABLE predictions;
+```
 
 ## Run locally
 
@@ -124,7 +169,15 @@ uvicorn app.main:app --reload
 
 API: http://localhost:8000 — docs: http://localhost:8000/docs
 
+If `pip` fails with a wrong venv path, use:
+
+```bash
+python -m pip install -r requirements.txt
+```
+
 ## Run with Docker
+
+Ensure `models_back/*.joblib` exist before building.
 
 ```bash
 cd backend
@@ -135,12 +188,15 @@ docker run -d --name repif-api -p 8000:8000 \
   repif-backend
 ```
 
+Adjust `DATABASE_URL` to match your credentials.
+
 ## CORS
 
-The frontend (`http://localhost:3000`) is allowed in development. Update `allow_origins` in `main.py` when deploying to production.
+The frontend origin `http://localhost:3000` is allowed in development. Update `allow_origins` in `main.py` for production.
 
 ## Beta limitations
 
-- Tables created via `create_all()` — no Alembic migrations yet
-- Model file bundled in the image/repo (MLOps registry planned later)
-- Single linear regression model — accuracy varies by area
+- No Alembic migrations — schema changes require manual table drop
+- Model files copied by hand from `ml/models/`
+- Separate apartment / house models — same inputs can yield very different prices (different markets)
+- Predictions are indicative, not certified appraisals — see [ml/README_ml.md](../ml/README_ml.md)

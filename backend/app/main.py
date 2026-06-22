@@ -4,15 +4,16 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from app.schemas import PredictInput, PredictOutput, PredictionRecord
-from app.predictor import predict_price
+from app.predictor import predict_price_apartment, predict_price_house # loads models within API startup on first import
 from app.database import Base, engine, get_db
 from app import models
+from fastapi import HTTPException
 
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="REPIF API",
-    description="Real Estate Prices In France — apartment price estimation API (beta).",
+    description="Real Estate Prices In France — apartment and house price estimation API (beta).",
 )
 
 app.add_middleware(
@@ -35,14 +36,52 @@ def list_predictions(db: Session = Depends(get_db)):
         .all()
     )
 
-@app.post("/predict", response_model=PredictOutput)
-def predict(input: PredictInput, db: Session = Depends(get_db)):
-    price = predict_price(input.postal_code, input.room_count, input.living_area)
+# Apartment prediction
+@app.post("/predict/apartment", response_model=PredictOutput)
+def predict_apartment(input: PredictInput, db: Session = Depends(get_db)):
+    if input.property_type != "APARTMENT":
+        raise HTTPException(status_code=400, detail="Invalid property type")
+
+    price = predict_price_apartment(
+        input.sbati, input.nblocdep, input.lat, input.lon, input.l_codinsee, input.dpe_median, input.annee_construction
+    )
 
     prediction = models.Prediction(
-        postal_code=input.postal_code,
-        room_count=input.room_count,
-        living_area=input.living_area,
+        property_type=input.property_type,
+        sbati=input.sbati,
+        nblocdep=input.nblocdep,
+        lat=input.lat,
+        lon=input.lon,
+        l_codinsee=input.l_codinsee,
+        dpe_median=input.dpe_median,
+        annee_construction=input.annee_construction,
+        predicted_price=price,
+    )
+    db.add(prediction)
+    db.commit()
+    db.refresh(prediction)
+
+    return PredictOutput(price=price)
+
+# House prediction
+@app.post("/predict/house", response_model=PredictOutput)
+def predict_house(input: PredictInput, db: Session = Depends(get_db)):
+    if input.property_type != "HOUSE":
+        raise HTTPException(status_code=400, detail="Invalid property type")
+
+    price = predict_price_house(
+        input.sbati, input.nblocdep, input.lat, input.lon, input.l_codinsee, input.dpe_median, input.annee_construction
+    )
+
+    prediction = models.Prediction(
+        property_type=input.property_type,
+        sbati=input.sbati,
+        nblocdep=input.nblocdep,
+        lat=input.lat,
+        lon=input.lon,
+        l_codinsee=input.l_codinsee,
+        dpe_median=input.dpe_median,
+        annee_construction=input.annee_construction,
         predicted_price=price,
     )
     db.add(prediction)
