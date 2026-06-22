@@ -67,7 +67,9 @@ Enable progress logs in a notebook:
 
 ```python
 from repif_ml import configure_logging
-configure_logging()
+
+log_path = configure_logging()  # also writes ml/models/repif_ml_YYYYMMDD_HHMMSS.log
+print(log_path)
 ```
 
 ## Package repif_ml

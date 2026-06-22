@@ -21,6 +21,7 @@ npm-debug.log*
 # ML artifacts
 *.pkl
 *.joblib
+ml/models/*.log
 
 # Exception : while phase 1 of the project
 !backend/model.pkl
