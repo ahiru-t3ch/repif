@@ -12,6 +12,7 @@ type PredictionRecord = {
   lat: number;
   lon: number;
   l_codinsee: string;
+  address: string;
   dpe_median: number;
   annee_construction: number;
   predicted_price: number;
@@ -46,11 +47,9 @@ function inputClassName() {
 
 export default function Home() {
   const [propertyType, setPropertyType] = useState<PropertyType>("APARTMENT");
+  const [address, setAddress] = useState("");
   const [sbati, setSbati] = useState("");
   const [nblocdep, setNblocdep] = useState("");
-  const [lat, setLat] = useState("");
-  const [lon, setLon] = useState("");
-  const [lCodinsee, setLCodinsee] = useState("");
   const [dpeMedian, setDpeMedian] = useState("");
   const [anneeConstruction, setAnneeConstruction] = useState("");
   const [price, setPrice] = useState<number | null>(null);
@@ -88,11 +87,9 @@ export default function Home() {
 
     const body = {
       property_type: propertyType,
+      address: address.trim(),
       sbati: Number(sbati),
       nblocdep: Number(nblocdep),
-      lat: Number(lat),
-      lon: Number(lon),
-      l_codinsee: lCodinsee.trim(),
       dpe_median: Number(dpeMedian),
       annee_construction: Number(anneeConstruction),
     };
@@ -157,6 +154,20 @@ export default function Home() {
         </label>
 
         <label className="flex flex-col gap-1 text-sm">
+          Address
+          <input
+            type="text"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            minLength={10}
+            maxLength={255}
+            placeholder="e.g. 10 rue de la Pomme 31000 Toulouse"
+            required
+            className={inputClassName()}
+          />
+        </label>
+
+        <label className="flex flex-col gap-1 text-sm">
           Built area — sbati (m²)
           <input
             type="number"
@@ -176,50 +187,6 @@ export default function Home() {
             value={nblocdep}
             onChange={(e) => setNblocdep(e.target.value)}
             min={0}
-            required
-            className={inputClassName()}
-          />
-        </label>
-
-        <div className="grid grid-cols-2 gap-4">
-          <label className="flex flex-col gap-1 text-sm">
-            Latitude
-            <input
-              type="number"
-              value={lat}
-              onChange={(e) => setLat(e.target.value)}
-              min={-90}
-              max={90}
-              step="any"
-              required
-              className={inputClassName()}
-            />
-          </label>
-
-          <label className="flex flex-col gap-1 text-sm">
-            Longitude
-            <input
-              type="number"
-              value={lon}
-              onChange={(e) => setLon(e.target.value)}
-              min={-180}
-              max={180}
-              step="any"
-              required
-              className={inputClassName()}
-            />
-          </label>
-        </div>
-
-        <label className="flex flex-col gap-1 text-sm">
-          INSEE commune code — l_codinsee
-          <input
-            type="text"
-            value={lCodinsee}
-            onChange={(e) => setLCodinsee(e.target.value)}
-            minLength={5}
-            maxLength={5}
-            pattern="[0-9]{5}"
             required
             className={inputClassName()}
           />
@@ -292,7 +259,7 @@ export default function Home() {
                   {propertyLabel(item.property_type)}
                 </span>
                 {" · "}
-                {item.l_codinsee} · {item.sbati} m² · DPE{" "}
+                {item.address} · {item.sbati} m² · DPE{" "}
                 {DPE_OPTIONS.find((o) => o.value === item.dpe_median)?.label ??
                   item.dpe_median}{" "}
                 · {item.annee_construction}

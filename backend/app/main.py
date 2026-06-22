@@ -5,6 +5,7 @@ from typing import List
 
 from app.schemas import PredictInput, PredictOutput, PredictionRecord
 from app.predictor import predict_price_apartment, predict_price_house # loads models within API startup on first import
+from app.geocoding import GeocodingError, geocode_address
 from app.database import Base, engine, get_db
 from app import models
 from fastapi import HTTPException
@@ -36,23 +37,37 @@ def list_predictions(db: Session = Depends(get_db)):
         .all()
     )
 
-# Apartment prediction
-@app.post("/predict/apartment", response_model=PredictOutput)
-def predict_apartment(input: PredictInput, db: Session = Depends(get_db)):
-    if input.property_type != "APARTMENT":
-        raise HTTPException(status_code=400, detail="Invalid property type")
 
-    price = predict_price_apartment(
-        input.sbati, input.nblocdep, input.lat, input.lon, input.l_codinsee, input.dpe_median, input.annee_construction
+def _predict_and_save(
+    input: PredictInput,
+    db: Session,
+    predict_fn,
+) -> PredictOutput:
+    try:
+        geocoded = geocode_address(input.address)
+    except GeocodingError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    price = float(
+        predict_fn(
+            input.sbati,
+            input.nblocdep,
+            geocoded.lat,
+            geocoded.lon,
+            geocoded.l_codinsee,
+            input.dpe_median,
+            input.annee_construction,
+        )
     )
 
     prediction = models.Prediction(
         property_type=input.property_type,
         sbati=input.sbati,
         nblocdep=input.nblocdep,
-        lat=input.lat,
-        lon=input.lon,
-        l_codinsee=input.l_codinsee,
+        lat=geocoded.lat,
+        lon=geocoded.lon,
+        l_codinsee=geocoded.l_codinsee,
+        address=input.address.strip(),
         dpe_median=input.dpe_median,
         annee_construction=input.annee_construction,
         predicted_price=price,
@@ -62,6 +77,16 @@ def predict_apartment(input: PredictInput, db: Session = Depends(get_db)):
     db.refresh(prediction)
 
     return PredictOutput(price=price)
+
+
+# Apartment prediction
+@app.post("/predict/apartment", response_model=PredictOutput)
+def predict_apartment(input: PredictInput, db: Session = Depends(get_db)):
+    if input.property_type != "APARTMENT":
+        raise HTTPException(status_code=400, detail="Invalid property type")
+
+    return _predict_and_save(input, db, predict_price_apartment)
+
 
 # House prediction
 @app.post("/predict/house", response_model=PredictOutput)
@@ -69,23 +94,4 @@ def predict_house(input: PredictInput, db: Session = Depends(get_db)):
     if input.property_type != "HOUSE":
         raise HTTPException(status_code=400, detail="Invalid property type")
 
-    price = predict_price_house(
-        input.sbati, input.nblocdep, input.lat, input.lon, input.l_codinsee, input.dpe_median, input.annee_construction
-    )
-
-    prediction = models.Prediction(
-        property_type=input.property_type,
-        sbati=input.sbati,
-        nblocdep=input.nblocdep,
-        lat=input.lat,
-        lon=input.lon,
-        l_codinsee=input.l_codinsee,
-        dpe_median=input.dpe_median,
-        annee_construction=input.annee_construction,
-        predicted_price=price,
-    )
-    db.add(prediction)
-    db.commit()
-    db.refresh(prediction)
-
-    return PredictOutput(price=price)
+    return _predict_and_save(input, db, predict_price_house)

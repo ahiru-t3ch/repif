@@ -17,6 +17,7 @@ class Prediction(Base):
     lat = Column[Any](Float, nullable=False)
     lon = Column[Any](Float, nullable=False)
     l_codinsee = Column[Any](String, nullable=False)
+    address = Column(String, nullable=False)
     dpe_median = Column[Any](Integer, nullable=False)
     annee_construction = Column[Any](Integer, nullable=False)
     predicted_price = Column(Float, nullable=False)

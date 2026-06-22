@@ -41,6 +41,8 @@ The browser calls **Next.js route handlers** (same origin). They proxy to FastAP
 
 Implementation: `app/api/**/route.ts` and `lib/backend.ts`.
 
+Request body: `property_type`, `address`, `sbati`, `nblocdep`, `dpe_median`, `annee_construction`. The backend geocodes the address via Géoplateforme before running the model.
+
 ## Configuration
 
 Server-only env vars live in **gitignored** `.env.local`:
@@ -106,11 +108,11 @@ docker run -d --name repif-web -p 3000:3000 \
 ## Beta limitations
 
 - Single page — no routing, auth, or accounts
-- User must provide coordinates and INSEE code (no geocoding yet)
+- User enters a postal address (geocoded server-side by the backend)
 - No mobile-specific polish
 - No ad integration yet
 
 ## Planned (post-beta)
 
-- Geocoding from address or postal code
+- Address autocomplete (Géoplateforme)
 - Loading skeletons and clearer error states

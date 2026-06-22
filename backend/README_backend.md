@@ -6,7 +6,8 @@ Beta POC: XGBoost models trained locally in `ml/`, copied into this service for 
 
 ## Role in the product
 
-- Receives prediction requests (property features as JSON)
+- Receives prediction requests (address + property features as JSON)
+- **Geocodes** the address via [Géoplateforme](https://data.geopf.fr/geocodage/openapi)
 - Runs the appropriate XGBoost model (apartment or house)
 - Returns an estimated price in euros
 - Persists every prediction in PostgreSQL
@@ -18,7 +19,7 @@ Beta POC: XGBoost models trained locally in `ml/`, copied into this service for 
 | Framework | FastAPI |
 | ORM | SQLAlchemy |
 | Database | PostgreSQL (`psycopg2-binary`) |
-| ML inference | XGBoost + joblib + pandas |
+| ML inference | XGBoost + joblib + pandas + httpx (geocoding) |
 | Server | Uvicorn |
 
 ## Project structure
@@ -28,6 +29,7 @@ backend/
 ├── app/
 │   ├── main.py        # Routes, CORS, DB bootstrap
 │   ├── schemas.py     # Pydantic request/response models
+│   ├── geocoding.py   # Address → lat/lon/INSEE (Géoplateforme BAN)
 │   ├── predictor.py   # Loads .joblib models, runs inference
 │   ├── database.py    # Engine, session, get_db
 │   └── models.py      # SQLAlchemy Prediction table
@@ -76,11 +78,9 @@ Same schema for both routes. `property_type` must match the endpoint (`APARTMENT
 ```json
 {
   "property_type": "APARTMENT",
+  "address": "10 rue de la Pomme 31000 Toulouse",
   "sbati": 102.55,
   "nblocdep": 0,
-  "lat": 43.60396,
-  "lon": 1.44575,
-  "l_codinsee": "31555",
   "dpe_median": 4,
   "annee_construction": 1980
 }
@@ -88,12 +88,13 @@ Same schema for both routes. `property_type` must match the endpoint (`APARTMENT
 
 | Field | Meaning |
 |---|---|
+| `address` | Postal address — geocoded server-side to `lat`, `lon`, `l_codinsee` |
 | `sbati` | Built area (m²) — DVF+ field name |
 | `nblocdep` | Number of outbuildings / dependencies (not room count) |
-| `lat`, `lon` | WGS84 coordinates |
-| `l_codinsee` | INSEE commune code (5 chars) |
 | `dpe_median` | Energy class as integer 1–7 (A=1 … G=7) |
 | `annee_construction` | Construction year |
+
+Stored in the database after geocoding: `address`, `lat`, `lon`, `l_codinsee`, plus the input fields and `predicted_price`.
 
 ### Response
 
@@ -120,7 +121,13 @@ Copy `.env.sample` to `.env`. **Never commit `.env`.**
 DATABASE_URL=postgresql://user:password@localhost:5432/dbname
 ```
 
-**Backend in Docker** (Postgres on host):
+**Backend in Docker Compose** (Postgres service `db`):
+
+```
+DATABASE_URL=postgresql://user:password@db:5432/dbname
+```
+
+**Backend alone in Docker** (Postgres on host):
 
 ```
 DATABASE_URL=postgresql://user:password@host.docker.internal:5432/dbname
@@ -128,7 +135,9 @@ DATABASE_URL=postgresql://user:password@host.docker.internal:5432/dbname
 
 ## Database (PostgreSQL)
 
-Start Postgres in Docker (credentials from `.env`):
+Prefer [Docker Compose from the repo root](../README.md#run-with-docker-compose) — it starts Postgres (`db` service) and creates the `predictions` table on API startup.
+
+Standalone Postgres (local dev without Compose):
 
 ```bash
 cd backend
@@ -175,20 +184,7 @@ If `pip` fails with a wrong venv path, use:
 python -m pip install -r requirements.txt
 ```
 
-## Run with Docker
-
-Ensure `models_back/*.joblib` exist before building.
-
-```bash
-cd backend
-docker build -t repif-backend .
-docker run -d --name repif-api -p 8000:8000 \
-  --env-file .env \
-  -e DATABASE_URL=postgresql://USER:PASS@host.docker.internal:5432/DB \
-  repif-backend
-```
-
-Adjust `DATABASE_URL` to match your credentials.
+Prefer [Docker Compose from the repo root](../README.md#run-with-docker-compose) for the full stack.
 
 ## CORS
 
@@ -199,4 +195,5 @@ The frontend origin `http://localhost:3000` is allowed in development. Update `a
 - No Alembic migrations — schema changes require manual table drop
 - Model files copied by hand from `ml/models/`
 - Separate apartment / house models — same inputs can yield very different prices (different markets)
+- Geocoding requires internet access to `data.geopf.fr` (50 req/s/IP)
 - Predictions are indicative, not certified appraisals — see [ml/README_ml.md](../ml/README_ml.md)

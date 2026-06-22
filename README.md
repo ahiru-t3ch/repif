@@ -6,8 +6,8 @@ Web app that estimates **apartment and house** sale prices from property feature
 
 ## What it does
 
-1. Client sends property features (surface, location, DPE, etc.) to the API
-2. Backend runs an **XGBoost** model (separate models for apartments and houses)
+1. Client sends an **address** and property features (surface, DPE, etc.)
+2. Backend **geocodes** the address (Géoplateforme BAN), then runs **XGBoost**
 3. Estimated price in euros is returned and stored in PostgreSQL
 
 ## Architecture
@@ -18,11 +18,11 @@ Web app that estimates **apartment and house** sale prices from property feature
 │   Next.js   │               │   FastAPI   │              │             │
 └─────────────┘               └──────┬──────┘              └─────────────┘
                                      │
-                                     │ loads at startup
+                                     │ geocode + infer
                                      ▼
                               ┌─────────────────────┐
-                              │  models_back/*.joblib │
-                              │  (from ml/ pipeline)  │
+                              │  FastAPI + geocoding │
+                              │  models_back/*.joblib│
                               └─────────────────────┘
                                      ▲
                                      │ trained from
@@ -144,7 +144,8 @@ You can also run each service on the host — see sub-project READMEs.
 |---|---|
 | ML models | XGBoost dev models (~100k recent sales, hyperparameter search) |
 | Inference | Separate apartment / house models |
-| API | `POST /predict/apartment`, `POST /predict/house` |
+| API | `POST /predict/apartment`, `POST /predict/house` (input: `address`, not lat/lon) |
+| Geocoding | Géoplateforme BAN in the backend (`geocoding.py`) |
 | Output | Indicative market index — not an official appraisal |
 
 ## Roadmap (post-beta)
@@ -152,7 +153,7 @@ You can also run each service on the host — see sub-project READMEs.
 - CI/CD (GitHub Actions → registry → VPS)
 - Production retraining (e.g. GCE) and model registry
 - Alembic migrations for the database
-- Geocoding in the frontend (address → lat/lon / INSEE)
+- Address autocomplete in the UI (Géoplateforme)
 
 ## License
 
