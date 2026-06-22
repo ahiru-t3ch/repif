@@ -2,16 +2,31 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+type PropertyType = "APARTMENT" | "HOUSE";
 
 type PredictionRecord = {
   id: number;
-  postal_code: string;
-  room_count: number;
-  living_area: number;
+  property_type: PropertyType;
+  sbati: number;
+  nblocdep: number;
+  lat: number;
+  lon: number;
+  l_codinsee: string;
+  dpe_median: number;
+  annee_construction: number;
   predicted_price: number;
   created_at: string;
 };
+
+const DPE_OPTIONS = [
+  { value: 1, label: "A" },
+  { value: 2, label: "B" },
+  { value: 3, label: "C" },
+  { value: 4, label: "D" },
+  { value: 5, label: "E" },
+  { value: 6, label: "F" },
+  { value: 7, label: "G" },
+] as const;
 
 function formatPrice(value: number) {
   return new Intl.NumberFormat("fr-FR", {
@@ -21,17 +36,30 @@ function formatPrice(value: number) {
   }).format(value);
 }
 
+function propertyLabel(type: PropertyType) {
+  return type === "APARTMENT" ? "Apartment" : "House";
+}
+
+function inputClassName() {
+  return "rounded border border-zinc-300 px-3 py-2";
+}
+
 export default function Home() {
-  const [postalCode, setPostalCode] = useState("31000");
-  const [roomCount, setRoomCount] = useState(3);
-  const [livingArea, setLivingArea] = useState(65);
+  const [propertyType, setPropertyType] = useState<PropertyType>("APARTMENT");
+  const [sbati, setSbati] = useState("");
+  const [nblocdep, setNblocdep] = useState("");
+  const [lat, setLat] = useState("");
+  const [lon, setLon] = useState("");
+  const [lCodinsee, setLCodinsee] = useState("");
+  const [dpeMedian, setDpeMedian] = useState("");
+  const [anneeConstruction, setAnneeConstruction] = useState("");
   const [price, setPrice] = useState<number | null>(null);
   const [history, setHistory] = useState<PredictionRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchHistory = useCallback(async () => {
-    const response = await fetch(`${API_URL}/predictions`);
+    const response = await fetch("/api/predictions");
     if (!response.ok) return;
     const data: PredictionRecord[] = await response.json();
     setHistory(data);
@@ -41,25 +69,56 @@ export default function Home() {
     fetchHistory();
   }, [fetchHistory]);
 
+  function handlePropertyTypeChange(next: PropertyType) {
+    setPropertyType(next);
+    setPrice(null);
+    setError(null);
+  }
+
   async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
     setError(null);
     setPrice(null);
 
+    const endpoint =
+      propertyType === "APARTMENT"
+        ? "/api/predict/apartment"
+        : "/api/predict/house";
+
+    const body = {
+      property_type: propertyType,
+      sbati: Number(sbati),
+      nblocdep: Number(nblocdep),
+      lat: Number(lat),
+      lon: Number(lon),
+      l_codinsee: lCodinsee.trim(),
+      dpe_median: Number(dpeMedian),
+      annee_construction: Number(anneeConstruction),
+    };
+
     try {
-      const response = await fetch(`${API_URL}/predict`, {
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          postal_code: postalCode,
-          room_count: Number(roomCount),
-          living_area: Number(livingArea),
-        }),
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
-        throw new Error(`API error (${response.status})`);
+        let message = `API error (${response.status})`;
+        try {
+          const payload = (await response.json()) as { detail?: unknown };
+          if (typeof payload.detail === "string") {
+            message = payload.detail;
+          } else if (Array.isArray(payload.detail)) {
+            message = payload.detail
+              .map((item) => item.msg ?? JSON.stringify(item))
+              .join("; ");
+          }
+        } catch {
+          // keep generic message
+        }
+        throw new Error(message);
       }
 
       const data: { price: number } = await response.json();
@@ -73,50 +132,132 @@ export default function Home() {
   }
 
   return (
-    <main className="mx-auto flex min-h-full max-w-lg flex-col gap-8 px-6 py-12">
+    <main className="mx-auto flex min-h-full max-w-xl flex-col gap-8 px-6 py-12">
       <header>
         <h1 className="text-2xl font-semibold">REPIF</h1>
         <p className="mt-1 text-sm text-zinc-500">
-          Real Estate Prices In France — beta (Haute-Garonne, 31)
+          Real Estate Prices In France — beta (indicative estimates from DVF+
+          and DPE data)
         </p>
       </header>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <label className="flex flex-col gap-1 text-sm">
-          Postal code
+          Property type
+          <select
+            value={propertyType}
+            onChange={(e) =>
+              handlePropertyTypeChange(e.target.value as PropertyType)
+            }
+            className={inputClassName()}
+          >
+            <option value="APARTMENT">Apartment</option>
+            <option value="HOUSE">House</option>
+          </select>
+        </label>
+
+        <label className="flex flex-col gap-1 text-sm">
+          Built area — sbati (m²)
+          <input
+            type="number"
+            value={sbati}
+            onChange={(e) => setSbati(e.target.value)}
+            min={11}
+            step={0.01}
+            required
+            className={inputClassName()}
+          />
+        </label>
+
+        <label className="flex flex-col gap-1 text-sm">
+          Outbuildings — nblocdep
+          <input
+            type="number"
+            value={nblocdep}
+            onChange={(e) => setNblocdep(e.target.value)}
+            min={0}
+            required
+            className={inputClassName()}
+          />
+        </label>
+
+        <div className="grid grid-cols-2 gap-4">
+          <label className="flex flex-col gap-1 text-sm">
+            Latitude
+            <input
+              type="number"
+              value={lat}
+              onChange={(e) => setLat(e.target.value)}
+              min={-90}
+              max={90}
+              step="any"
+              required
+              className={inputClassName()}
+            />
+          </label>
+
+          <label className="flex flex-col gap-1 text-sm">
+            Longitude
+            <input
+              type="number"
+              value={lon}
+              onChange={(e) => setLon(e.target.value)}
+              min={-180}
+              max={180}
+              step="any"
+              required
+              className={inputClassName()}
+            />
+          </label>
+        </div>
+
+        <label className="flex flex-col gap-1 text-sm">
+          INSEE commune code — l_codinsee
           <input
             type="text"
-            value={postalCode}
-            onChange={(e) => setPostalCode(e.target.value)}
+            value={lCodinsee}
+            onChange={(e) => setLCodinsee(e.target.value)}
+            minLength={5}
             maxLength={5}
+            pattern="[0-9]{5}"
             required
-            className="rounded border border-zinc-300 px-3 py-2"
+            className={inputClassName()}
           />
         </label>
 
-        <label className="flex flex-col gap-1 text-sm">
-          Number of rooms
-          <input
-            type="number"
-            value={roomCount}
-            onChange={(e) => setRoomCount(Number(e.target.value))}
-            min={1}
-            required
-            className="rounded border border-zinc-300 px-3 py-2"
-          />
-        </label>
+        <div className="grid grid-cols-2 gap-4">
+          <label className="flex flex-col gap-1 text-sm">
+            Energy class — dpe_median
+            <select
+              value={dpeMedian}
+              onChange={(e) => setDpeMedian(e.target.value)}
+              required
+              className={inputClassName()}
+            >
+              <option value="" disabled>
+                Select a class
+              </option>
+              {DPE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label} ({option.value})
+                </option>
+              ))}
+            </select>
+          </label>
 
-        <label className="flex flex-col gap-1 text-sm">
-          Living area (m²)
-          <input
-            type="number"
-            value={livingArea}
-            onChange={(e) => setLivingArea(Number(e.target.value))}
-            min={1}
-            required
-            className="rounded border border-zinc-300 px-3 py-2"
-          />
-        </label>
+          <label className="flex flex-col gap-1 text-sm">
+            Construction year
+            <input
+              type="number"
+              value={anneeConstruction}
+              onChange={(e) => setAnneeConstruction(e.target.value)}
+              min={1501}
+              max={new Date().getFullYear()}
+              required
+              className={inputClassName()}
+            />
+          </label>
+        </div>
 
         <button
           type="submit"
@@ -131,7 +272,8 @@ export default function Home() {
 
       {price !== null && (
         <p className="text-xl font-medium">
-          Estimated price: {formatPrice(price)}
+          Estimated {propertyLabel(propertyType).toLowerCase()} price:{" "}
+          {formatPrice(price)}
         </p>
       )}
 
@@ -146,8 +288,16 @@ export default function Home() {
                 key={item.id}
                 className="rounded border border-zinc-200 px-3 py-2"
               >
-                {item.postal_code} · {item.living_area} m² · {item.room_count}{" "}
-                rooms → {formatPrice(item.predicted_price)}
+                <span className="font-medium">
+                  {propertyLabel(item.property_type)}
+                </span>
+                {" · "}
+                {item.l_codinsee} · {item.sbati} m² · DPE{" "}
+                {DPE_OPTIONS.find((o) => o.value === item.dpe_median)?.label ??
+                  item.dpe_median}{" "}
+                · {item.annee_construction}
+                {" → "}
+                {formatPrice(item.predicted_price)}
               </li>
             ))}
           </ul>

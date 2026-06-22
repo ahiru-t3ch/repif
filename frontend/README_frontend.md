@@ -29,32 +29,48 @@ frontend/
 └── README_frontend.md
 ```
 
-## API integration (current state)
+## API integration
 
-The backend now exposes:
+The browser calls **Next.js route handlers** (same origin). They proxy to FastAPI server-side:
 
-- `POST /predict/apartment`
-- `POST /predict/house`
+| Browser | Next.js route | Backend |
+|---|---|---|
+| `GET /api/predictions` | → | `GET /predictions` |
+| `POST /api/predict/apartment` | → | `POST /predict/apartment` |
+| `POST /api/predict/house` | → | `POST /predict/house` |
 
-with a JSON body using DVF+/DPE field names (`sbati`, `l_codinsee`, `lat`, `lon`, `dpe_median`, etc.).
-
-**The form in `page.tsx` still calls the legacy `POST /predict` endpoint** with `postal_code`, `room_count`, and `living_area`. It must be updated to match the new API before the full stack works end-to-end.
-
-Until then, test predictions via the backend Swagger UI: http://localhost:8000/docs
+Implementation: `app/api/**/route.ts` and `lib/backend.ts`.
 
 ## Configuration
 
-```ts
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+Server-only env vars live in **gitignored** `.env.local`:
+
+```bash
+cd frontend
+cp .env.example .env.local
 ```
 
-Set `NEXT_PUBLIC_API_URL` in `.env.local` when deploying.
+| Variable | Purpose |
+|---|---|
+| `BACKEND_URL` | FastAPI base URL (used by route handlers only) |
+| `BACKEND_API_TOKEN` | Optional `Authorization: Bearer` token for the backend |
+
+These variables are **not** exposed to the browser. When you add auth on the backend, set `BACKEND_API_TOKEN` here (or in Compose / hosting env at **runtime**).
+
+**Docker Compose:** `BACKEND_URL=http://backend:8000` is set in `docker-compose.yml` for the frontend service.
+
+**Standalone container:**
+
+```bash
+docker run -d --name repif-web -p 3000:3000 \
+  -e BACKEND_URL=http://host.docker.internal:8000 \
+  repif-frontend
+```
 
 ## Prerequisites
 
 - Node.js 18+ (project tested with Node 24)
-- Backend API running on port 8000
-- CORS enabled on the backend for `http://localhost:3000`
+- Backend API running on port 8000 (reachable from the Next.js server via `BACKEND_URL`)
 
 ## Run locally
 
@@ -73,16 +89,28 @@ npm run build
 npm start
 ```
 
+## Run with Docker
+
+Use [Docker Compose from the repo root](../README.md#run-with-docker-compose) to run the full stack.
+
+Standalone image (set backend URL at **runtime**):
+
+```bash
+cd frontend
+docker build -t repif-frontend .
+docker run -d --name repif-web -p 3000:3000 \
+  -e BACKEND_URL=http://host.docker.internal:8000 \
+  repif-frontend
+```
+
 ## Beta limitations
 
 - Single page — no routing, auth, or accounts
-- Form not yet aligned with the new prediction API
+- User must provide coordinates and INSEE code (no geocoding yet)
 - No mobile-specific polish
 - No ad integration yet
 
 ## Planned (post-beta)
 
-- Form for apartment / house with all required ML features (or backend-side geocoding)
-- Property type selector (`APARTMENT` / `HOUSE`)
-- Updated prediction history display
+- Geocoding from address or postal code
 - Loading skeletons and clearer error states
