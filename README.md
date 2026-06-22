@@ -39,6 +39,8 @@ Monorepo: each service has its own folder, dependencies, and README.
 ├── frontend/       Web UI
 ├── backend/        REST API, inference, persistence
 ├── ml/             Training pipeline (DVF+ + DPE → XGBoost)
+├── docker-compose.yml
+├── .env.example    # Template for Compose (copy to .env)
 └── README.md       You are here
 ```
 
@@ -46,26 +48,95 @@ Monorepo: each service has its own folder, dependencies, and README.
 
 | Component | Details |
 |---|---|
-| [backend/README_backend.md](backend/README_backend.md) | API, models, database, Docker |
-| [frontend/README_frontend.md](frontend/README_frontend.md) | UI, local dev, build |
+| [backend/README_backend.md](backend/README_backend.md) | API, models, database |
+| [frontend/README_frontend.md](frontend/README_frontend.md) | UI, local dev |
 | [ml/README_ml.md](ml/README_ml.md) | Training, features, limitations |
 
-## Run the stack (overview)
+## Run with Docker Compose
 
-You need **PostgreSQL**, the **API**, and optionally the **frontend**.
+Orchestrates **PostgreSQL**, the **API**, and the **frontend** from the repo root.
+
+### Prerequisites
+
+1. Copy the env template:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   Edit `.env` if needed. For Compose, `DATABASE_URL` must use the service name **`db`** as host (already set in `.env.example`).
+
+2. Copy trained models into the backend image context:
+
+   ```bash
+   mkdir -p backend/models_back
+   cp ml/models/apartment_dev_*.joblib backend/models_back/
+   cp ml/models/house_dev_*.joblib backend/models_back/
+   ```
+
+   Update filenames in `backend/app/predictor.py` if your timestamps differ.
+
+### Start the stack
+
+```bash
+docker compose up --build
+```
+
+| Service | URL |
+|---|---|
+| App | http://localhost:3000 |
+| API docs | http://localhost:8000/docs |
+| Postgres | `localhost:5432` (credentials from `.env`) |
+
+Stop:
+
+```bash
+docker compose down
+```
+
+Remove the database volume (fresh DB):
+
+```bash
+docker compose down -v
+```
+
+### How it is wired
+
+```
+Browser  →  Next.js :3000  (/api/*)  →  FastAPI :8000
+                ↑                           ↑
+         no backend URL              BACKEND_URL
+         in the browser              (+ optional BACKEND_API_TOKEN)
+```
+
+```
+docker-compose.yml
+├── db          postgres:16
+├── backend     build ./backend  →  port 8000
+└── frontend    build ./frontend  →  port 3000
+                  environment: BACKEND_URL=http://backend:8000
+```
+
+- **Backend → Postgres:** `DATABASE_URL` in `.env` (host `db` inside the network).
+- **Frontend → Backend:** server-side proxy via `BACKEND_URL` (Docker network hostname `backend`). No public API URL in the browser bundle.
+
+Optional shared token (when the backend requires it): set `BACKEND_API_TOKEN` in `.env` — forwarded by Compose to the frontend container.
+
+Per-service notes: [backend/README_backend.md](backend/README_backend.md), [frontend/README_frontend.md](frontend/README_frontend.md).
+
+## Run locally (without Compose)
+
+You can also run each service on the host — see sub-project READMEs.
 
 | Service | Default URL |
 |---|---|
 | App | http://localhost:3000 |
 | API docs | http://localhost:8000/docs |
 
-1. Copy `backend/.env.sample` → `backend/.env`
-2. Copy trained `.joblib` files from `ml/models/` → `backend/models_back/` (see backend README)
-3. Start Postgres, then the API, then the frontend
-
-Details and commands live in each sub-project README.
-
-> **Note:** The frontend form still targets the old `/predict` API in places. Use **Swagger** (`/docs`) to test the new endpoints until the UI is updated.
+1. Copy `backend/.env.sample` → `backend/.env` (use `@localhost` in `DATABASE_URL`)
+2. Copy `frontend/.env.example` → `frontend/.env.local` (`BACKEND_URL=http://localhost:8000`)
+3. Copy `.joblib` files to `backend/models_back/`
+4. Start Postgres, backend, then frontend
 
 ## Beta scope
 
@@ -78,11 +149,10 @@ Details and commands live in each sub-project README.
 
 ## Roadmap (post-beta)
 
-- Align frontend with the new API contract
-- `docker-compose` for Postgres + API + frontend
 - CI/CD (GitHub Actions → registry → VPS)
 - Production retraining (e.g. GCE) and model registry
 - Alembic migrations for the database
+- Geocoding in the frontend (address → lat/lon / INSEE)
 
 ## License
 
