@@ -55,9 +55,10 @@ cp .env.example .env.local
 | Variable | Purpose |
 |---|---|
 | `BACKEND_URL` | FastAPI base URL (used by route handlers only) |
-| `BACKEND_API_TOKEN` | Optional `Authorization: Bearer` token for the backend |
+| `BACKEND_JWT_PRIVATE_KEY` | PEM private key — signs short-lived JWTs sent to the backend |
+| `BACKEND_JWT_TTL_SECONDS` | Token lifetime in seconds (default `300`) |
 
-These variables are **not** exposed to the browser. When you add auth on the backend, set `BACKEND_API_TOKEN` here (or in Compose / hosting env at **runtime**).
+These variables are **not** exposed to the browser. Generate keys with `bash generate-jwt-keys.sh` from the repo root; set the public key on the backend (`BACKEND_JWT_PUBLIC_KEY`). Swagger (`/docs`) is controlled by **`ENABLE_DOCS`** on the backend — see [backend/README_backend.md](../backend/README_backend.md#configuration).
 
 **Docker Compose:** `BACKEND_URL=http://backend:8000` is set in `docker-compose.yml` for the frontend service.
 

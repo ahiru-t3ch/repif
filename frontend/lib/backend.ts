@@ -1,3 +1,5 @@
+import { createBackendJwt } from "@/lib/backend-jwt";
+
 const BACKEND_CONFIG_ERROR = "BACKEND_URL is not configured";
 
 export function getBackendUrl(): string {
@@ -8,15 +10,15 @@ export function getBackendUrl(): string {
   return url.replace(/\/$/, "");
 }
 
-export function backendHeaders(contentType = "application/json"): HeadersInit {
+export async function backendHeaders(contentType = "application/json"): Promise<HeadersInit> {
   const headers: Record<string, string> = {};
   if (contentType) {
     headers["Content-Type"] = contentType;
   }
 
-  const token = process.env.BACKEND_API_TOKEN?.trim();
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
+  const privateKey = process.env.BACKEND_JWT_PRIVATE_KEY?.trim();
+  if (privateKey) {
+    headers.Authorization = `Bearer ${await createBackendJwt()}`;
   }
 
   return headers;

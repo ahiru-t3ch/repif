@@ -1,8 +1,10 @@
 services:
   db:
     image: postgres:16
-    env_file:
-      - .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "5432:5432"
     volumes:
@@ -17,8 +19,12 @@ services:
   backend:
     build:
       context: ./backend
-    env_file:
-      - .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      BACKEND_JWT_PUBLIC_KEY: ${BACKEND_JWT_PUBLIC_KEY:-}
+      BACKEND_JWT_ISSUER: ${BACKEND_JWT_ISSUER:-repif-frontend}
+      BACKEND_JWT_AUDIENCE: ${BACKEND_JWT_AUDIENCE:-repif-backend}
+      ENABLE_DOCS: ${ENABLE_DOCS:-true}
     ports:
       - "8000:8000"
     depends_on:
@@ -30,7 +36,10 @@ services:
       context: ./frontend
     environment:
       BACKEND_URL: http://backend:8000
-      BACKEND_API_TOKEN: ${BACKEND_API_TOKEN:-}
+      BACKEND_JWT_PRIVATE_KEY: ${BACKEND_JWT_PRIVATE_KEY:-}
+      BACKEND_JWT_ISSUER: ${BACKEND_JWT_ISSUER:-repif-frontend}
+      BACKEND_JWT_AUDIENCE: ${BACKEND_JWT_AUDIENCE:-repif-backend}
+      BACKEND_JWT_TTL_SECONDS: ${BACKEND_JWT_TTL_SECONDS:-300}
     ports:
       - "3000:3000"
     depends_on:

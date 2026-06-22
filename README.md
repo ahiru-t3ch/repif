@@ -40,6 +40,8 @@ Monorepo: each service has its own folder, dependencies, and README.
 ├── backend/        REST API, inference, persistence
 ├── ml/             Training pipeline (DVF+ + DPE → XGBoost)
 ├── docker-compose.yml
+├── generate-jwt-keys.sh   # One-off: RSA key pair for Next ↔ API JWT
+├── generate-test-jwt.py   # Dev: print a JWT for Swagger / curl
 ├── .env.example    # Template for Compose (copy to .env)
 └── README.md       You are here
 ```
@@ -66,6 +68,8 @@ Orchestrates **PostgreSQL**, the **API**, and the **frontend** from the repo roo
 
    Edit `.env` if needed. For Compose, `DATABASE_URL` must use the service name **`db`** as host (already set in `.env.example`).
 
+   Optional but recommended for a realistic stack: JWT keys (`bash generate-jwt-keys.sh`) and `ENABLE_DOCS=true` for local Swagger. See [backend/README_backend.md](backend/README_backend.md#configuration).
+
 2. Copy trained models into the backend image context:
 
    ```bash
@@ -85,7 +89,7 @@ docker compose up --build
 | Service | URL |
 |---|---|
 | App | http://localhost:3000 |
-| API docs | http://localhost:8000/docs |
+| API docs | http://localhost:8000/docs (if `ENABLE_DOCS=true`) |
 | Postgres | `localhost:5432` (credentials from `.env`) |
 
 Stop:
@@ -106,7 +110,7 @@ docker compose down -v
 Browser  →  Next.js :3000  (/api/*)  →  FastAPI :8000
                 ↑                           ↑
          no backend URL              BACKEND_URL
-         in the browser              (+ optional BACKEND_API_TOKEN)
+         in the browser              (+ JWT RS256 server-to-server)
 ```
 
 ```
@@ -120,7 +124,9 @@ docker-compose.yml
 - **Backend → Postgres:** `DATABASE_URL` in `.env` (host `db` inside the network).
 - **Frontend → Backend:** server-side proxy via `BACKEND_URL` (Docker network hostname `backend`). No public API URL in the browser bundle.
 
-Optional shared token (when the backend requires it): set `BACKEND_API_TOKEN` in `.env` — forwarded by Compose to the frontend container.
+**JWT (Next → API):** run `bash generate-jwt-keys.sh`, then set both keys in root `.env` (Compose reads it for substitution). Only the **private** key is injected into the frontend container; only the **public** key into the backend.
+
+**Swagger:** `ENABLE_DOCS=true` in `.env` for local dev (default in Compose). On **Coolify prod**, set `ENABLE_DOCS=false` on the backend service — `/docs` is then disabled even if the API has a public domain.
 
 Per-service notes: [backend/README_backend.md](backend/README_backend.md), [frontend/README_frontend.md](frontend/README_frontend.md).
 
@@ -131,7 +137,7 @@ You can also run each service on the host — see sub-project READMEs.
 | Service | Default URL |
 |---|---|
 | App | http://localhost:3000 |
-| API docs | http://localhost:8000/docs |
+| API docs | http://localhost:8000/docs (if `ENABLE_DOCS=true`) |
 
 1. Copy `backend/.env.sample` → `backend/.env` (use `@localhost` in `DATABASE_URL`)
 2. Copy `frontend/.env.example` → `frontend/.env.local` (`BACKEND_URL=http://localhost:8000`)

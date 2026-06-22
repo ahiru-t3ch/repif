@@ -1,5 +1,5 @@
 # REPIF frontend — Next.js standalone production image
-# Runtime: set BACKEND_URL (and optional BACKEND_API_TOKEN) when running the container.
+# Runtime: set BACKEND_URL and JWT keys when running the container.
 
 FROM node:24-alpine AS base
 RUN apk add --no-cache libc6-compat

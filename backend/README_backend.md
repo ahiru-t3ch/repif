@@ -28,6 +28,8 @@ Beta POC: XGBoost models trained locally in `ml/`, copied into this service for 
 backend/
 ├── app/
 │   ├── main.py        # Routes, CORS, DB bootstrap
+│   ├── auth.py        # JWT RS256 middleware
+│   ├── config.py      # ENABLE_DOCS and shared settings
 │   ├── schemas.py     # Pydantic request/response models
 │   ├── geocoding.py   # Address → lat/lon/INSEE (Géoplateforme BAN)
 │   ├── predictor.py   # Loads .joblib models, runs inference
@@ -69,7 +71,7 @@ Predictions are in **log-price** inside the model; `predictor.py` applies `exp()
 | `POST` | `/predict/apartment` | Apartment price estimate |
 | `POST` | `/predict/house` | House price estimate |
 | `GET` | `/predictions` | Saved predictions (newest first) |
-| `GET` | `/docs` | Swagger UI |
+| `GET` | `/docs` | Swagger UI (only if `ENABLE_DOCS=true`) |
 
 ### Request body (`PredictInput`)
 
@@ -114,6 +116,12 @@ Copy `.env.sample` to `.env`. **Never commit `.env`.**
 | `POSTGRES_PASSWORD` | PostgreSQL password |
 | `POSTGRES_DB` | Database name |
 | `DATABASE_URL` | Full SQLAlchemy connection string |
+| `BACKEND_JWT_PUBLIC_KEY` | PEM public key — when set, routes except `GET /` require a valid RS256 JWT |
+| `BACKEND_JWT_ISSUER` | Expected JWT `iss` (default `repif-frontend`) |
+| `BACKEND_JWT_AUDIENCE` | Expected JWT `aud` (default `repif-backend`) |
+| `ENABLE_DOCS` | `true` → `/docs` enabled; `false` → disabled. Default if unset: **`false`**. Compose sets `true` for local dev; use `false` on Coolify prod. |
+
+Generate keys: `bash generate-jwt-keys.sh` from the repo root. Put the **private** key in Next.js (`BACKEND_JWT_PRIVATE_KEY`), the **public** key here. If `BACKEND_JWT_PUBLIC_KEY` is unset, the API stays open (dev only — warning at startup).
 
 **Local dev** (Uvicorn on host, Postgres in Docker):
 
@@ -177,6 +185,23 @@ uvicorn app.main:app --reload
 ```
 
 API: http://localhost:8000 — docs: http://localhost:8000/docs
+
+### Test the API when JWT auth is enabled
+
+Requires `ENABLE_DOCS=true` (default in local Compose).
+
+1. Generate a JWT: `python generate-test-jwt.py` (private key in `.env` or `repif-jwt-private.pem`).
+2. Open http://localhost:8000/docs → **Authorize** → paste the token.
+3. Or with curl:
+
+   ```bash
+   TOKEN=$(python generate-test-jwt.py)
+   curl -H "Authorization: Bearer $TOKEN" http://localhost:8000/predictions
+   ```
+
+**Production (Coolify):** `ENABLE_DOCS=false` — `/docs` is disabled.
+
+**Local without JWT:** remove `BACKEND_JWT_PUBLIC_KEY` from `.env` and restart the backend (dev only).
 
 If `pip` fails with a wrong venv path, use:
 
