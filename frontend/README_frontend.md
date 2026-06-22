@@ -1,13 +1,12 @@
 # Frontend — REPIF
 
-**REPIF** (Real Estate Prices In France) — web UI for estimating apartment prices. **Beta POC** — Haute-Garonne first, minimal UI, no ads yet (monetization planned).
+**REPIF** (Real Estate Prices In France) — web UI for property price estimates. **Beta POC**, minimal single-page app.
 
 ## Role in the product
 
 - User-facing entry point for the beta
-- Collects apartment features (postal code, rooms, living area)
-- Calls the backend API and displays the estimated price
-- Shows recent predictions from the database
+- Collects property features and calls the backend API
+- Displays the estimated price and recent predictions from the database
 
 ## Stack
 
@@ -23,34 +22,39 @@
 frontend/
 ├── app/
 │   ├── page.tsx       # Main page: form + result + history
-│   ├── layout.tsx       # Root layout and metadata
-│   └── globals.css      # Global styles
-├── public/              # Static assets
+│   ├── layout.tsx     # Root layout and metadata
+│   └── globals.css    # Global styles
+├── public/
 ├── package.json
 └── README_frontend.md
 ```
 
-## Features (beta)
+## API integration (current state)
 
-- **Prediction form** — postal code, room count, living area (m²)
-- **Price display** — formatted in EUR (`fr-FR` locale)
-- **Prediction history** — loaded from `GET /predictions` on page load and after each submit
+The backend now exposes:
+
+- `POST /predict/apartment`
+- `POST /predict/house`
+
+with a JSON body using DVF+/DPE field names (`sbati`, `l_codinsee`, `lat`, `lon`, `dpe_median`, etc.).
+
+**The form in `page.tsx` still calls the legacy `POST /predict` endpoint** with `postal_code`, `room_count`, and `living_area`. It must be updated to match the new API before the full stack works end-to-end.
+
+Until then, test predictions via the backend Swagger UI: http://localhost:8000/docs
 
 ## Configuration
 
-The API base URL is defined in `app/page.tsx`:
-
 ```ts
-const API_URL = "http://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 ```
 
-Change this when deploying (production API domain, env variable in a later iteration).
+Set `NEXT_PUBLIC_API_URL` in `.env.local` when deploying.
 
 ## Prerequisites
 
 - Node.js 18+ (project tested with Node 24)
 - Backend API running on port 8000
-- CORS enabled on the backend for the frontend origin
+- CORS enabled on the backend for `http://localhost:3000`
 
 ## Run locally
 
@@ -71,14 +75,14 @@ npm start
 
 ## Beta limitations
 
-- Single page — no routing, auth, or user accounts
-- Hardcoded API URL — no `.env.local` yet
-- No ad integration — placeholder for future monetization
-- No mobile-specific UX polish
+- Single page — no routing, auth, or accounts
+- Form not yet aligned with the new prediction API
+- No mobile-specific polish
+- No ad integration yet
 
 ## Planned (post-beta)
 
-- Environment-based API URL (`NEXT_PUBLIC_API_URL`)
-- Ad slots (e.g. banner / sidebar) without hurting core UX
-- SEO landing copy for Haute-Garonne / Toulouse searches
-- Error states and loading skeletons
+- Form for apartment / house with all required ML features (or backend-side geocoding)
+- Property type selector (`APARTMENT` / `HOUSE`)
+- Updated prediction history display
+- Loading skeletons and clearer error states
