@@ -6,7 +6,7 @@
 
 - User-facing entry point for the beta
 - Collects property features and calls the backend API
-- Displays the estimated price and recent predictions from the database
+- Displays the estimated price and geocoding match details
 
 ## Stack
 
@@ -21,7 +21,7 @@
 ```
 frontend/
 ├── app/
-│   ├── page.tsx       # Main page: form + result + history
+│   ├── page.tsx       # Main page: form + result
 │   ├── layout.tsx     # Root layout and metadata
 │   └── globals.css    # Global styles
 ├── public/
@@ -112,7 +112,7 @@ docker run -d --name repif-web -p 3000:3000 \
 
 ## Beta limitations
 
-- Single page — no routing, auth, or accounts
+- Single page — no routing, auth, accounts, or prediction history UI
 - User enters a postal address (geocoded server-side by the backend)
 - No mobile-specific polish
 - No ad integration yet

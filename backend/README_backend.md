@@ -97,13 +97,16 @@ Same schema for both routes. `property_type` must match the endpoint (`APARTMENT
 | `dpe_median` | Energy class as integer 1–7 (A=1 … G=7) |
 | `annee_construction` | Construction year |
 
-Stored in the database after geocoding: `address`, `lat`, `lon`, `l_codinsee`, plus the input fields and `predicted_price`.
+Stored in the database after geocoding: **`address`** = BAN normalized label (best match), plus `lat`, `lon`, `l_codinsee`, input fields and `predicted_price`.
 
 ### Response
 
 ```json
 {
-  "price": 450637.0
+  "price": 450637.0,
+  "input_address": "10 rue de la pomme toulouse",
+  "geocoded_address": "10 Rue de la Pomme 31000 Toulouse",
+  "geocode_score": 0.87
 }
 ```
 

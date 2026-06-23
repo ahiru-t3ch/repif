@@ -1,22 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 
 type PropertyType = "APARTMENT" | "HOUSE";
 
-type PredictionRecord = {
-  id: number;
-  property_type: PropertyType;
-  sbati: number;
-  nblocdep: number;
-  lat: number;
-  lon: number;
-  l_codinsee: string;
-  address: string;
-  dpe_median: number;
-  annee_construction: number;
-  predicted_price: number;
-  created_at: string;
+type PredictResult = {
+  price: number;
+  input_address: string;
+  geocoded_address: string;
+  geocode_score: number;
 };
 
 const DPE_OPTIONS = [
@@ -28,6 +20,10 @@ const DPE_OPTIONS = [
   { value: 6, label: "F" },
   { value: 7, label: "G" },
 ] as const;
+
+function formatScore(score: number) {
+  return `${Math.round(score * 100)} %`;
+}
 
 function formatPrice(value: number) {
   return new Intl.NumberFormat("fr-FR", {
@@ -52,25 +48,13 @@ export default function Home() {
   const [nblocdep, setNblocdep] = useState("");
   const [dpeMedian, setDpeMedian] = useState("");
   const [anneeConstruction, setAnneeConstruction] = useState("");
-  const [price, setPrice] = useState<number | null>(null);
-  const [history, setHistory] = useState<PredictionRecord[]>([]);
+  const [result, setResult] = useState<PredictResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchHistory = useCallback(async () => {
-    const response = await fetch("/api/predictions");
-    if (!response.ok) return;
-    const data: PredictionRecord[] = await response.json();
-    setHistory(data);
-  }, []);
-
-  useEffect(() => {
-    fetchHistory();
-  }, [fetchHistory]);
-
   function handlePropertyTypeChange(next: PropertyType) {
     setPropertyType(next);
-    setPrice(null);
+    setResult(null);
     setError(null);
   }
 
@@ -78,7 +62,7 @@ export default function Home() {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    setPrice(null);
+    setResult(null);
 
     const endpoint =
       propertyType === "APARTMENT"
@@ -118,9 +102,8 @@ export default function Home() {
         throw new Error(message);
       }
 
-      const data: { price: number } = await response.json();
-      setPrice(data.price);
-      await fetchHistory();
+      const data: PredictResult = await response.json();
+      setResult(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
@@ -237,39 +220,22 @@ export default function Home() {
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      {price !== null && (
-        <p className="text-xl font-medium">
-          Estimated {propertyLabel(propertyType).toLowerCase()} price:{" "}
-          {formatPrice(price)}
-        </p>
+      {result && (
+        <div className="flex flex-col gap-2">
+          <p className="text-xl font-medium">
+            Estimated {propertyLabel(propertyType).toLowerCase()} price:{" "}
+            {formatPrice(result.price)}
+          </p>
+          <p className="text-sm text-zinc-600">
+            Your address matched with a score of{" "}
+            <span className="font-medium">{formatScore(result.geocode_score)}</span>.
+          </p>
+          <p className="text-sm text-zinc-600">
+            Estimate based on the geocoded address:{" "}
+            <span className="font-medium">{result.geocoded_address}</span>
+          </p>
+        </div>
       )}
-
-      <section>
-        <h2 className="mb-3 text-lg font-medium">Recent predictions</h2>
-        {history.length === 0 ? (
-          <p className="text-sm text-zinc-500">No predictions yet.</p>
-        ) : (
-          <ul className="flex flex-col gap-2 text-sm">
-            {history.map((item) => (
-              <li
-                key={item.id}
-                className="rounded border border-zinc-200 px-3 py-2"
-              >
-                <span className="font-medium">
-                  {propertyLabel(item.property_type)}
-                </span>
-                {" · "}
-                {item.address} · {item.sbati} m² · DPE{" "}
-                {DPE_OPTIONS.find((o) => o.value === item.dpe_median)?.label ??
-                  item.dpe_median}{" "}
-                · {item.annee_construction}
-                {" → "}
-                {formatPrice(item.predicted_price)}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
     </main>
   );
 }

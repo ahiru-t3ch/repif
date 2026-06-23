@@ -32,3 +32,6 @@ class PredictInput(BaseModel):
 
 class PredictOutput(BaseModel):
     price: float
+    input_address: str
+    geocoded_address: str
+    geocode_score: float = Field(..., ge=0, le=1)

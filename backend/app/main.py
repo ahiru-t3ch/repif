@@ -139,7 +139,7 @@ def _predict_and_save(
         lat=geocoded.lat,
         lon=geocoded.lon,
         l_codinsee=geocoded.l_codinsee,
-        address=input.address.strip(),
+        address=geocoded.label.strip(),
         dpe_median=input.dpe_median,
         annee_construction=input.annee_construction,
         predicted_price=price,
@@ -148,7 +148,12 @@ def _predict_and_save(
     db.commit()
     db.refresh(prediction)
 
-    return PredictOutput(price=price)
+    return PredictOutput(
+        price=price,
+        input_address=input.address.strip(),
+        geocoded_address=geocoded.label.strip(),
+        geocode_score=geocoded.score,
+    )
 
 
 # Apartment prediction
