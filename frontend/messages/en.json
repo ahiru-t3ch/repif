@@ -1,0 +1,93 @@
+{
+  "meta": {
+    "badge": "Hawk Prix Immo · Beta · France",
+    "title": "Hawk Prix Immo",
+    "subtitle": "Beta · France",
+    "description": "Indicative property price estimates from French open data (DVF+ and energy performance records). Not a formal appraisal."
+  },
+  "lang": {
+    "label": "Language",
+    "fr": "Français",
+    "en": "English"
+  },
+  "form": {
+    "propertyType": "Property type",
+    "apartment": "Apartment",
+    "house": "House",
+    "address": "Address",
+    "addressPlaceholder": "e.g. 10 rue de la Pomme 31000 Toulouse",
+    "surface": "Living area (m²)",
+    "outbuildings": "Number of outbuildings",
+    "outbuildingsHint": "An outbuilding is e.g. a cellar, a parking space, or a garage.",
+    "dpe": "Energy class (DPE)",
+    "dpeSelect": "Select",
+    "year": "Year built",
+    "submit": "Estimate price",
+    "submitting": "Calculating…"
+  },
+  "dpeAlert": {
+    "title": "DPE alert — rental use",
+    "rentalWarning": "For a buy-to-let investment, class E, F, or G properties carry high risk: renting out is already banned or will be banned depending on the class.",
+    "tableLetter": "DPE class",
+    "tableStatus": "Current status (2026)",
+    "tableDate": "Rental ban",
+    "statusForbidden": "Banned",
+    "statusSoonForbidden": "Soon banned",
+    "statusDeferred": "Deferred",
+    "dateG": "Since 1 January 2025",
+    "dateF": "From 1 January 2028",
+    "dateE": "From 1 January 2034"
+  },
+  "result": {
+    "estimateApartment": "Apartment estimate",
+    "estimateHouse": "House estimate",
+    "excludingAgencyFees": "Excluding agency fees",
+    "pricePerSqm": "Price per m²",
+    "includingAgencyFees": "Including agency fees",
+    "agencyFeesRate": "Agency fees: {rate}%",
+    "agencyFeesAmount": "Agency fee amount (FAI − net) :",
+    "notaryFeesTitle": "Notary fees",
+    "notaryPropertyAge": "Existing or new property",
+    "notaryOld": "Existing (7–8.5%)",
+    "notaryNew": "New (2–3%)",
+    "notaryFeesOldRange": "Typical range 7–8.5%",
+    "notaryFeesNewRange": "Typical range 2–3%",
+    "notaryFeesAmount": "Notary fee amount:",
+    "notaryFeesRate": "Notary fee rate: {rate}%",
+    "notaryFeesBase": "Calculated on the price excluding agency fees.",
+    "totalFeesAmount": "Total fees (agency + notary):",
+    "totalBudget": "Estimated total budget",
+    "totalBudgetHint": "FAI price + notary fees.",
+    "priceExplanationLink": "How this price is calculated",
+    "matchScore": "Address match score:",
+    "inputAddress": "Address entered:",
+    "geocodedAddress": "Estimate based on:",
+    "modelInputTitle": "Inputs sent to the Machine Learning model"
+  },
+  "errors": {
+    "api": "API error ({status})",
+    "unknown": "Unknown error"
+  },
+  "footer": {
+    "copyright": "© 2026",
+    "prefix": "Hawk Prix Immo by",
+    "company": "Ahiru-T3ch"
+  },
+  "explanation": {
+    "title": "How this price is calculated",
+    "back": "Back to estimate",
+    "intro": "Hawk Prix Immo provides an indicative, non-binding estimate based on open data and a statistical model.",
+    "modelTitle": "Model and data",
+    "modelBody": "The estimate uses an XGBoost model trained on DVF+ sales (Cerema), enriched with ADEME energy performance (DPE) data. Inputs include living area, outbuildings, location, energy class, and year built.",
+    "modelBeta": "This machine learning model is in beta: it was trained with the max_train_rows=100_000 option, i.e. on the 100,000 most recent DVF+ sales, not the full national dataset.",
+    "geocodeTitle": "Address and geocoding",
+    "geocodeBody": "Your address is geocoded via the French national address base (Géoplateforme BAN). The match score reflects how closely your input matches the address used for the estimate.",
+    "agencyFeesTitle": "Price excluding agency fees",
+    "agencyFeesDisclaimer": "The main price shown excludes agency fees. DVF sale values only include agency fees when they are paid by the seller.",
+    "agencyFeesBuyerShareIntro": "According to",
+    "agencyFeesSource": "Levine Immobilier",
+    "agencyFeesBuyerShareOutro": ", agency fees are paid by the buyer in approximately 90% of cases.",
+    "faiTitle": "FAI price and fee simulator",
+    "faiBody": "The price including agency fees (FAI) adds an adjustable percentage (4% by default) to the net price. The fee amount is the difference between the FAI price and the net price."
+  }
+}

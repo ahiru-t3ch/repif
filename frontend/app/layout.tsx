@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+
+import { Providers } from "@/components/Providers";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -13,8 +15,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "REPIF — Real Estate Prices In France",
-  description: "Estimate real estate prices in France. Beta — starting with Haute-Garonne.",
+  title: "Hawk Prix Immo — estimation prix immobilier en France",
+  description:
+    "Estimation indicative de prix immobilier en France (DVF+, DPE). Beta — Hawk Prix Immo.",
+  icons: {
+    icon: [{ url: "/icon.png", type: "image/png" }],
+    apple: [{ url: "/icon.png", type: "image/png" }],
+  },
 };
 
 export default function RootLayout({
@@ -24,10 +31,12 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="fr"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full bg-background text-foreground">
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

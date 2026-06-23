@@ -1,15 +1,23 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
-type PropertyType = "APARTMENT" | "HOUSE";
-
-type PredictResult = {
-  price: number;
-  input_address: string;
-  geocoded_address: string;
-  geocode_score: number;
-};
+import { DpeRentalAlert } from "@/components/DpeRentalAlert";
+import {
+  DEFAULT_AGENCY_FEE_RATE,
+  useEstimateSession,
+  type PredictResult,
+  type PropertyType,
+} from "@/lib/estimate-session/context";
+import { dpeValueToLetter } from "@/lib/dpe-rental";
+import { useI18n } from "@/lib/i18n/context";
+import {
+  getNotaryFeeRangeByAge,
+  inferNotaryPropertyAge,
+  notaryFeeAmount,
+  type NotaryPropertyAge,
+} from "@/lib/notary-fees";
 
 const DPE_OPTIONS = [
   { value: 1, label: "A" },
@@ -21,40 +29,120 @@ const DPE_OPTIONS = [
   { value: 7, label: "G" },
 ] as const;
 
-function formatScore(score: number) {
-  return `${Math.round(score * 100)} %`;
+const COMPANY_URL = "https://www.ahiru-t3ch.com/";
+const AGENCY_FEE_MIN = 0;
+const AGENCY_FEE_MAX = 10;
+const AGENCY_FEE_STEP = 0.5;
+
+const inputClassName =
+  "w-full rounded-lg border border-border bg-surface px-3.5 py-2.5 text-sm text-foreground shadow-sm transition focus:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-200";
+
+const labelClassName = "text-xs font-medium uppercase tracking-wide text-muted";
+
+function FieldHint({ text }: { text: string }) {
+  return (
+    <button
+      type="button"
+      className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-stone-400 font-serif text-[10px] font-bold leading-none text-muted transition hover:border-stone-600 hover:text-foreground"
+      title={text}
+      aria-label={text}
+    >
+      i
+    </button>
+  );
 }
 
-function formatPrice(value: number) {
-  return new Intl.NumberFormat("fr-FR", {
-    style: "currency",
-    currency: "EUR",
-    maximumFractionDigits: 0,
-  }).format(value);
-}
-
-function propertyLabel(type: PropertyType) {
-  return type === "APARTMENT" ? "Apartment" : "House";
-}
-
-function inputClassName() {
-  return "rounded border border-zinc-300 px-3 py-2";
+function AdRail() {
+  return (
+    <aside
+      className="hidden min-h-full border-border/60 bg-stone-100/50 lg:block lg:border-x lg:border-dashed"
+      aria-hidden="true"
+    />
+  );
 }
 
 export default function Home() {
-  const [propertyType, setPropertyType] = useState<PropertyType>("APARTMENT");
-  const [address, setAddress] = useState("");
-  const [sbati, setSbati] = useState("");
-  const [nblocdep, setNblocdep] = useState("");
-  const [dpeMedian, setDpeMedian] = useState("");
-  const [anneeConstruction, setAnneeConstruction] = useState("");
-  const [result, setResult] = useState<PredictResult | null>(null);
+  const { t, intlLocale } = useI18n();
+  const {
+    propertyType,
+    setPropertyType,
+    address,
+    setAddress,
+    sbati,
+    setSbati,
+    nblocdep,
+    setNblocdep,
+    dpeMedian,
+    setDpeMedian,
+    anneeConstruction,
+    setAnneeConstruction,
+    result,
+    setResult,
+    modelInputSnapshot,
+    setModelInputSnapshot,
+    agencyFeeRate,
+    setAgencyFeeRate,
+    notaryFeeRate,
+    setNotaryFeeRate,
+    notaryPropertyAge,
+    setNotaryPropertyAge,
+    error,
+    setError,
+  } = useEstimateSession();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
+  function formatScore(score: number) {
+    return `${Math.round(score * 100)} %`;
+  }
+
+  function formatPrice(value: number) {
+    return new Intl.NumberFormat(intlLocale, {
+      style: "currency",
+      currency: "EUR",
+      maximumFractionDigits: 0,
+    }).format(value);
+  }
+
+  function formatFeeRate(rate: number) {
+    return new Intl.NumberFormat(intlLocale, {
+      maximumFractionDigits: 1,
+    }).format(rate);
+  }
+
+  function formatPricePerSqm(netPrice: number, surface: number) {
+    if (surface <= 0) {
+      return null;
+    }
+
+    return new Intl.NumberFormat(intlLocale, {
+      style: "currency",
+      currency: "EUR",
+      maximumFractionDigits: 0,
+    }).format(Math.round(netPrice / surface));
+  }
+
+  function priceWithAgencyFees(netPrice: number, feeRate: number) {
+    return Math.round(netPrice * (1 + feeRate / 100));
+  }
+
+  function handleNotaryPropertyAgeChange(next: NotaryPropertyAge) {
+    const range = getNotaryFeeRangeByAge(next);
+    setNotaryPropertyAge(next);
+    setNotaryFeeRate(range.default);
+  }
+
+  function modelPropertyTypeLabel(type: PropertyType) {
+    return type === "APARTMENT" ? t("form.apartment") : t("form.house");
+  }
+
+  function resultTitle(type: PropertyType) {
+    return type === "APARTMENT" ? t("result.estimateApartment") : t("result.estimateHouse");
+  }
 
   function handlePropertyTypeChange(next: PropertyType) {
     setPropertyType(next);
     setResult(null);
+    setModelInputSnapshot(null);
     setError(null);
   }
 
@@ -63,6 +151,7 @@ export default function Home() {
     setLoading(true);
     setError(null);
     setResult(null);
+    setModelInputSnapshot(null);
 
     const endpoint =
       propertyType === "APARTMENT"
@@ -86,7 +175,7 @@ export default function Home() {
       });
 
       if (!response.ok) {
-        let message = `API error (${response.status})`;
+        let message = t("errors.api", { status: response.status });
         try {
           const payload = (await response.json()) as { detail?: unknown };
           if (typeof payload.detail === "string") {
@@ -103,139 +192,420 @@ export default function Home() {
       }
 
       const data: PredictResult = await response.json();
+      const notaryAge = inferNotaryPropertyAge(Number(anneeConstruction));
+      const notaryRange = getNotaryFeeRangeByAge(notaryAge);
+      setAgencyFeeRate(DEFAULT_AGENCY_FEE_RATE);
+      setNotaryPropertyAge(notaryAge);
+      setNotaryFeeRate(notaryRange.default);
+      setModelInputSnapshot({
+        propertyType,
+        address: address.trim(),
+        sbati: Number(sbati),
+        nblocdep: Number(nblocdep),
+        dpeMedian: Number(dpeMedian),
+        anneeConstruction: Number(anneeConstruction),
+      });
       setResult(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
+      setError(err instanceof Error ? err.message : t("errors.unknown"));
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <main className="mx-auto flex min-h-full max-w-xl flex-col gap-8 px-6 py-12">
-      <header>
-        <h1 className="text-2xl font-semibold">REPIF</h1>
-        <p className="mt-1 text-sm text-zinc-500">
-          Real Estate Prices In France — beta (indicative estimates from DVF+
-          and DPE data)
-        </p>
-      </header>
+    <div className="min-h-full lg:grid lg:grid-cols-[1fr_min(100%,28rem)_1fr] xl:grid-cols-[1fr_min(100%,32rem)_1fr]">
+      <AdRail />
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <label className="flex flex-col gap-1 text-sm">
-          Property type
-          <select
-            value={propertyType}
-            onChange={(e) =>
-              handlePropertyTypeChange(e.target.value as PropertyType)
-            }
-            className={inputClassName()}
-          >
-            <option value="APARTMENT">Apartment</option>
-            <option value="HOUSE">House</option>
-          </select>
-        </label>
+      <main className="px-5 py-10 sm:px-8 sm:py-12">
+        <div className="mx-auto flex max-w-lg flex-col gap-8">
+          <div className="space-y-2 text-center sm:text-left">
+            <h1 className="sr-only">{t("meta.title")}</h1>
+            <p className="text-sm leading-relaxed text-muted">
+              {t("meta.description")}
+            </p>
+          </div>
 
-        <label className="flex flex-col gap-1 text-sm">
-          Address
-          <input
-            type="text"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            minLength={10}
-            maxLength={255}
-            placeholder="e.g. 10 rue de la Pomme 31000 Toulouse"
-            required
-            className={inputClassName()}
-          />
-        </label>
+          <section className="rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+              <label className="flex flex-col gap-2">
+                <span className={labelClassName}>{t("form.propertyType")}</span>
+                <select
+                  value={propertyType}
+                  onChange={(e) =>
+                    handlePropertyTypeChange(e.target.value as PropertyType)
+                  }
+                  className={inputClassName}
+                >
+                  <option value="APARTMENT">{t("form.apartment")}</option>
+                  <option value="HOUSE">{t("form.house")}</option>
+                </select>
+              </label>
 
-        <label className="flex flex-col gap-1 text-sm">
-          Built area — sbati (m²)
-          <input
-            type="number"
-            value={sbati}
-            onChange={(e) => setSbati(e.target.value)}
-            min={11}
-            step={0.01}
-            required
-            className={inputClassName()}
-          />
-        </label>
+              <label className="flex flex-col gap-2">
+                <span className={labelClassName}>{t("form.address")}</span>
+                <input
+                  type="text"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  minLength={10}
+                  maxLength={255}
+                  placeholder={t("form.addressPlaceholder")}
+                  required
+                  className={inputClassName}
+                />
+              </label>
 
-        <label className="flex flex-col gap-1 text-sm">
-          Outbuildings — nblocdep
-          <input
-            type="number"
-            value={nblocdep}
-            onChange={(e) => setNblocdep(e.target.value)}
-            min={0}
-            required
-            className={inputClassName()}
-          />
-        </label>
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-x-5 sm:gap-y-2">
+                <label className="flex flex-col gap-2 sm:contents">
+                  <span
+                    className={`${labelClassName} sm:col-start-1 sm:row-start-1 sm:flex sm:min-h-11 sm:items-end`}
+                  >
+                    {t("form.surface")}
+                  </span>
+                  <input
+                    type="number"
+                    value={sbati}
+                    onChange={(e) => setSbati(e.target.value)}
+                    min={11}
+                    step={0.01}
+                    required
+                    className={`${inputClassName} sm:col-start-1 sm:row-start-2`}
+                  />
+                </label>
 
-        <div className="grid grid-cols-2 gap-4">
-          <label className="flex flex-col gap-1 text-sm">
-            Energy class — dpe_median
-            <select
-              value={dpeMedian}
-              onChange={(e) => setDpeMedian(e.target.value)}
-              required
-              className={inputClassName()}
+                <label className="flex flex-col gap-2 sm:contents">
+                  <span
+                    className={`${labelClassName} flex items-center gap-1.5 normal-case sm:col-start-2 sm:row-start-1 sm:min-h-11 sm:items-end`}
+                  >
+                    {t("form.outbuildings")}
+                    <FieldHint text={t("form.outbuildingsHint")} />
+                  </span>
+                  <input
+                    type="number"
+                    value={nblocdep}
+                    onChange={(e) => setNblocdep(e.target.value)}
+                    min={0}
+                    required
+                    className={`${inputClassName} sm:col-start-2 sm:row-start-2`}
+                  />
+                </label>
+              </div>
+
+              <div className="grid gap-5 sm:grid-cols-2">
+                <label className="flex flex-col gap-2">
+                  <span className={labelClassName}>{t("form.dpe")}</span>
+                  <select
+                    value={dpeMedian}
+                    onChange={(e) => setDpeMedian(e.target.value)}
+                    required
+                    className={inputClassName}
+                  >
+                    <option value="" disabled>
+                      {t("form.dpeSelect")}
+                    </option>
+                    {DPE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="flex flex-col gap-2">
+                  <span className={labelClassName}>{t("form.year")}</span>
+                  <input
+                    type="number"
+                    value={anneeConstruction}
+                    onChange={(e) => setAnneeConstruction(e.target.value)}
+                    min={1501}
+                    max={new Date().getFullYear()}
+                    required
+                    className={inputClassName}
+                  />
+                </label>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="mt-1 rounded-lg bg-accent px-4 py-3 text-sm font-medium text-white transition hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {loading ? t("form.submitting") : t("form.submit")}
+              </button>
+            </form>
+          </section>
+
+          {error && (
+            <p
+              className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+              role="alert"
             >
-              <option value="" disabled>
-                Select a class
-              </option>
-              {DPE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label} ({option.value})
-                </option>
-              ))}
-            </select>
-          </label>
+              {error}
+            </p>
+          )}
 
-          <label className="flex flex-col gap-1 text-sm">
-            Construction year
-            <input
-              type="number"
-              value={anneeConstruction}
-              onChange={(e) => setAnneeConstruction(e.target.value)}
-              min={1501}
-              max={new Date().getFullYear()}
-              required
-              className={inputClassName()}
-            />
-          </label>
+          {result && (() => {
+            const priceFai = priceWithAgencyFees(result.price, agencyFeeRate);
+            const feeAmount = priceFai - result.price;
+            const notaryRange = getNotaryFeeRangeByAge(notaryPropertyAge);
+            const notaryAmount = notaryFeeAmount(result.price, notaryFeeRate);
+            const totalFeesAmount = feeAmount + notaryAmount;
+            const totalBudget = priceFai + notaryAmount;
+            const surfaceUsed = modelInputSnapshot?.sbati ?? 0;
+            const pricePerSqm = formatPricePerSqm(result.price, surfaceUsed);
+
+            return (
+            <section className="rounded-2xl border border-stone-800 bg-accent px-6 py-7 text-white sm:px-8">
+              <div className="space-y-2 border-b border-stone-700 pb-5 text-sm leading-relaxed text-stone-300">
+                <p>
+                  {t("result.geocodedAddress")}{" "}
+                  <span className="font-medium text-white">
+                    {result.geocoded_address}
+                  </span>
+                </p>
+                {result.input_address.trim().toLowerCase() !==
+                  result.geocoded_address.trim().toLowerCase() && (
+                  <p>
+                    {t("result.inputAddress")}{" "}
+                    <span className="font-medium text-white">
+                      {result.input_address}
+                    </span>
+                  </p>
+                )}
+                <p>
+                  {t("result.matchScore")}{" "}
+                  <span
+                    className={`font-medium ${
+                      result.geocode_score < 0.7
+                        ? "text-amber-300"
+                        : "text-white"
+                    }`}
+                  >
+                    {formatScore(result.geocode_score)}
+                  </span>
+                </p>
+
+                {modelInputSnapshot && (
+                  <div className="mt-4 border-t border-stone-700 pt-4">
+                    <p className="text-xs font-medium uppercase tracking-wide text-stone-400">
+                      {t("result.modelInputTitle")}
+                    </p>
+                    <dl className="mt-2 grid gap-1.5">
+                      <div className="flex flex-wrap gap-x-2">
+                        <dt className="text-stone-400">{t("form.propertyType")} :</dt>
+                        <dd className="font-medium text-white">
+                          {modelPropertyTypeLabel(modelInputSnapshot.propertyType)}
+                        </dd>
+                      </div>
+                      <div className="flex flex-wrap gap-x-2">
+                        <dt className="text-stone-400">{t("form.surface")} :</dt>
+                        <dd className="font-medium text-white">
+                          {new Intl.NumberFormat(intlLocale, {
+                            maximumFractionDigits: 2,
+                          }).format(modelInputSnapshot.sbati)}{" "}
+                          m²
+                        </dd>
+                      </div>
+                      <div className="flex flex-wrap gap-x-2">
+                        <dt className="text-stone-400">{t("form.outbuildings")} :</dt>
+                        <dd className="font-medium text-white">
+                          {modelInputSnapshot.nblocdep}
+                        </dd>
+                      </div>
+                      <div className="flex flex-wrap gap-x-2">
+                        <dt className="text-stone-400">{t("form.dpe")} :</dt>
+                        <dd className="font-medium text-white">
+                          {dpeValueToLetter(modelInputSnapshot.dpeMedian) ??
+                            modelInputSnapshot.dpeMedian}
+                        </dd>
+                      </div>
+                      <div className="flex flex-wrap gap-x-2">
+                        <dt className="text-stone-400">{t("form.year")} :</dt>
+                        <dd className="font-medium text-white">
+                          {modelInputSnapshot.anneeConstruction}
+                        </dd>
+                      </div>
+                    </dl>
+                  </div>
+                )}
+              </div>
+
+              <p className="mt-5 text-xs font-medium uppercase tracking-[0.15em] text-stone-400">
+                {resultTitle(modelInputSnapshot?.propertyType ?? propertyType)}
+              </p>
+
+              <div className="mt-2 flex flex-wrap items-end gap-x-8 gap-y-3">
+                <div>
+                  <p className="font-sans text-3xl font-semibold tracking-tight sm:text-4xl">
+                    {formatPrice(result.price)}
+                  </p>
+                  <p className="mt-1 text-sm text-stone-400">
+                    {t("result.excludingAgencyFees")}
+                  </p>
+                </div>
+                {pricePerSqm && (
+                  <div>
+                    <p className="font-sans text-2xl font-semibold tracking-tight sm:text-3xl">
+                      {pricePerSqm}
+                    </p>
+                    <p className="mt-1 text-sm text-stone-400">
+                      {t("result.pricePerSqm")}
+                    </p>
+                  </div>
+                )}
+              </div>
+              <Link
+                href="/explication-prix"
+                className="mt-2 inline-block text-sm text-stone-300 underline decoration-stone-500 underline-offset-2 transition hover:text-white"
+              >
+                {t("result.priceExplanationLink")}
+              </Link>
+
+              <div className="mt-4">
+                <DpeRentalAlert
+                  dpeValue={String(modelInputSnapshot?.dpeMedian ?? "")}
+                  variant="dark"
+                />
+              </div>
+
+              <div className="mt-6 border-t border-stone-700 pt-5">
+                <p className="text-xs font-medium uppercase tracking-[0.15em] text-stone-400">
+                  {t("result.includingAgencyFees")}
+                </p>
+                <p className="mt-2 font-sans text-2xl font-semibold tracking-tight sm:text-3xl">
+                  {formatPrice(priceFai)}
+                </p>
+                <p className="mt-2 text-sm text-stone-300">
+                  {t("result.agencyFeesAmount")}{" "}
+                  <span className="font-medium text-white">
+                    {formatPrice(feeAmount)}
+                  </span>
+                </p>
+                <label className="mt-4 block">
+                  <span className="text-xs text-stone-400">
+                    {t("result.agencyFeesRate", {
+                      rate: formatFeeRate(agencyFeeRate),
+                    })}
+                  </span>
+                  <input
+                    type="range"
+                    min={AGENCY_FEE_MIN}
+                    max={AGENCY_FEE_MAX}
+                    step={AGENCY_FEE_STEP}
+                    value={agencyFeeRate}
+                    onChange={(e) => setAgencyFeeRate(Number(e.target.value))}
+                    aria-valuemin={AGENCY_FEE_MIN}
+                    aria-valuemax={AGENCY_FEE_MAX}
+                    aria-valuenow={agencyFeeRate}
+                    className="mt-2 h-1.5 w-full cursor-pointer appearance-none rounded-full bg-stone-600 accent-white"
+                  />
+                </label>
+              </div>
+
+              <div className="mt-6 border-t border-stone-700 pt-5">
+                <p className="text-xs font-medium uppercase tracking-[0.15em] text-stone-400">
+                  {t("result.notaryFeesTitle")}
+                </p>
+
+                <div className="mt-3 flex flex-col gap-2">
+                  <span className="text-xs text-stone-400">
+                    {t("result.notaryPropertyAge")}
+                  </span>
+                  <div className="flex gap-2">
+                    {(["OLD", "NEW"] as const).map((age) => (
+                      <button
+                        key={age}
+                        type="button"
+                        onClick={() => handleNotaryPropertyAgeChange(age)}
+                        aria-pressed={notaryPropertyAge === age}
+                        className={`flex-1 rounded-lg px-3 py-2 text-xs font-medium transition ${
+                          notaryPropertyAge === age
+                            ? "bg-white text-stone-900"
+                            : "bg-stone-700 text-stone-300 hover:bg-stone-600 hover:text-white"
+                        }`}
+                      >
+                        {age === "OLD"
+                          ? t("result.notaryOld")
+                          : t("result.notaryNew")}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <p className="mt-3 text-xs text-stone-400">
+                  {notaryPropertyAge === "NEW"
+                    ? t("result.notaryFeesNewRange")
+                    : t("result.notaryFeesOldRange")}
+                </p>
+                <p className="mt-2 text-sm text-stone-300">
+                  {t("result.notaryFeesAmount")}{" "}
+                  <span className="font-medium text-white">
+                    {formatPrice(notaryAmount)}
+                  </span>
+                </p>
+                <label className="mt-4 block">
+                  <span className="text-xs text-stone-400">
+                    {t("result.notaryFeesRate", {
+                      rate: formatFeeRate(notaryFeeRate),
+                    })}
+                  </span>
+                  <input
+                    type="range"
+                    min={notaryRange.min}
+                    max={notaryRange.max}
+                    step={notaryRange.step}
+                    value={notaryFeeRate}
+                    onChange={(e) => setNotaryFeeRate(Number(e.target.value))}
+                    aria-valuemin={notaryRange.min}
+                    aria-valuemax={notaryRange.max}
+                    aria-valuenow={notaryFeeRate}
+                    className="mt-2 h-1.5 w-full cursor-pointer appearance-none rounded-full bg-stone-600 accent-white"
+                  />
+                </label>
+                <p className="mt-2 text-xs text-stone-500">
+                  {t("result.notaryFeesBase")}
+                </p>
+              </div>
+
+              <div className="mt-6 space-y-2 border-t border-stone-700 pt-5">
+                <p className="text-sm text-stone-300">
+                  {t("result.totalFeesAmount")}{" "}
+                  <span className="font-medium text-white">
+                    {formatPrice(totalFeesAmount)}
+                  </span>
+                </p>
+                <p>
+                  <span className="text-xs font-medium uppercase tracking-[0.15em] text-stone-400">
+                    {t("result.totalBudget")}
+                  </span>
+                  <span className="mt-2 block font-sans text-2xl font-semibold tracking-tight sm:text-3xl">
+                    {formatPrice(totalBudget)}
+                  </span>
+                </p>
+                <p className="text-xs text-stone-500">
+                  {t("result.totalBudgetHint")}
+                </p>
+              </div>
+            </section>
+            );
+          })()}
+
+          <footer className="text-center text-xs text-muted">
+            {t("footer.copyright")} · {t("footer.prefix")}{" "}
+            <a
+              href={COMPANY_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline decoration-stone-400 underline-offset-2 hover:text-foreground"
+            >
+              {t("footer.company")}
+            </a>
+          </footer>
         </div>
+      </main>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="rounded bg-zinc-900 px-4 py-2 text-white disabled:opacity-50"
-        >
-          {loading ? "Predicting..." : "Predict price"}
-        </button>
-      </form>
-
-      {error && <p className="text-sm text-red-600">{error}</p>}
-
-      {result && (
-        <div className="flex flex-col gap-2">
-          <p className="text-xl font-medium">
-            Estimated {propertyLabel(propertyType).toLowerCase()} price:{" "}
-            {formatPrice(result.price)}
-          </p>
-          <p className="text-sm text-zinc-600">
-            Your address matched with a score of{" "}
-            <span className="font-medium">{formatScore(result.geocode_score)}</span>.
-          </p>
-          <p className="text-sm text-zinc-600">
-            Estimate based on the geocoded address:{" "}
-            <span className="font-medium">{result.geocoded_address}</span>
-          </p>
-        </div>
-      )}
-    </main>
+      <AdRail />
+    </div>
   );
 }
