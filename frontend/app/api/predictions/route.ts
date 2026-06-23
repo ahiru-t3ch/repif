@@ -5,11 +5,11 @@ import {
   proxyBackendResponse,
 } from "@/lib/backend";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const response = await fetch(`${getBackendUrl()}/predictions`, {
       cache: "no-store",
-      headers: await backendHeaders(""),
+      headers: await backendHeaders("", request),
     });
     return proxyBackendResponse(response);
   } catch (error) {

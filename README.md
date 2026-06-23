@@ -128,6 +128,8 @@ docker-compose.yml
 
 **Swagger:** `ENABLE_DOCS=true` in `.env` for local dev (default in Compose). On **Coolify prod**, set `ENABLE_DOCS=false` on the backend service — `/docs` is then disabled even if the API has a public domain.
 
+**Rate limits:** per client IP on predictions (`10/min` default) and history (`60/min` default). Configured in `.env` — see [backend/README_backend.md](backend/README_backend.md#configuration).
+
 Per-service notes: [backend/README_backend.md](backend/README_backend.md), [frontend/README_frontend.md](frontend/README_frontend.md).
 
 ## Run locally (without Compose)

@@ -57,8 +57,12 @@ cp .env.example .env.local
 | `BACKEND_URL` | FastAPI base URL (used by route handlers only) |
 | `BACKEND_JWT_PRIVATE_KEY` | PEM private key — signs short-lived JWTs sent to the backend |
 | `BACKEND_JWT_TTL_SECONDS` | Token lifetime in seconds (default `300`) |
+| `RATE_LIMIT_PREDICT_PER_MIN` | Max POST `/api/predict/*` per IP per minute (default `10`) |
+| `RATE_LIMIT_PREDICTIONS_PER_MIN` | Max GET `/api/predictions` per IP per minute (default `60`) |
 
 These variables are **not** exposed to the browser. Generate keys with `bash generate-jwt-keys.sh` from the repo root; set the public key on the backend (`BACKEND_JWT_PUBLIC_KEY`). Swagger (`/docs`) is controlled by **`ENABLE_DOCS`** on the backend — see [backend/README_backend.md](../backend/README_backend.md#configuration).
+
+Rate limits apply in **Next.js middleware** (first layer) and **FastAPI** (second layer). The proxy forwards the client IP via `X-Forwarded-For`.
 
 **Docker Compose:** `BACKEND_URL=http://backend:8000` is set in `docker-compose.yml` for the frontend service.
 

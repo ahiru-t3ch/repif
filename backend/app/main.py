@@ -1,18 +1,25 @@
 import logging
 
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List
 
 from app.auth import JwtAuthMiddleware, is_auth_enabled
 from app.config import DOCS_URL, OPENAPI_URL, REDOC_URL, is_docs_enabled
+from app.rate_limit import (
+    RATE_LIMIT_PREDICT,
+    RATE_LIMIT_PREDICTIONS,
+    limiter,
+    rate_limit_exceeded_handler,
+)
 from app.schemas import PredictInput, PredictOutput, PredictionRecord
 from app.predictor import predict_price_apartment, predict_price_house # loads models within API startup on first import
 from app.geocoding import GeocodingError, geocode_address
 from app.database import Base, engine, get_db
 from app import models
 from fastapi import HTTPException
+from slowapi.errors import RateLimitExceeded
 
 Base.metadata.create_all(bind=engine)
 
@@ -43,6 +50,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.add_middleware(JwtAuthMiddleware)
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
 
 def _configure_openapi_security() -> None:
@@ -91,7 +101,8 @@ def health_check():
     return {"status": "ok"}
 
 @app.get("/predictions", response_model=List[PredictionRecord])
-def list_predictions(db: Session = Depends(get_db)):
+@limiter.limit(RATE_LIMIT_PREDICTIONS)
+def list_predictions(request: Request, db: Session = Depends(get_db)):
     return (
         db.query(models.Prediction)
         .order_by(models.Prediction.created_at.desc())
@@ -142,7 +153,8 @@ def _predict_and_save(
 
 # Apartment prediction
 @app.post("/predict/apartment", response_model=PredictOutput)
-def predict_apartment(input: PredictInput, db: Session = Depends(get_db)):
+@limiter.limit(RATE_LIMIT_PREDICT)
+def predict_apartment(request: Request, input: PredictInput, db: Session = Depends(get_db)):
     if input.property_type != "APARTMENT":
         raise HTTPException(status_code=400, detail="Invalid property type")
 
@@ -151,7 +163,8 @@ def predict_apartment(input: PredictInput, db: Session = Depends(get_db)):
 
 # House prediction
 @app.post("/predict/house", response_model=PredictOutput)
-def predict_house(input: PredictInput, db: Session = Depends(get_db)):
+@limiter.limit(RATE_LIMIT_PREDICT)
+def predict_house(request: Request, input: PredictInput, db: Session = Depends(get_db)):
     if input.property_type != "HOUSE":
         raise HTTPException(status_code=400, detail="Invalid property type")
 

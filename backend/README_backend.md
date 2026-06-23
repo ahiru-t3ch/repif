@@ -30,6 +30,7 @@ backend/
 │   ├── main.py        # Routes, CORS, DB bootstrap
 │   ├── auth.py        # JWT RS256 middleware
 │   ├── config.py      # ENABLE_DOCS and shared settings
+│   ├── rate_limit.py  # Per-IP limits (slowapi)
 │   ├── schemas.py     # Pydantic request/response models
 │   ├── geocoding.py   # Address → lat/lon/INSEE (Géoplateforme BAN)
 │   ├── predictor.py   # Loads .joblib models, runs inference
@@ -120,6 +121,8 @@ Copy `.env.sample` to `.env`. **Never commit `.env`.**
 | `BACKEND_JWT_ISSUER` | Expected JWT `iss` (default `repif-frontend`) |
 | `BACKEND_JWT_AUDIENCE` | Expected JWT `aud` (default `repif-backend`) |
 | `ENABLE_DOCS` | `true` → `/docs` enabled; `false` → disabled. Default if unset: **`false`**. Compose sets `true` for local dev; use `false` on Coolify prod. |
+| `RATE_LIMIT_PREDICT` | Max prediction requests per IP (default `10/minute`) — slowapi format |
+| `RATE_LIMIT_PREDICTIONS` | Max history list requests per IP (default `60/minute`) |
 
 Generate keys: `bash generate-jwt-keys.sh` from the repo root. Put the **private** key in Next.js (`BACKEND_JWT_PRIVATE_KEY`), the **public** key here. If `BACKEND_JWT_PUBLIC_KEY` is unset, the API stays open (dev only — warning at startup).
 

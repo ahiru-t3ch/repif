@@ -10,7 +10,7 @@ export async function POST(request: Request) {
     const body = await request.text();
     const response = await fetch(`${getBackendUrl()}/predict/apartment`, {
       method: "POST",
-      headers: await backendHeaders(),
+      headers: await backendHeaders("application/json", request),
       body,
     });
     return proxyBackendResponse(response);
