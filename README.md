@@ -78,7 +78,7 @@ Orchestrates **PostgreSQL**, the **API**, and the **frontend** from the repo roo
    cp ml/models/house_dev_*.joblib backend/models_back/
    ```
 
-   Update filenames in `backend/app/predictor.py` if your timestamps differ.
+   Update `MODEL_APARTMENT` / `MODEL_HOUSE` in `.env` if your timestamps differ.
 
 ### Start the stack
 
@@ -143,7 +143,7 @@ You can also run each service on the host — see sub-project READMEs.
 
 1. Copy `backend/.env.sample` → `backend/.env` (use `@localhost` in `DATABASE_URL`)
 2. Copy `frontend/.env.example` → `frontend/.env.local` (`BACKEND_URL=http://localhost:8000`)
-3. Copy `.joblib` files to `backend/models_back/`
+3. Copy `.joblib` files to `backend/models_back/` and set `MODEL_APARTMENT` / `MODEL_HOUSE` in `.env`
 4. Start Postgres, backend, then frontend
 
 ## Beta scope

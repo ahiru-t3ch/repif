@@ -31,7 +31,7 @@ export type ModelInputSnapshot = {
 };
 
 export const DEFAULT_AGENCY_FEE_RATE = 4;
-export const DEFAULT_NOTARY_FEE_RATE = NOTARY_OLD.default;
+export const DEFAULT_NOTARY_FEE_RATE: number = NOTARY_OLD.default;
 
 type EstimateSessionContextValue = {
   propertyType: PropertyType;
@@ -74,8 +74,8 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
   const [result, setResult] = useState<PredictResult | null>(null);
   const [modelInputSnapshot, setModelInputSnapshot] =
     useState<ModelInputSnapshot | null>(null);
-  const [agencyFeeRate, setAgencyFeeRate] = useState(DEFAULT_AGENCY_FEE_RATE);
-  const [notaryFeeRate, setNotaryFeeRate] = useState(DEFAULT_NOTARY_FEE_RATE);
+  const [agencyFeeRate, setAgencyFeeRate] = useState<number>(DEFAULT_AGENCY_FEE_RATE);
+  const [notaryFeeRate, setNotaryFeeRate] = useState<number>(DEFAULT_NOTARY_FEE_RATE);
   const [notaryPropertyAge, setNotaryPropertyAge] =
     useState<NotaryPropertyAge>("OLD");
   const [error, setError] = useState<string | null>(null);

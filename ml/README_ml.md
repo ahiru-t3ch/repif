@@ -57,7 +57,7 @@ ml/
 3. Train dev models: `train_model_dev(...)` on apartment and house DataFrames
 4. Evaluate: `evaluate_model_dev(...)` on the chronological hold-out
 5. Save: `save_model(..., stage="dev")` → `ml/models/{name}_dev_{timestamp}.joblib`
-6. **Deploy to API:** copy `.joblib` files to `backend/models_back/` and update paths in `backend/app/predictor.py`
+6. **Deploy to API:** copy `.joblib` files to `backend/models_back/` and set `MODEL_APARTMENT` / `MODEL_HOUSE` in `.env`
 
 ### Beta training settings (fast iteration)
 

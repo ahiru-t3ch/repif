@@ -36,7 +36,7 @@ backend/
 │   ├── predictor.py   # Loads .joblib models, runs inference
 │   ├── database.py    # Engine, session, get_db
 │   └── models.py      # SQLAlchemy Prediction table
-├── models_back/       # Serialized XGBoost models (not committed by default)
+├── models_back/       # Serialized XGBoost models (Git LFS, see README there)
 ├── requirements.txt
 ├── Dockerfile
 ├── .dockerignore
@@ -46,7 +46,7 @@ backend/
 
 ## Models
 
-Inference uses two files in `models_back/` (paths set in `predictor.py`):
+Inference uses two files in `models_back/`. Filenames are set via env (`MODEL_APARTMENT`, `MODEL_HOUSE`):
 
 ```
 models_back/apartment_dev_YYYYMMDD_HHMMSS.joblib
@@ -57,8 +57,8 @@ models_back/house_dev_YYYYMMDD_HHMMSS.joblib
 
 1. Train and save in `ml/` → `ml/models/`
 2. Copy the `.joblib` files into `backend/models_back/`
-3. Update filenames in `predictor.py` if the timestamp changed
-4. Restart the API (or rebuild the Docker image)
+3. Update `MODEL_APARTMENT` / `MODEL_HOUSE` in `.env` (or Coolify env)
+4. Commit the new files (Git LFS) and restart the API
 
 Predictions are in **log-price** inside the model; `predictor.py` applies `exp()` before returning euros.
 

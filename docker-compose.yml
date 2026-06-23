@@ -25,6 +25,8 @@ services:
       BACKEND_JWT_ISSUER: ${BACKEND_JWT_ISSUER:-repif-frontend}
       BACKEND_JWT_AUDIENCE: ${BACKEND_JWT_AUDIENCE:-repif-backend}
       ENABLE_DOCS: ${ENABLE_DOCS:-true}
+      MODEL_APARTMENT: ${MODEL_APARTMENT:-apartment_dev_20260621_220900.joblib}
+      MODEL_HOUSE: ${MODEL_HOUSE:-house_dev_20260621_220900.joblib}
       RATE_LIMIT_PREDICT: ${RATE_LIMIT_PREDICT:-10/minute}
       RATE_LIMIT_PREDICTIONS: ${RATE_LIMIT_PREDICTIONS:-60/minute}
     ports:
