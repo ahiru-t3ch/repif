@@ -6,7 +6,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY ./app ./app
-COPY ./models_back/*.joblib ./models_back/
+COPY ./models_back ./models_back
 
 EXPOSE 8000
 

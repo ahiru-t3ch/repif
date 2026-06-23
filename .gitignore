@@ -22,7 +22,6 @@ npm-debug.log*
 # ML artifacts
 *.pkl
 *.joblib
-!backend/models_back/*.joblib
 ml/models/*.log
 
 # OS / IDE

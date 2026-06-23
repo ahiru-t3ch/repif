@@ -31,6 +31,8 @@ services:
       RATE_LIMIT_PREDICTIONS: ${RATE_LIMIT_PREDICTIONS:-60/minute}
     ports:
       - "8000:8000"
+    volumes:
+      - ./backend/models_back:/backend/models_back
     depends_on:
       db:
         condition: service_healthy

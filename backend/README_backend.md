@@ -36,7 +36,7 @@ backend/
 │   ├── predictor.py   # Loads .joblib models, runs inference
 │   ├── database.py    # Engine, session, get_db
 │   └── models.py      # SQLAlchemy Prediction table
-├── models_back/       # Serialized XGBoost models (Git LFS, see README there)
+├── models_back/       # Serialized XGBoost models (not in Git — see README there)
 ├── requirements.txt
 ├── Dockerfile
 ├── .dockerignore
@@ -58,7 +58,7 @@ models_back/house_dev_YYYYMMDD_HHMMSS.joblib
 1. Train and save in `ml/` → `ml/models/`
 2. Copy the `.joblib` files into `backend/models_back/`
 3. Update `MODEL_APARTMENT` / `MODEL_HOUSE` in `.env` (or Coolify env)
-4. Commit the new files (Git LFS) and restart the API
+4. Copy files to `models_back/` on the server (or local bind mount) and restart the API
 
 Predictions are in **log-price** inside the model; `predictor.py` applies `exp()` before returning euros.
 
@@ -124,6 +124,8 @@ Copy `.env.sample` to `.env`. **Never commit `.env`.**
 | `BACKEND_JWT_ISSUER` | Expected JWT `iss` (default `repif-frontend`) |
 | `BACKEND_JWT_AUDIENCE` | Expected JWT `aud` (default `repif-backend`) |
 | `ENABLE_DOCS` | `true` → `/docs` enabled; `false` → disabled. Default if unset: **`false`**. Compose sets `true` for local dev; use `false` on Coolify prod. |
+| `MODEL_APARTMENT` | Filename in `models_back/` (default `apartment_dev_20260621_220900.joblib`) |
+| `MODEL_HOUSE` | Filename in `models_back/` (default `house_dev_20260621_220900.joblib`) |
 | `RATE_LIMIT_PREDICT` | Max prediction requests per IP (default `10/minute`) — slowapi format |
 | `RATE_LIMIT_PREDICTIONS` | Max history list requests per IP (default `60/minute`) |
 
@@ -140,6 +142,15 @@ DATABASE_URL=postgresql://user:password@localhost:5432/dbname
 ```
 DATABASE_URL=postgresql://user:password@db:5432/dbname
 ```
+
+Place model files in `backend/models_back/` on the host (Compose mounts that folder into the container, same idea as Coolify persistent storage). Copy from training output if needed:
+
+```bash
+cp ml/models/apartment_dev_*.joblib backend/models_back/
+cp ml/models/house_dev_*.joblib backend/models_back/
+```
+
+Optional in root `.env`: `MODEL_APARTMENT` / `MODEL_HOUSE` to pick another filename without rebuilding.
 
 **Backend alone in Docker** (Postgres on host):
 
