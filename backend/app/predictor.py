@@ -1,15 +1,10 @@
 from pathlib import Path
+
 import joblib
-import pandas as pd
 import numpy as np
+import pandas as pd
 
-MODEL_DIR = Path(__file__).resolve().parent.parent / "models_back"
-
-MODEL_PATH_APARTMENT = MODEL_DIR / "apartment_dev_20260621_220900.joblib"
-MODEL_PATH_HOUSE = MODEL_DIR / "house_dev_20260621_220900.joblib"
-
-model_apartment = joblib.load(MODEL_PATH_APARTMENT)
-model_house = joblib.load(MODEL_PATH_HOUSE)
+from app.config import model_path_apartment, model_path_house
 
 # Update default features as needed
 # Check ml/repif_ml/train_models.py for more details
@@ -23,6 +18,17 @@ DEFAULT_FEATURES = [
     "annee_construction",
 ]
 
+
+def _load_model(path: Path):
+    if not path.is_file():
+        raise FileNotFoundError(f"Model file not found: {path}")
+    return joblib.load(path)
+
+
+model_apartment = _load_model(model_path_apartment())
+model_house = _load_model(model_path_house())
+
+
 # Apartment prediction
 def predict_price_apartment(
     sbati: float,
@@ -31,7 +37,7 @@ def predict_price_apartment(
     lon: float,
     l_codinsee: str,
     dpe_median: int,
-    annee_construction: int
+    annee_construction: int,
 ) -> float:
     """
     Predict the price of an apartment
@@ -47,17 +53,18 @@ def predict_price_apartment(
         float, price in euros
     """
     data_dict = {
-        'sbati': [sbati],
-        'nblocdep': [nblocdep],
-        'lat': [lat],
-        'lon': [lon],
-        'l_codinsee': [l_codinsee],
-        'dpe_median': [dpe_median],
-        'annee_construction': [annee_construction]
+        "sbati": [sbati],
+        "nblocdep": [nblocdep],
+        "lat": [lat],
+        "lon": [lon],
+        "l_codinsee": [l_codinsee],
+        "dpe_median": [dpe_median],
+        "annee_construction": [annee_construction],
     }
     data_df = pd.DataFrame(data_dict)
     data_df["l_codinsee"] = data_df["l_codinsee"].astype("category")
     return float(np.exp(model_apartment.predict(data_df[DEFAULT_FEATURES])[0]))
+
 
 # House prediction
 def predict_price_house(
@@ -67,7 +74,7 @@ def predict_price_house(
     lon: float,
     l_codinsee: str,
     dpe_median: int,
-    annee_construction: int
+    annee_construction: int,
 ) -> float:
     """
     Predict the price of a house
@@ -83,13 +90,13 @@ def predict_price_house(
         float, price in euros
     """
     data_dict = {
-        'sbati': [sbati],
-        'nblocdep': [nblocdep],
-        'lat': [lat],
-        'lon': [lon],
-        'l_codinsee': [l_codinsee],
-        'dpe_median': [dpe_median],
-        'annee_construction': [annee_construction]
+        "sbati": [sbati],
+        "nblocdep": [nblocdep],
+        "lat": [lat],
+        "lon": [lon],
+        "l_codinsee": [l_codinsee],
+        "dpe_median": [dpe_median],
+        "annee_construction": [annee_construction],
     }
     data_df = pd.DataFrame(data_dict)
     data_df["l_codinsee"] = data_df["l_codinsee"].astype("category")

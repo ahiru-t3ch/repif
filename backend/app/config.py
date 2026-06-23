@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 
@@ -7,6 +8,10 @@ load_dotenv()
 DOCS_URL = "/docs"
 REDOC_URL = "/redoc"
 OPENAPI_URL = "/openapi.json"
+
+MODEL_DIR = Path(__file__).resolve().parent.parent / "models_back"
+DEFAULT_MODEL_APARTMENT = "apartment_dev_20260621_220900.joblib"
+DEFAULT_MODEL_HOUSE = "house_dev_20260621_220900.joblib"
 
 
 def _env_flag(name: str, *, default: bool = False) -> bool:
@@ -26,3 +31,21 @@ def jwt_public_paths() -> frozenset[str]:
     if is_docs_enabled():
         paths |= {DOCS_URL, REDOC_URL, OPENAPI_URL}
     return frozenset(paths)
+
+
+def model_apartment_filename() -> str:
+    value = os.getenv("MODEL_APARTMENT", DEFAULT_MODEL_APARTMENT).strip()
+    return value or DEFAULT_MODEL_APARTMENT
+
+
+def model_house_filename() -> str:
+    value = os.getenv("MODEL_HOUSE", DEFAULT_MODEL_HOUSE).strip()
+    return value or DEFAULT_MODEL_HOUSE
+
+
+def model_path_apartment() -> Path:
+    return MODEL_DIR / model_apartment_filename()
+
+
+def model_path_house() -> Path:
+    return MODEL_DIR / model_house_filename()
