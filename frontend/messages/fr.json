@@ -46,6 +46,11 @@
     "includingAgencyFees": "Avec frais d'agence",
     "agencyFeesRate": "Frais d'agence : {rate} %",
     "agencyFeesAmount": "Montant des frais d'agence (FAI − hors FAI) :",
+    "agencyFeeMode": "Mode de calcul des frais d'agence",
+    "agencyFeeModePercent": "Pourcentage",
+    "agencyFeeModeFixed": "Montant fixe",
+    "agencyFeesFixedAmount": "Montant des frais d'agence (€) :",
+    "agencyFeesEffectiveRate": "Soit {rate} % du prix hors frais d'agence",
     "notaryFeesTitle": "Frais de notaire",
     "notaryPropertyAge": "Ancien ou neuf",
     "notaryOld": "Ancien (7–8,5 %)",
@@ -88,6 +93,6 @@
     "agencyFeesSource": "Levine Immobilier",
     "agencyFeesBuyerShareOutro": ", les frais d'agence sont à la charge de l'acheteur dans environ 90 % des cas.",
     "faiTitle": "Prix FAI et simulateur",
-    "faiBody": "Le prix « avec frais d'agence » (FAI) ajoute un pourcentage réglable (4 % par défaut) au prix hors frais. Le montant des frais correspond à la différence entre le prix FAI et le prix hors frais."
+    "faiBody": "Le prix « avec frais d'agence » (FAI) s'obtient en ajoutant des frais d'agence au prix hors frais : soit un pourcentage réglable (4 % par défaut), soit un montant fixe en euros. Le montant des frais correspond à la différence entre le prix FAI et le prix hors frais."
   }
 }

@@ -5,6 +5,14 @@ import Link from "next/link";
 
 import { DpeRentalAlert } from "@/components/DpeRentalAlert";
 import {
+  AGENCY_FEE_PERCENT,
+  agencyFeeAmount,
+  agencyFeeAmountFromRate,
+  effectiveAgencyFeeRate,
+  priceWithAgencyFees,
+  type AgencyFeeMode,
+} from "@/lib/agency-fees";
+import {
   DEFAULT_AGENCY_FEE_RATE,
   useEstimateSession,
   type PredictResult,
@@ -30,9 +38,9 @@ const DPE_OPTIONS = [
 ] as const;
 
 const COMPANY_URL = "https://www.ahiru-t3ch.com/";
-const AGENCY_FEE_MIN = 0;
-const AGENCY_FEE_MAX = 10;
-const AGENCY_FEE_STEP = 0.5;
+
+const darkInputClassName =
+  "mt-2 w-full rounded-lg border border-stone-600 bg-stone-800 px-3 py-2 text-sm text-white shadow-sm transition focus:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-500";
 
 const inputClassName =
   "w-full rounded-lg border border-border bg-surface px-3.5 py-2.5 text-sm text-foreground shadow-sm transition focus:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-200";
@@ -80,8 +88,12 @@ export default function Home() {
     setResult,
     modelInputSnapshot,
     setModelInputSnapshot,
+    agencyFeeMode,
+    setAgencyFeeMode,
     agencyFeeRate,
     setAgencyFeeRate,
+    agencyFeeFixed,
+    setAgencyFeeFixed,
     notaryFeeRate,
     setNotaryFeeRate,
     notaryPropertyAge,
@@ -121,14 +133,17 @@ export default function Home() {
     }).format(Math.round(netPrice / surface));
   }
 
-  function priceWithAgencyFees(netPrice: number, feeRate: number) {
-    return Math.round(netPrice * (1 + feeRate / 100));
-  }
-
   function handleNotaryPropertyAgeChange(next: NotaryPropertyAge) {
     const range = getNotaryFeeRangeByAge(next);
     setNotaryPropertyAge(next);
     setNotaryFeeRate(range.default);
+  }
+
+  function handleAgencyFeeModeChange(next: AgencyFeeMode) {
+    setAgencyFeeMode(next);
+    if (next === "fixed" && result) {
+      setAgencyFeeFixed(agencyFeeAmountFromRate(result.price, agencyFeeRate));
+    }
   }
 
   function modelPropertyTypeLabel(type: PropertyType) {
@@ -194,7 +209,9 @@ export default function Home() {
       const data: PredictResult = await response.json();
       const notaryAge = inferNotaryPropertyAge(Number(anneeConstruction));
       const notaryRange = getNotaryFeeRangeByAge(notaryAge);
+      setAgencyFeeMode("percent");
       setAgencyFeeRate(DEFAULT_AGENCY_FEE_RATE);
+      setAgencyFeeFixed(0);
       setNotaryPropertyAge(notaryAge);
       setNotaryFeeRate(notaryRange.default);
       setModelInputSnapshot({
@@ -346,8 +363,19 @@ export default function Home() {
           )}
 
           {result && (() => {
-            const priceFai = priceWithAgencyFees(result.price, agencyFeeRate);
-            const feeAmount = priceFai - result.price;
+            const feeAmount = agencyFeeAmount(
+              result.price,
+              agencyFeeMode,
+              agencyFeeRate,
+              agencyFeeFixed,
+            );
+            const priceFai = priceWithAgencyFees(
+              result.price,
+              agencyFeeMode,
+              agencyFeeRate,
+              agencyFeeFixed,
+            );
+            const effectiveRate = effectiveAgencyFeeRate(result.price, feeAmount);
             const notaryRange = getNotaryFeeRangeByAge(notaryPropertyAge);
             const notaryAmount = notaryFeeAmount(result.price, notaryFeeRate);
             const totalFeesAmount = feeAmount + notaryAmount;
@@ -482,25 +510,76 @@ export default function Home() {
                     {formatPrice(feeAmount)}
                   </span>
                 </p>
-                <label className="mt-4 block">
+
+                <div className="mt-4 flex flex-col gap-2">
                   <span className="text-xs text-stone-400">
-                    {t("result.agencyFeesRate", {
-                      rate: formatFeeRate(agencyFeeRate),
-                    })}
+                    {t("result.agencyFeeMode")}
                   </span>
-                  <input
-                    type="range"
-                    min={AGENCY_FEE_MIN}
-                    max={AGENCY_FEE_MAX}
-                    step={AGENCY_FEE_STEP}
-                    value={agencyFeeRate}
-                    onChange={(e) => setAgencyFeeRate(Number(e.target.value))}
-                    aria-valuemin={AGENCY_FEE_MIN}
-                    aria-valuemax={AGENCY_FEE_MAX}
-                    aria-valuenow={agencyFeeRate}
-                    className="mt-2 h-1.5 w-full cursor-pointer appearance-none rounded-full bg-stone-600 accent-white"
-                  />
-                </label>
+                  <div className="flex gap-2">
+                    {(["percent", "fixed"] as const).map((mode) => (
+                      <button
+                        key={mode}
+                        type="button"
+                        onClick={() => handleAgencyFeeModeChange(mode)}
+                        aria-pressed={agencyFeeMode === mode}
+                        className={`flex-1 rounded-lg px-3 py-2 text-xs font-medium transition ${
+                          agencyFeeMode === mode
+                            ? "bg-white text-stone-900"
+                            : "bg-stone-700 text-stone-300 hover:bg-stone-600 hover:text-white"
+                        }`}
+                      >
+                        {mode === "percent"
+                          ? t("result.agencyFeeModePercent")
+                          : t("result.agencyFeeModeFixed")}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {agencyFeeMode === "percent" ? (
+                  <label className="mt-4 block">
+                    <span className="text-xs text-stone-400">
+                      {t("result.agencyFeesRate", {
+                        rate: formatFeeRate(agencyFeeRate),
+                      })}
+                    </span>
+                    <input
+                      type="range"
+                      min={AGENCY_FEE_PERCENT.min}
+                      max={AGENCY_FEE_PERCENT.max}
+                      step={AGENCY_FEE_PERCENT.step}
+                      value={agencyFeeRate}
+                      onChange={(e) => setAgencyFeeRate(Number(e.target.value))}
+                      aria-valuemin={AGENCY_FEE_PERCENT.min}
+                      aria-valuemax={AGENCY_FEE_PERCENT.max}
+                      aria-valuenow={agencyFeeRate}
+                      className="mt-2 h-1.5 w-full cursor-pointer appearance-none rounded-full bg-stone-600 accent-white"
+                    />
+                  </label>
+                ) : (
+                  <label className="mt-4 block">
+                    <span className="text-xs text-stone-400">
+                      {t("result.agencyFeesFixedAmount")}
+                    </span>
+                    <input
+                      type="number"
+                      min={0}
+                      step={100}
+                      value={agencyFeeFixed || ""}
+                      onChange={(e) =>
+                        setAgencyFeeFixed(Math.max(0, Number(e.target.value) || 0))
+                      }
+                      className={darkInputClassName}
+                    />
+                    {result.price > 0 && feeAmount > 0 && (
+                      <p className="mt-2 text-xs text-stone-400">
+                        {t("result.agencyFeesEffectiveRate", {
+                          rate: formatFeeRate(effectiveRate),
+                        })}
+                      </p>
+                    )}
+                  </label>
+                )}
               </div>
 
               <div className="mt-6 border-t border-stone-700 pt-5">

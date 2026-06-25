@@ -131,3 +131,11 @@ curl https://your-backend-domain/
 ## Switch models without redeploying the image
 
 Update files in this folder (or on the Coolify volume) and/or change `MODEL_*` env vars, then **restart** or **redeploy** the backend.
+
+## See also
+
+Full Coolify stack (Postgres, domains, HTTPS, frontend `BACKEND_URL`, JWT):
+
+- [../../README.md#deploy-on-coolify-beta-vps](../../README.md#deploy-on-coolify-beta-vps)
+- [../README_backend.md#coolify-production](../README_backend.md#coolify-production)
+- [../../frontend/README_frontend.md#coolify-production](../../frontend/README_frontend.md#coolify-production)

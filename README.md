@@ -50,8 +50,9 @@ Monorepo: each service has its own folder, dependencies, and README.
 
 | Component | Details |
 |---|---|
-| [backend/README_backend.md](backend/README_backend.md) | API, models, database |
-| [frontend/README_frontend.md](frontend/README_frontend.md) | UI, local dev |
+| [backend/README_backend.md](backend/README_backend.md) | API, models, database, [Coolify prod](backend/README_backend.md#coolify-production) |
+| [frontend/README_frontend.md](frontend/README_frontend.md) | UI, local dev, [Coolify prod](frontend/README_frontend.md#coolify-production) |
+| [backend/models_back/README.md](backend/models_back/README.md) | ML model delivery (SCP + volume on Coolify) |
 | [ml/README_ml.md](ml/README_ml.md) | Training, features, limitations |
 
 ## Run with Docker Compose
@@ -131,6 +132,28 @@ docker-compose.yml
 **Rate limits:** per client IP on predictions (`10/min` default) and history (`60/min` default). Configured in `.env` — see [backend/README_backend.md](backend/README_backend.md#configuration).
 
 Per-service notes: [backend/README_backend.md](backend/README_backend.md), [frontend/README_frontend.md](frontend/README_frontend.md).
+
+## Deploy on Coolify (beta VPS)
+
+Three Coolify resources in the same **project** and **production** environment:
+
+| Resource | Build | Port | Domain (example) |
+|---|---|---|---|
+| PostgreSQL | Coolify database | 5432 | internal only |
+| Backend | Dockerfile `/backend` | **8000** | `https://api.hawk-prix-immo.example.com` |
+| Frontend | Dockerfile `/frontend` | **3000** | `https://www.hawk-prix-immo.example.com` |
+
+Checklist:
+
+1. **Postgres** — note credentials; set backend `DATABASE_URL` with scheme **`postgresql://`** (not `postgres://`).
+2. **Backend** — persistent volume on `/backend/models_back`; deliver `.joblib` via SSH — [models_back/README.md](backend/models_back/README.md).
+3. **Backend** — `ENABLE_DOCS=false`, JWT **public** key, model env vars.
+4. **Frontend** — JWT **private** key; `BACKEND_URL` = backend **HTTPS** URL (see frontend README — internal Docker hostname often fails with two Dockerfile apps).
+5. **DNS** (e.g. Infomaniak) — A records for frontend and API subdomains → VPS IP; enable **Force HTTPS** in Coolify; redeploy after domain changes.
+
+Env vars go in **Production Environment Variables**, not Preview.
+
+Details: [backend/README_backend.md#coolify-production](backend/README_backend.md#coolify-production), [frontend/README_frontend.md#coolify-production](frontend/README_frontend.md#coolify-production).
 
 ## Run locally (without Compose)
 

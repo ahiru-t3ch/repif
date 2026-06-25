@@ -46,6 +46,11 @@
     "includingAgencyFees": "Including agency fees",
     "agencyFeesRate": "Agency fees: {rate}%",
     "agencyFeesAmount": "Agency fee amount (FAI − net) :",
+    "agencyFeeMode": "Agency fee calculation mode",
+    "agencyFeeModePercent": "Percentage",
+    "agencyFeeModeFixed": "Fixed amount",
+    "agencyFeesFixedAmount": "Agency fee amount (€):",
+    "agencyFeesEffectiveRate": "Equivalent to {rate}% of the net price",
     "notaryFeesTitle": "Notary fees",
     "notaryPropertyAge": "Existing or new property",
     "notaryOld": "Existing (7–8.5%)",
@@ -88,6 +93,6 @@
     "agencyFeesSource": "Levine Immobilier",
     "agencyFeesBuyerShareOutro": ", agency fees are paid by the buyer in approximately 90% of cases.",
     "faiTitle": "FAI price and fee simulator",
-    "faiBody": "The price including agency fees (FAI) adds an adjustable percentage (4% by default) to the net price. The fee amount is the difference between the FAI price and the net price."
+    "faiBody": "The price including agency fees (FAI) adds agency fees to the net price: either an adjustable percentage (4% by default) or a fixed amount in euros. The fee amount is the difference between the FAI price and the net price."
   }
 }

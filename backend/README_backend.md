@@ -218,7 +218,7 @@ Requires `ENABLE_DOCS=true` (default in local Compose).
    curl -H "Authorization: Bearer $TOKEN" http://localhost:8000/predictions
    ```
 
-**Production (Coolify):** `ENABLE_DOCS=false` — `/docs` is disabled.
+**Production (Coolify):** `ENABLE_DOCS=false` — `/docs` is disabled. See [Coolify production](#coolify-production) below.
 
 **Local without JWT:** remove `BACKEND_JWT_PUBLIC_KEY` from `.env` and restart the backend (dev only).
 
@@ -229,6 +229,66 @@ python -m pip install -r requirements.txt
 ```
 
 Prefer [Docker Compose from the repo root](../README.md#run-with-docker-compose) for the full stack.
+
+## Coolify production
+
+Deploy as a **separate Dockerfile application** in the same Coolify project/environment as the frontend and Postgres.
+
+### Application settings
+
+| Setting | Value |
+|---|---|
+| Build Pack | Dockerfile |
+| Base Directory | `/backend` |
+| Dockerfile Location | `/Dockerfile` |
+| Port | **8000** |
+| Persistent Storage | **Volume Mount** → `/backend/models_back` |
+
+Use **Production Environment Variables** only (Preview is for PR deployments).
+
+### Environment variables (Production)
+
+```env
+DATABASE_URL=postgresql://USER:PASSWORD@HOST:5432/DBNAME
+BACKEND_JWT_PUBLIC_KEY=<PEM public key>
+BACKEND_JWT_ISSUER=repif-frontend
+BACKEND_JWT_AUDIENCE=repif-backend
+ENABLE_DOCS=false
+MODEL_APARTMENT=apartment_dev_20260621_220900.joblib
+MODEL_HOUSE=house_dev_20260621_220900.joblib
+```
+
+**`DATABASE_URL`:** Coolify often generates `postgres://…`. SQLAlchemy requires **`postgresql://`** (replace the scheme only; keep user, password, host, port, db).
+
+Link the Postgres resource to the backend or paste the **internal** hostname Coolify provides (not `localhost` from inside the container).
+
+**JWT public key:** multiline PEM or single line with `\n` — same pair as `BACKEND_JWT_PRIVATE_KEY` on the frontend.
+
+**Models:** not in Git. Upload `.joblib` files to the persistent volume before the first successful start — see [`models_back/README.md`](models_back/README.md#coolify--deliver-joblib-to-persistent-storage).
+
+### Custom domain and HTTPS
+
+1. **DNS** — type **A** to the VPS IP, e.g. `api.hawk-prix-immo.example.com`.
+2. **Coolify → Domains:**
+
+   ```
+   https://api.hawk-prix-immo.example.com
+   ```
+
+3. **Advanced → Force HTTPS** → Save → **Redeploy**.
+
+4. Health check: `curl https://api.hawk-prix-immo.example.com/` → `{"status":"ok"}`.
+
+Set the frontend’s `BACKEND_URL` to this HTTPS URL (see [frontend/README_frontend.md](../frontend/README_frontend.md#coolify-production)).
+
+### Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| `NoSuchModuleError: sqlalchemy.dialects:postgres` | Change `postgres://` → `postgresql://` in `DATABASE_URL` |
+| `FileNotFoundError` for `.joblib` | Copy models into the volume, then redeploy |
+| Container Exited before upload | Use SSH/SCP — Coolify terminal unavailable while down |
+| `401` from frontend | Check JWT public/private pair and issuer/audience |
 
 ## CORS
 

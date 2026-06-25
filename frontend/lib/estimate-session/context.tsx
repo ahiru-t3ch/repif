@@ -10,6 +10,10 @@ import {
   type SetStateAction,
 } from "react";
 
+import {
+  AGENCY_FEE_PERCENT,
+  type AgencyFeeMode,
+} from "@/lib/agency-fees";
 import { NOTARY_OLD, type NotaryPropertyAge } from "@/lib/notary-fees";
 
 export type PropertyType = "APARTMENT" | "HOUSE";
@@ -30,7 +34,7 @@ export type ModelInputSnapshot = {
   anneeConstruction: number;
 };
 
-export const DEFAULT_AGENCY_FEE_RATE = 4;
+export const DEFAULT_AGENCY_FEE_RATE = AGENCY_FEE_PERCENT.defaultRate;
 export const DEFAULT_NOTARY_FEE_RATE: number = NOTARY_OLD.default;
 
 type EstimateSessionContextValue = {
@@ -50,8 +54,12 @@ type EstimateSessionContextValue = {
   setResult: Dispatch<SetStateAction<PredictResult | null>>;
   modelInputSnapshot: ModelInputSnapshot | null;
   setModelInputSnapshot: Dispatch<SetStateAction<ModelInputSnapshot | null>>;
+  agencyFeeMode: AgencyFeeMode;
+  setAgencyFeeMode: Dispatch<SetStateAction<AgencyFeeMode>>;
   agencyFeeRate: number;
   setAgencyFeeRate: Dispatch<SetStateAction<number>>;
+  agencyFeeFixed: number;
+  setAgencyFeeFixed: Dispatch<SetStateAction<number>>;
   notaryFeeRate: number;
   setNotaryFeeRate: Dispatch<SetStateAction<number>>;
   notaryPropertyAge: NotaryPropertyAge;
@@ -74,7 +82,9 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
   const [result, setResult] = useState<PredictResult | null>(null);
   const [modelInputSnapshot, setModelInputSnapshot] =
     useState<ModelInputSnapshot | null>(null);
+  const [agencyFeeMode, setAgencyFeeMode] = useState<AgencyFeeMode>("percent");
   const [agencyFeeRate, setAgencyFeeRate] = useState<number>(DEFAULT_AGENCY_FEE_RATE);
+  const [agencyFeeFixed, setAgencyFeeFixed] = useState<number>(0);
   const [notaryFeeRate, setNotaryFeeRate] = useState<number>(DEFAULT_NOTARY_FEE_RATE);
   const [notaryPropertyAge, setNotaryPropertyAge] =
     useState<NotaryPropertyAge>("OLD");
@@ -98,8 +108,12 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       setResult,
       modelInputSnapshot,
       setModelInputSnapshot,
+      agencyFeeMode,
+      setAgencyFeeMode,
       agencyFeeRate,
       setAgencyFeeRate,
+      agencyFeeFixed,
+      setAgencyFeeFixed,
       notaryFeeRate,
       setNotaryFeeRate,
       notaryPropertyAge,
@@ -116,7 +130,9 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       anneeConstruction,
       result,
       modelInputSnapshot,
+      agencyFeeMode,
       agencyFeeRate,
+      agencyFeeFixed,
       notaryFeeRate,
       notaryPropertyAge,
       error,
