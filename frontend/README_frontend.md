@@ -209,10 +209,10 @@ See also [backend/README_backend.md](../backend/README_backend.md#coolify-produc
 
 ## Beta limitations
 
-- Single page — no routing, auth, accounts, or prediction history UI
+- Single column layout (no side ad rails in beta)
 - User enters a postal address (geocoded server-side by the backend)
 - No mobile-specific polish
-- No ad integration yet
+- First estimate free; rewarded ads before further estimates planned (post-beta)
 
 ## Planned (post-beta)
 

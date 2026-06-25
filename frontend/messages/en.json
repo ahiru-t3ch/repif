@@ -23,7 +23,10 @@
     "dpeSelect": "Select",
     "year": "Year built",
     "submit": "Estimate price",
-    "submitting": "Calculating…"
+    "expandForm": "Edit criteria",
+    "editHint": "Update the property details below, then click “Estimate price”.",
+    "submitting": "Calculating…",
+    "collapsedSummary": "Estimate shown for: {summary}"
   },
   "dpeAlert": {
     "title": "DPE alert — rental use",

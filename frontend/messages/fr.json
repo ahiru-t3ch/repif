@@ -23,7 +23,10 @@
     "dpeSelect": "Choisir",
     "year": "Année de construction",
     "submit": "Estimer le prix",
-    "submitting": "Calcul en cours…"
+    "expandForm": "Modifier les critères",
+    "editHint": "Modifiez les informations du bien ci-dessous, puis cliquez sur « Estimer le prix ».",
+    "submitting": "Calcul en cours…",
+    "collapsedSummary": "Estimation affichée pour : {summary}"
   },
   "dpeAlert": {
     "title": "Alerte DPE — location",
