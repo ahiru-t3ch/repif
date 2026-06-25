@@ -57,8 +57,10 @@ models_back/house_dev_YYYYMMDD_HHMMSS.joblib
 
 1. Train and save in `ml/` → `ml/models/`
 2. Copy the `.joblib` files into `backend/models_back/`
-3. Update `MODEL_APARTMENT` / `MODEL_HOUSE` in `.env` (or Coolify env)
-4. Copy files to `models_back/` on the server (or local bind mount) and restart the API
+3. Update `MODEL_APARTMENT` / `MODEL_HOUSE` in `.env` (local) or Coolify **Production** env
+4. Deliver files to the running environment and restart the API:
+   - **Local / Compose:** files in `backend/models_back/` on the host (bind mount) — restart the backend service
+   - **Coolify:** SCP to the VPS, copy into the persistent volume, redeploy — full procedure in [`models_back/README.md`](models_back/README.md#coolify--deliver-joblib-to-persistent-storage)
 
 Predictions are in **log-price** inside the model; `predictor.py` applies `exp()` before returning euros.
 
@@ -143,7 +145,7 @@ DATABASE_URL=postgresql://user:password@localhost:5432/dbname
 DATABASE_URL=postgresql://user:password@db:5432/dbname
 ```
 
-Place model files in `backend/models_back/` on the host (Compose mounts that folder into the container, same idea as Coolify persistent storage). Copy from training output if needed:
+Place model files in `backend/models_back/` on the host (Compose bind-mounts that folder into the container). Copy from training output if needed:
 
 ```bash
 cp ml/models/apartment_dev_*.joblib backend/models_back/
