@@ -59,8 +59,14 @@ cp .env.example .env.local
 | `BACKEND_JWT_TTL_SECONDS` | Token lifetime in seconds (default `300`) |
 | `RATE_LIMIT_PREDICT_PER_MIN` | Max POST `/api/predict/*` per IP per minute (default `10`) |
 | `RATE_LIMIT_PREDICTIONS_PER_MIN` | Max GET `/api/predictions` per IP per minute (default `60`) |
+| `NEXT_PUBLIC_UMAMI_SCRIPT_URL` | Umami tracker script URL (optional, e.g. `https://analytics.example.com/script.js`) |
+| `NEXT_PUBLIC_UMAMI_WEBSITE_ID` | Umami website UUID from **Settings → Websites** |
 
-These variables are **not** exposed to the browser. Generate keys with `bash generate-jwt-keys.sh` from the repo root; set the public key on the backend (`BACKEND_JWT_PUBLIC_KEY`). Swagger (`/docs`) is controlled by **`ENABLE_DOCS`** on the backend — see [backend/README_backend.md](../backend/README_backend.md#configuration).
+Server-only vars (`BACKEND_*`, rate limits) stay on the Next.js server. `NEXT_PUBLIC_UMAMI_*` are embedded in the client bundle at build time (Umami website ID and script URL only — no secrets).
+
+Generate keys with `bash generate-jwt-keys.sh` from the repo root; set the public key on the backend (`BACKEND_JWT_PUBLIC_KEY`). Swagger (`/docs`) is controlled by **`ENABLE_DOCS`** on the backend — see [backend/README_backend.md](../backend/README_backend.md#configuration).
+
+Omit `NEXT_PUBLIC_UMAMI_*` locally if you do not run Umami in dev.
 
 Rate limits apply in **Next.js middleware** (first layer) and **FastAPI** (second layer). The proxy forwards the client IP via `X-Forwarded-For`.
 
@@ -134,9 +140,13 @@ BACKEND_JWT_PRIVATE_KEY=<PEM private key — pair with backend public key>
 BACKEND_JWT_ISSUER=repif-frontend
 BACKEND_JWT_AUDIENCE=repif-backend
 BACKEND_JWT_TTL_SECONDS=300
+NEXT_PUBLIC_UMAMI_SCRIPT_URL=https://analytics.example.com/script.js
+NEXT_PUBLIC_UMAMI_WEBSITE_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 ```
 
 Generate the key pair from the repo root: `bash generate-jwt-keys.sh`. Set the **public** key on the backend (`BACKEND_JWT_PUBLIC_KEY`).
+
+**Umami:** copy the script URL and website ID from your Umami instance (**Settings → Websites → hawk-prix-immo**). In Coolify, enable **Available at Buildtime** for both `NEXT_PUBLIC_UMAMI_*` vars, then **Redeploy** (rebuild required — runtime-only env is not enough). Verify in the browser: Network tab → `script.js` + `send`/`collect` → 200; Umami **Realtime** should show your visit.
 
 **JWT key format in Coolify:** multiline PEM (real line breaks) or single line with `\n` — both work. The app normalizes `\n` at runtime. Do not use `BEGIN RSA PRIVATE KEY` (must be PKCS#8: `BEGIN PRIVATE KEY`). To verify without printing the full key:
 
