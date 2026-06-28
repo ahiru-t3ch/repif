@@ -148,6 +148,34 @@ Generate the key pair from the repo root: `bash generate-jwt-keys.sh`. Set the *
 
 **Umami:** copy the script URL and website ID from your Umami instance (**Settings → Websites → hawk-prix-immo**). In Coolify, enable **Available at Buildtime** for both `NEXT_PUBLIC_UMAMI_*` vars, then **Redeploy** (rebuild required — runtime-only env is not enough). Verify in the browser: Network tab → `script.js` + `send`/`collect` → 200; Umami **Realtime** should show your visit.
 
+**Exclude your own visits** (self-hosted Umami has no per-website IP UI — that is Umami Cloud Pro only):
+
+1. **This browser (official Umami)** — on the live site, DevTools → Console:
+
+   ```javascript
+   localStorage.setItem("umami.disabled", 1);
+   location.reload();
+   ```
+
+   Re-enable: `localStorage.removeItem("umami.disabled"); location.reload();`
+
+2. **All devices from your IP** — Coolify → **Umami** service → **Environment Variables**:
+
+   ```env
+   IGNORE_IP=YOUR.PUBLIC.IP.HERE
+   ```
+
+   Comma-separated list; CIDR ranges supported (e.g. `203.0.113.42, 10.0.0.0/24`). Redeploy Umami. Check your IP on [ifconfig.me](https://ifconfig.me).
+
+3. **This browser (app cookie)** — after frontend deploy, optional alternative:
+
+   ```javascript
+   document.cookie = "umami-opt-out=1; path=/; max-age=31536000; SameSite=Lax";
+   location.reload();
+   ```
+
+   Use a private window to test Realtime as a normal visitor.
+
 **JWT key format in Coolify:** multiline PEM (real line breaks) or single line with `\n` — both work. The app normalizes `\n` at runtime. Do not use `BEGIN RSA PRIVATE KEY` (must be PKCS#8: `BEGIN PRIVATE KEY`). To verify without printing the full key:
 
 ```bash
