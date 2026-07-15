@@ -1,5 +1,7 @@
+import json
 import logging
 import time
+from collections.abc import Sequence
 from datetime import datetime
 from pathlib import Path
 from typing import Literal
@@ -457,22 +459,65 @@ def evaluate_model_dev(
     return metrics
 
 
-if __name__ == "__main__":
-    from repif_ml.log import configure_logging
+def run_training(
+    *,
+    dvf_dir: str | Path,
+    dpe_csv: str | Path,
+    models_dir: str | Path | None = None,
+    models: Sequence[str] = ("apartment", "house"),
+    max_train_rows: int | None = 100_000,
+    n_iter: int = 10,
+    n_cv_splits: int = 3,
+    stage: Literal["dev", "prod"] = "dev",
+) -> dict:
+    """Load data, train the requested dev models, evaluate, save, write metrics.
 
-    configure_logging()
+    Shared orchestration behind the ``train_local`` and ``train_gcp`` CLIs. Does
+    not configure logging (callers do) so it stays usable from notebooks.
 
-    df_house, df_apartment = get_data_for_training(
-        "../csv_data/dvf_plus",
-        "../csv_data/dpe/dpe-france.csv",
-    )
-    
-    model_apartment_dev = train_model_dev(df_apartment, verbose=1)
-    metrics_apartment_dev = evaluate_model_dev(model_apartment_dev, df_apartment)
-    print(metrics_apartment_dev)
-    save_model(model_apartment_dev, name="apartment", stage="dev")
-    
-    model_house_dev = train_model_dev(df_house, verbose=1)
-    metrics_house_dev = evaluate_model_dev(model_house_dev, df_house)
-    print(metrics_house_dev)
-    save_model(model_house_dev, name="house", stage="dev")
+    Returns:
+        Summary dict with ``params``, saved model paths (``models``), hold-out
+        ``metrics`` per model, and the ``metrics_path`` of the JSON written.
+    """
+    output_dir = Path(models_dir) if models_dir is not None else DEFAULT_MODELS_DIR
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    df_house, df_apartment = get_data_for_training(str(dvf_dir), str(dpe_csv))
+    frames = {"apartment": df_apartment, "house": df_house}
+
+    all_metrics: dict[str, dict[str, float]] = {}
+    saved_paths: dict[str, str] = {}
+    for name in models:
+        if name not in frames:
+            raise ValueError(f"Unknown model '{name}', expected one of {sorted(frames)}")
+        df = frames[name]
+        model = train_model_dev(
+            df,
+            max_train_rows=max_train_rows,
+            n_iter=n_iter,
+            n_cv_splits=n_cv_splits,
+            verbose=1,
+        )
+        metrics = evaluate_model_dev(model, df)
+        path = save_model(model, name=name, stage=stage, models_dir=output_dir)
+        all_metrics[name] = metrics
+        saved_paths[name] = str(path)
+        logger.info("[%s] hold-out metrics: %s", name, metrics)
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    metrics_path = output_dir / f"metrics_{stage}_{timestamp}.json"
+    summary: dict = {
+        "trained_at": timestamp,
+        "params": {
+            "max_train_rows": max_train_rows,
+            "n_iter": n_iter,
+            "n_cv_splits": n_cv_splits,
+            "stage": stage,
+        },
+        "models": saved_paths,
+        "metrics": all_metrics,
+    }
+    metrics_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    logger.info("Wrote metrics summary to %s", metrics_path.resolve())
+    summary["metrics_path"] = str(metrics_path.resolve())
+    return summary
