@@ -214,6 +214,7 @@ def train_model_dev(
     max_train_rows: int | None = None,
     n_iter: int = 50,
     n_cv_splits: int = 5,
+    search_n_jobs: int = 1,
     random_state: int = 42,
     verbose: int = 0,
 ) -> XGBRegressor:
@@ -228,6 +229,12 @@ def train_model_dev(
         max_train_rows: If set, keep only the most recent training rows before
             the hyperparameter search. Useful for faster notebook iterations.
         n_cv_splits: Number of time-series CV folds. Lower values train faster.
+        search_n_jobs: Parallelism of the hyperparameter search. To avoid CPU
+            over-subscription and memory blow-up, only one level is parallel:
+            with ``search_n_jobs=1`` (default, memory-safe) candidates run one at
+            a time while XGBoost uses all cores; with ``search_n_jobs>1`` that
+            many candidates run in parallel while each XGBoost is single-threaded
+            (faster but holds one data copy per parallel job).
 
     Returns:
         Fitted ``XGBRegressor`` (best estimator from hyperparameter search).
@@ -265,6 +272,9 @@ def train_model_dev(
     y_train = np.log(train[target_col])
 
     total_fits = n_iter * n_cv_splits
+    # Parallelize a single level to avoid CPU over-subscription and per-job
+    # data copies (a common OOM cause on large datasets).
+    model_n_jobs = -1 if search_n_jobs == 1 else 1
     logger.info(
         "Training model on %d rows (%d train / %d hold-out), dates %s -> %s",
         len(prepared),
@@ -274,10 +284,13 @@ def train_model_dev(
         train[date_col].max().date(),
     )
     logger.info(
-        "Hyperparameter search: %d fits (%d iterations x %d CV folds), features=%s",
+        "Hyperparameter search: %d fits (%d iterations x %d CV folds), "
+        "search_n_jobs=%d, model_n_jobs=%d, features=%s",
         total_fits,
         n_iter,
         n_cv_splits,
+        search_n_jobs,
+        model_n_jobs,
         features,
     )
 
@@ -285,7 +298,7 @@ def train_model_dev(
     search = RandomizedSearchCV(
         XGBRegressor(
             random_state=random_state,
-            n_jobs=-1,
+            n_jobs=model_n_jobs,
             enable_categorical=True,
         ),
         param_distributions=PARAM_DIST,
@@ -293,7 +306,7 @@ def train_model_dev(
         cv=TimeSeriesSplit(n_splits=n_cv_splits),
         scoring="neg_mean_absolute_error",
         random_state=random_state,
-        n_jobs=-1,
+        n_jobs=search_n_jobs,
         verbose=verbose,
     )
     search.fit(x_train, y_train)
@@ -468,6 +481,7 @@ def run_training(
     max_train_rows: int | None = 100_000,
     n_iter: int = 10,
     n_cv_splits: int = 3,
+    search_n_jobs: int = 1,
     stage: Literal["dev", "prod"] = "dev",
 ) -> dict:
     """Load data, train the requested dev models, evaluate, save, write metrics.
@@ -496,6 +510,7 @@ def run_training(
             max_train_rows=max_train_rows,
             n_iter=n_iter,
             n_cv_splits=n_cv_splits,
+            search_n_jobs=search_n_jobs,
             verbose=1,
         )
         metrics = evaluate_model_dev(model, df)
@@ -512,6 +527,7 @@ def run_training(
             "max_train_rows": max_train_rows,
             "n_iter": n_iter,
             "n_cv_splits": n_cv_splits,
+            "search_n_jobs": search_n_jobs,
             "stage": stage,
         },
         "models": saved_paths,
@@ -521,3 +537,42 @@ def run_training(
     logger.info("Wrote metrics summary to %s", metrics_path.resolve())
     summary["metrics_path"] = str(metrics_path.resolve())
     return summary
+
+
+def finalize_training(
+    *,
+    dvf_dir: str | Path,
+    dpe_csv: str | Path,
+    dev_models: dict[str, str | Path],
+    models_dir: str | Path | None = None,
+) -> dict:
+    """Refit saved ``_dev`` models on 100% of rows and save them as ``_prod``.
+
+    Stage B of the workflow: once the dev models (trained with a chronological
+    train/hold-out split) look good, re-fit them on **all** rows using the same
+    tuned hyperparameters, for a production model that has seen the most data.
+
+    Args:
+        dev_models: Mapping of model name (``"apartment"`` / ``"house"``) to the
+            path of its saved ``_dev`` ``.joblib``.
+
+    Returns:
+        Summary dict with the saved prod model paths (``models``).
+    """
+    output_dir = Path(models_dir) if models_dir is not None else DEFAULT_MODELS_DIR
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    df_house, df_apartment = get_data_for_training(str(dvf_dir), str(dpe_csv))
+    frames = {"apartment": df_apartment, "house": df_house}
+
+    saved_paths: dict[str, str] = {}
+    for name, dev_path in dev_models.items():
+        if name not in frames:
+            raise ValueError(f"Unknown model '{name}', expected one of {sorted(frames)}")
+        model_dev = load_model(dev_path)
+        model_final = train_final_model(model_dev, frames[name])
+        path = save_model(model_final, name=name, stage="prod", models_dir=output_dir)
+        saved_paths[name] = str(path)
+        logger.info("[%s] finalized (100%% rows) -> %s", name, path)
+
+    return {"models": saved_paths}

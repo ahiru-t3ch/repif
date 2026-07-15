@@ -195,28 +195,47 @@ gcloud storage rsync --recursive "$BUCKET/csv_data" csv_data
 
 ### 5. Run the training
 
-Thorough run — `train_gcp` defaults (all rows, wider search; use a bigger VM):
+Long runs: keep them alive across SSH drops with `tmux` (activate the venv
+*inside* tmux, it starts a fresh shell):
 
 ```bash
-python -m repif_ml.train_gcp
+tmux new -s train
+source .venv/bin/activate
+# run a command below ; detach with Ctrl-b then d ; reattach: tmux attach -t train
 ```
 
-Or a lighter run (override the defaults):
+**Stage A — dev model (train/hold-out split + evaluation).** `train_gcp`
+defaults train on all rows with a wider search:
 
 ```bash
+python -m repif_ml.train_gcp                    # all rows, n_iter=50, cv=5
+```
+
+Lighter/faster variants (override the defaults):
+
+```bash
+python -m repif_ml.train_gcp --n-iter 20 --n-cv-splits 4
 python -m repif_ml.train_gcp --max-train-rows 300000 --n-iter 20 --n-cv-splits 4
 ```
 
-Long runs: keep them alive across SSH drops with `tmux` (or `nohup ... &`):
+Outputs: `apartment_dev_*.joblib`, `house_dev_*.joblib`, plus a `metrics_*.json`.
+
+> **Memory:** keep `--search-jobs 1` (default) — one candidate at a time, XGBoost
+> uses all cores, a single data copy in RAM. On the full dataset with a small VM
+> (e.g. 32 GB) a higher value risks OOM (killed worker). Raise it only with lots
+> of RAM.
+
+**Stage B — production model (refit on 100 % of rows).** Once the stage-A
+hold-out metrics look good, refit the saved dev models on all rows (uses their
+tuned hyperparameters):
 
 ```bash
-sudo apt-get install -y tmux
-tmux new -s train
-# run the command, then detach with Ctrl-b d ; reattach later with: tmux attach -t train
+python -m repif_ml.train_final \
+  --apartment-dev models/apartment_dev_XXXXXXXX_XXXXXX.joblib \
+  --house-dev     models/house_dev_XXXXXXXX_XXXXXX.joblib
 ```
 
-Outputs land in `ml/models/`: `apartment_dev_*.joblib`, `house_dev_*.joblib`,
-plus a `metrics_*.json` summary.
+Outputs: `apartment_prod_*.joblib`, `house_prod_*.joblib`.
 
 ### 6. Push the models back and fetch them locally
 
@@ -255,12 +274,14 @@ Install with `pip install -e .` from `ml/`.
 | `dpe.py` | Load/clean DPE CSV; aggregate by building |
 | `geo.py` | Lambert-93 / DOM → `lat` / `lon` |
 | `train_models.py` | Library: merge DVF+DPE, train/evaluate/save XGBoost models, `run_training()` |
-| `train_local.py` | CLI runner — `python -m repif_ml.train_local` (fast beta defaults) |
-| `train_gcp.py` | CLI runner — `python -m repif_ml.train_gcp` (thorough defaults, bigger VM) |
+| `train_local.py` | CLI runner (stage A) — `python -m repif_ml.train_local` (fast beta defaults) |
+| `train_gcp.py` | CLI runner (stage A) — `python -m repif_ml.train_gcp` (thorough defaults, bigger VM) |
+| `train_final.py` | CLI runner (stage B) — `python -m repif_ml.train_final` (refit `_dev` → `_prod` on 100% of rows) |
 | `log.py` | `configure_logging()` |
 
 `train_local.py` and `train_gcp.py` are thin wrappers over `run_training()`;
 they differ only in default hyperparameters and share `_train_cli.py`.
+`train_final.py` wraps `finalize_training()`.
 
 ### Main functions
 
@@ -274,10 +295,16 @@ they differ only in default hyperparameters and share `_train_cli.py`.
 
 **Training**
 
-- `run_training(dvf_dir, dpe_csv, ...)` → full pipeline: load, train + eval + save each model, write `metrics_*.json` (used by the `train_local` / `train_gcp` CLIs)
-- `train_model_dev(df, ...)` → `RandomizedSearchCV` + `TimeSeriesSplit`; target = `log(valeurfonc)`
+- `run_training(dvf_dir, dpe_csv, ...)` → stage A pipeline: load, train + eval + save each dev model, write `metrics_*.json` (used by the `train_local` / `train_gcp` CLIs)
+- `train_model_dev(df, ..., search_n_jobs=1)` → `RandomizedSearchCV` + `TimeSeriesSplit`; target = `log(valeurfonc)` (see the parallelism note below)
 - `evaluate_model_dev(model_dev, df)` → R², MAE, MAPE on hold-out
 - `train_final_model(model_dev, df)` → refit on 100 % of rows (production)
+- `finalize_training(dvf_dir, dpe_csv, dev_models={...})` → stage B: refit saved `_dev` models on 100 % of rows and save as `_prod` (used by the `train_final` CLI)
+
+**Parallelism (avoid OOM):** `train_model_dev` parallelizes a single level.
+Default `search_n_jobs=1` is memory-safe (one candidate at a time, XGBoost uses
+all cores → a single data copy in RAM). Set `--search-jobs N` (CLI) only if you
+have plenty of RAM; each parallel job holds its own data copy.
 
 **Persistence**
 

@@ -75,6 +75,14 @@ def build_parser(
         help="Number of TimeSeriesSplit CV folds.",
     )
     parser.add_argument(
+        "--search-jobs",
+        type=int,
+        default=1,
+        help="Parallel candidates in the hyperparameter search. 1 (default) is "
+        "memory-safe (XGBoost uses all cores); >1 is faster but holds one data "
+        "copy per parallel job (needs more RAM).",
+    )
+    parser.add_argument(
         "--stage",
         choices=["dev", "prod"],
         default="dev",
@@ -126,6 +134,7 @@ def run(
         max_train_rows=max_train_rows,
         n_iter=args.n_iter,
         n_cv_splits=args.n_cv_splits,
+        search_n_jobs=args.search_jobs,
         stage=args.stage,
     )
 
