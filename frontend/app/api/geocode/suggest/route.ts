@@ -5,6 +5,10 @@ import {
   proxyBackendResponse,
 } from "@/lib/backend";
 
+const NO_STORE_HEADERS = {
+  "Cache-Control": "no-store, max-age=0",
+};
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -12,7 +16,7 @@ export async function GET(request: Request) {
     const limit = searchParams.get("limit") ?? "5";
 
     if (q.length < 3) {
-      return Response.json({ suggestions: [] });
+      return Response.json({ suggestions: [] }, { headers: NO_STORE_HEADERS });
     }
 
     const upstream = new URL(`${getBackendUrl()}/geocode/suggest`);
@@ -23,7 +27,13 @@ export async function GET(request: Request) {
       cache: "no-store",
       headers: await backendHeaders("", request),
     });
-    return proxyBackendResponse(response);
+    const proxied = await proxyBackendResponse(response);
+    const headers = new Headers(proxied.headers);
+    headers.set("Cache-Control", NO_STORE_HEADERS["Cache-Control"]);
+    return new Response(proxied.body, {
+      status: proxied.status,
+      headers,
+    });
   } catch (error) {
     return backendConfigErrorResponse(error);
   }

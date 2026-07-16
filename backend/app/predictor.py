@@ -3,6 +3,7 @@ from pathlib import Path
 import joblib
 import numpy as np
 import pandas as pd
+from xgboost.core import XGBoostError
 
 from app.config import model_path_apartment, model_path_house
 
@@ -18,6 +19,12 @@ DEFAULT_FEATURES = [
     "annee_construction",
 ]
 
+LOCATION_NOT_COVERED = "LOCATION_NOT_COVERED"
+
+
+class UnsupportedLocationError(Exception):
+    """Raised when l_codinsee was not seen during model training."""
+
 
 def _load_model(path: Path):
     if not path.is_file():
@@ -29,7 +36,36 @@ model_apartment = _load_model(model_path_apartment())
 model_house = _load_model(model_path_house())
 
 
-# Apartment prediction
+def _predict_price(
+    model,
+    sbati: float,
+    nblocdep: int,
+    lat: float,
+    lon: float,
+    l_codinsee: str,
+    dpe_median: int,
+    annee_construction: int,
+) -> float:
+    data_df = pd.DataFrame(
+        {
+            "sbati": [sbati],
+            "nblocdep": [nblocdep],
+            "lat": [lat],
+            "lon": [lon],
+            "l_codinsee": [l_codinsee],
+            "dpe_median": [dpe_median],
+            "annee_construction": [annee_construction],
+        }
+    )
+    data_df["l_codinsee"] = data_df["l_codinsee"].astype("category")
+    try:
+        return float(np.exp(model.predict(data_df[DEFAULT_FEATURES])[0]))
+    except XGBoostError as exc:
+        if "category not in the training set" in str(exc):
+            raise UnsupportedLocationError(LOCATION_NOT_COVERED) from exc
+        raise
+
+
 def predict_price_apartment(
     sbati: float,
     nblocdep: int,
@@ -52,21 +88,18 @@ def predict_price_apartment(
     Returns:
         float, price in euros
     """
-    data_dict = {
-        "sbati": [sbati],
-        "nblocdep": [nblocdep],
-        "lat": [lat],
-        "lon": [lon],
-        "l_codinsee": [l_codinsee],
-        "dpe_median": [dpe_median],
-        "annee_construction": [annee_construction],
-    }
-    data_df = pd.DataFrame(data_dict)
-    data_df["l_codinsee"] = data_df["l_codinsee"].astype("category")
-    return float(np.exp(model_apartment.predict(data_df[DEFAULT_FEATURES])[0]))
+    return _predict_price(
+        model_apartment,
+        sbati,
+        nblocdep,
+        lat,
+        lon,
+        l_codinsee,
+        dpe_median,
+        annee_construction,
+    )
 
 
-# House prediction
 def predict_price_house(
     sbati: float,
     nblocdep: int,
@@ -89,15 +122,13 @@ def predict_price_house(
     Returns:
         float, price in euros
     """
-    data_dict = {
-        "sbati": [sbati],
-        "nblocdep": [nblocdep],
-        "lat": [lat],
-        "lon": [lon],
-        "l_codinsee": [l_codinsee],
-        "dpe_median": [dpe_median],
-        "annee_construction": [annee_construction],
-    }
-    data_df = pd.DataFrame(data_dict)
-    data_df["l_codinsee"] = data_df["l_codinsee"].astype("category")
-    return float(np.exp(model_house.predict(data_df[DEFAULT_FEATURES])[0]))
+    return _predict_price(
+        model_house,
+        sbati,
+        nblocdep,
+        lat,
+        lon,
+        l_codinsee,
+        dpe_median,
+        annee_construction,
+    )

@@ -80,7 +80,8 @@
   },
   "errors": {
     "api": "Erreur API ({status})",
-    "unknown": "Erreur inconnue"
+    "unknown": "Erreur inconnue",
+    "locationNotCovered": "Cette commune n'est pas couverte par le modèle pour ce type de bien (pas assez de ventes similaires dans les données d'entraînement)."
   },
   "footer": {
     "copyright": "© 2026",

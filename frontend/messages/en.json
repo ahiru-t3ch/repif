@@ -80,7 +80,8 @@
   },
   "errors": {
     "api": "API error ({status})",
-    "unknown": "Unknown error"
+    "unknown": "Unknown error",
+    "locationNotCovered": "This location is not covered by the model for this property type (not enough similar sales in the training data)."
   },
   "footer": {
     "copyright": "© 2026",

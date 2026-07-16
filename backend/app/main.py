@@ -21,7 +21,12 @@ from app.schemas import (
     PredictionRecord,
     SuggestOutput,
 )
-from app.predictor import predict_price_apartment, predict_price_house # loads models within API startup on first import
+from app.predictor import (  # loads models within API startup on first import
+    LOCATION_NOT_COVERED,
+    UnsupportedLocationError,
+    predict_price_apartment,
+    predict_price_house,
+)
 from app.geocoding import GeocodingError, geocode_address, suggest_addresses
 from app.database import Base, engine, get_db
 from app import models
@@ -150,17 +155,20 @@ def _predict_and_save(
     except GeocodingError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    price = float(
-        predict_fn(
-            input.sbati,
-            input.nblocdep,
-            geocoded.lat,
-            geocoded.lon,
-            geocoded.l_codinsee,
-            input.dpe_median,
-            input.annee_construction,
+    try:
+        price = float(
+            predict_fn(
+                input.sbati,
+                input.nblocdep,
+                geocoded.lat,
+                geocoded.lon,
+                geocoded.l_codinsee,
+                input.dpe_median,
+                input.annee_construction,
+            )
         )
-    )
+    except UnsupportedLocationError as exc:
+        raise HTTPException(status_code=400, detail=LOCATION_NOT_COVERED) from exc
 
     prediction = models.Prediction(
         property_type=input.property_type,

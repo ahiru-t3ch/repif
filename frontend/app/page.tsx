@@ -205,7 +205,10 @@ export default function Home() {
         try {
           const payload = (await response.json()) as { detail?: unknown };
           if (typeof payload.detail === "string") {
-            message = payload.detail;
+            message =
+              payload.detail === "LOCATION_NOT_COVERED"
+                ? t("errors.locationNotCovered")
+                : payload.detail;
           } else if (Array.isArray(payload.detail)) {
             message = payload.detail
               .map((item) => item.msg ?? JSON.stringify(item))
