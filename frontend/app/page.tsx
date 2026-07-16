@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 import { DpeRentalAlert } from "@/components/DpeRentalAlert";
 import {
   AGENCY_FEE_PERCENT,
@@ -622,14 +623,15 @@ export default function Home() {
 
                 <label className="flex flex-col gap-2">
                   <span className={labelClassName}>{t("form.address")}</span>
-                  <input
-                    type="text"
+                  <AddressAutocomplete
                     value={address}
-                    onChange={(e) => setAddress(e.target.value)}
+                    onChange={setAddress}
                     minLength={10}
                     maxLength={255}
                     placeholder={t("form.addressPlaceholder")}
                     required
+                    listLabel={t("form.addressSuggestions")}
+                    loadingLabel={t("form.addressSuggestionsLoading")}
                     className={inputClassName}
                   />
                 </label>

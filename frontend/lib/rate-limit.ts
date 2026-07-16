@@ -9,6 +9,7 @@ const store = new Map<string, Bucket>();
 
 const PREDICT_LIMIT = Number(process.env.RATE_LIMIT_PREDICT_PER_MIN ?? 10);
 const PREDICTIONS_LIMIT = Number(process.env.RATE_LIMIT_PREDICTIONS_PER_MIN ?? 60);
+const SUGGEST_LIMIT = Number(process.env.RATE_LIMIT_SUGGEST_PER_MIN ?? 60);
 const WINDOW_MS = 60_000;
 
 export function getClientIp(request: NextRequest | Request): string {
@@ -44,9 +45,14 @@ function checkLimit(key: string, limit: number): { ok: true } | { ok: false; ret
 
 export function enforceRateLimit(
   request: NextRequest,
-  kind: "predict" | "predictions",
+  kind: "predict" | "predictions" | "suggest",
 ): { ok: true } | { ok: false; retryAfter: number } {
-  const limit = kind === "predict" ? PREDICT_LIMIT : PREDICTIONS_LIMIT;
+  const limit =
+    kind === "predict"
+      ? PREDICT_LIMIT
+      : kind === "predictions"
+        ? PREDICTIONS_LIMIT
+        : SUGGEST_LIMIT;
   const ip = getClientIp(request);
   return checkLimit(`${kind}:${ip}`, limit);
 }

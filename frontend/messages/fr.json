@@ -19,6 +19,8 @@
     "house": "Maison",
     "address": "Adresse",
     "addressPlaceholder": "ex. 10 rue de la Pomme 31000 Toulouse",
+    "addressSuggestions": "Suggestions d'adresse",
+    "addressSuggestionsLoading": "Recherche d'adresses…",
     "surface": "Surface (m²)",
     "parking": "Parking ou garage",
     "parkingHint": "Nombre de places de parking ou de garages (de 0 à 5).",

@@ -31,9 +31,22 @@ export function middleware(request: NextRequest) {
     }
   }
 
+  if (path === "/api/geocode/suggest" && request.method === "GET") {
+    const result = enforceRateLimit(request, "suggest");
+    if (!result.ok) {
+      return NextResponse.json(
+        { detail: "Too many requests. Try again later." },
+        {
+          status: 429,
+          headers: { "Retry-After": String(result.retryAfter) },
+        },
+      );
+    }
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/api/predict/:path*", "/api/predictions"],
+  matcher: ["/api/predict/:path*", "/api/predictions", "/api/geocode/suggest"],
 };

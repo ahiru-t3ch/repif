@@ -7,7 +7,11 @@ logger = logging.getLogger(__name__)
 
 GEOCODE_SEARCH_URL = "https://data.geopf.fr/geocodage/search"
 DEFAULT_TIMEOUT_S = 10.0
+DEFAULT_SUGGEST_TIMEOUT_S = 5.0
 DEFAULT_MIN_SCORE = 0.5
+DEFAULT_SUGGEST_LIMIT = 5
+MAX_SUGGEST_LIMIT = 10
+MIN_SUGGEST_QUERY_LENGTH = 3
 
 
 class GeocodingError(Exception):
@@ -21,6 +25,74 @@ class GeocodeResult:
     l_codinsee: str
     label: str
     score: float
+
+
+@dataclass(frozen=True)
+class SuggestedAddress:
+    label: str
+    score: float
+    city: str
+    postcode: str
+
+
+def suggest_addresses(
+    query: str,
+    *,
+    limit: int = DEFAULT_SUGGEST_LIMIT,
+    timeout_s: float = DEFAULT_SUGGEST_TIMEOUT_S,
+) -> list[SuggestedAddress]:
+    """Return address suggestions from the Géoplateforme BAN search API.
+
+    Uses the same ``/search`` endpoint as final geocoding so suggestion labels
+    stay consistent with the address that will be geocoded on submit.
+    Failures return an empty list so autocomplete stays non-blocking.
+    """
+    text = query.strip()
+    if len(text) < MIN_SUGGEST_QUERY_LENGTH:
+        return []
+
+    capped_limit = max(1, min(limit, MAX_SUGGEST_LIMIT))
+
+    try:
+        response = httpx.get(
+            GEOCODE_SEARCH_URL,
+            params={
+                "q": text,
+                "limit": capped_limit,
+                "index": "address",
+                "autocomplete": 1,
+            },
+            timeout=timeout_s,
+        )
+        response.raise_for_status()
+    except httpx.HTTPStatusError as exc:
+        logger.warning("Suggest HTTP error for %r: %s", text, exc)
+        return []
+    except httpx.RequestError as exc:
+        logger.warning("Suggest request failed for %r: %s", text, exc)
+        return []
+
+    payload = response.json()
+    features = payload.get("features") or []
+    suggestions: list[SuggestedAddress] = []
+    seen_labels: set[str] = set()
+
+    for feature in features:
+        properties = feature.get("properties") or {}
+        label = str(properties.get("label") or "").strip()
+        if not label or label in seen_labels:
+            continue
+        seen_labels.add(label)
+        suggestions.append(
+            SuggestedAddress(
+                label=label,
+                score=float(properties.get("score") or 0.0),
+                city=str(properties.get("city") or "").strip(),
+                postcode=str(properties.get("postcode") or "").strip(),
+            )
+        )
+
+    return suggestions
 
 
 def geocode_address(

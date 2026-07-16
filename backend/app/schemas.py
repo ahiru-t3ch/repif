@@ -35,3 +35,14 @@ class PredictOutput(BaseModel):
     input_address: str
     geocoded_address: str
     geocode_score: float = Field(..., ge=0, le=1)
+
+
+class AddressSuggestion(BaseModel):
+    label: str
+    score: float = Field(..., ge=0)
+    city: str = ""
+    postcode: str = ""
+
+
+class SuggestOutput(BaseModel):
+    suggestions: list[AddressSuggestion]

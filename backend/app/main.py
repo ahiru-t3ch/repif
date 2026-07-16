@@ -1,6 +1,6 @@
 import logging
 
-from fastapi import FastAPI, Depends, Request
+from fastapi import FastAPI, Depends, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List
@@ -10,12 +10,19 @@ from app.config import DOCS_URL, OPENAPI_URL, REDOC_URL, is_docs_enabled
 from app.rate_limit import (
     RATE_LIMIT_PREDICT,
     RATE_LIMIT_PREDICTIONS,
+    RATE_LIMIT_SUGGEST,
     limiter,
     rate_limit_exceeded_handler,
 )
-from app.schemas import PredictInput, PredictOutput, PredictionRecord
+from app.schemas import (
+    AddressSuggestion,
+    PredictInput,
+    PredictOutput,
+    PredictionRecord,
+    SuggestOutput,
+)
 from app.predictor import predict_price_apartment, predict_price_house # loads models within API startup on first import
-from app.geocoding import GeocodingError, geocode_address
+from app.geocoding import GeocodingError, geocode_address, suggest_addresses
 from app.database import Base, engine, get_db
 from app import models
 from fastapi import HTTPException
@@ -99,6 +106,29 @@ _configure_openapi_security()
 @app.get("/")
 def health_check():
     return {"status": "ok"}
+
+
+@app.get("/geocode/suggest", response_model=SuggestOutput)
+@limiter.limit(RATE_LIMIT_SUGGEST)
+def suggest_geocode(
+    request: Request,
+    q: str = Query(default="", max_length=255),
+    limit: int = Query(default=5, ge=1, le=10),
+):
+    """Return address autocomplete suggestions from Géoplateforme BAN."""
+    suggestions = suggest_addresses(q, limit=limit)
+    return SuggestOutput(
+        suggestions=[
+            AddressSuggestion(
+                label=item.label,
+                score=item.score,
+                city=item.city,
+                postcode=item.postcode,
+            )
+            for item in suggestions
+        ]
+    )
+
 
 @app.get("/predictions", response_model=List[PredictionRecord])
 @limiter.limit(RATE_LIMIT_PREDICTIONS)
