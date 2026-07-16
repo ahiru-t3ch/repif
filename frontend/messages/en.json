@@ -1,8 +1,8 @@
 {
   "meta": {
-    "badge": "Hawk Prix Immo · Beta · France",
+    "badge": "Hawk Prix Immo · France",
     "title": "Hawk Prix Immo",
-    "subtitle": "Beta · France",
+    "subtitle": "France",
     "description": "Indicative property price estimates from French open data (DVF+ and energy performance records). Not a formal appraisal."
   },
   "lang": {
@@ -89,7 +89,6 @@
     "intro": "Hawk Prix Immo provides an indicative, non-binding estimate based on open data and a statistical model.",
     "modelTitle": "Model and data",
     "modelBody": "The estimate uses an XGBoost model trained on DVF+ sales (Cerema), enriched with ADEME energy performance (DPE) data. Inputs include living area, outbuildings, location, energy class, and year built.",
-    "modelBeta": "This machine learning model is in beta: it was trained with the max_train_rows=100_000 option, i.e. on the 100,000 most recent DVF+ sales, not the full national dataset.",
     "geocodeTitle": "Address and geocoding",
     "geocodeBody": "Your address is geocoded via the French national address base (Géoplateforme BAN). The match score reflects how closely your input matches the address used for the estimate.",
     "agencyFeesTitle": "Price excluding agency fees",

@@ -35,9 +35,6 @@ export default function ExplicationPrixPage() {
             <p className="text-sm leading-relaxed text-muted">
               {t("explanation.modelBody")}
             </p>
-            <p className="text-sm leading-relaxed text-muted">
-              {t("explanation.modelBeta")}
-            </p>
           </section>
 
           <section className="space-y-2">

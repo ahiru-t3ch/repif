@@ -36,7 +36,7 @@ if not docs_enabled:
 
 app = FastAPI(
     title="REPIF API",
-    description="Real Estate Prices In France — apartment and house price estimation API (beta).",
+    description="Real Estate Prices In France — apartment and house price estimation API.",
     docs_url=DOCS_URL if docs_enabled else None,
     redoc_url=REDOC_URL if docs_enabled else None,
     openapi_url=OPENAPI_URL if docs_enabled else None,
