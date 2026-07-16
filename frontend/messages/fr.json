@@ -52,6 +52,8 @@
     "estimateApartment": "Estimation appartement",
     "estimateHouse": "Estimation maison",
     "excludingAgencyFees": "Hors frais d'agence",
+    "adjustWithinRange": "Ajuster dans la fourchette indicative",
+    "resetToModelPrice": "Revenir au prix du modèle",
     "pricePerSqm": "Prix au m²",
     "includingAgencyFees": "Avec frais d'agence",
     "agencyFeesRate": "Frais d'agence : {rate} %",

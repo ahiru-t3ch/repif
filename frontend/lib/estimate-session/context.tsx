@@ -20,6 +20,8 @@ export type PropertyType = "APARTMENT" | "HOUSE";
 
 export type PredictResult = {
   price: number;
+  price_low: number;
+  price_high: number;
   input_address: string;
   geocoded_address: string;
   geocode_score: number;
@@ -55,6 +57,8 @@ type EstimateSessionContextValue = {
   setAnneeConstruction: Dispatch<SetStateAction<string>>;
   result: PredictResult | null;
   setResult: Dispatch<SetStateAction<PredictResult | null>>;
+  adjustedPrice: number | null;
+  setAdjustedPrice: Dispatch<SetStateAction<number | null>>;
   modelInputSnapshot: ModelInputSnapshot | null;
   setModelInputSnapshot: Dispatch<SetStateAction<ModelInputSnapshot | null>>;
   agencyFeeMode: AgencyFeeMode;
@@ -84,6 +88,7 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
   const [dpeMedian, setDpeMedian] = useState("");
   const [anneeConstruction, setAnneeConstruction] = useState("");
   const [result, setResult] = useState<PredictResult | null>(null);
+  const [adjustedPrice, setAdjustedPrice] = useState<number | null>(null);
   const [modelInputSnapshot, setModelInputSnapshot] =
     useState<ModelInputSnapshot | null>(null);
   const [agencyFeeMode, setAgencyFeeMode] = useState<AgencyFeeMode>("percent");
@@ -112,6 +117,8 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       setAnneeConstruction,
       result,
       setResult,
+      adjustedPrice,
+      setAdjustedPrice,
       modelInputSnapshot,
       setModelInputSnapshot,
       agencyFeeMode,
@@ -136,6 +143,7 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       dpeMedian,
       anneeConstruction,
       result,
+      adjustedPrice,
       modelInputSnapshot,
       agencyFeeMode,
       agencyFeeRate,

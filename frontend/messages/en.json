@@ -52,6 +52,8 @@
     "estimateApartment": "Apartment estimate",
     "estimateHouse": "House estimate",
     "excludingAgencyFees": "Excluding agency fees",
+    "adjustWithinRange": "Adjust within the indicative range",
+    "resetToModelPrice": "Reset to model price",
     "pricePerSqm": "Price per m²",
     "includingAgencyFees": "Including agency fees",
     "agencyFeesRate": "Agency fees: {rate}%",

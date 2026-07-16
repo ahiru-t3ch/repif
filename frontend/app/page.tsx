@@ -81,6 +81,8 @@ export default function Home() {
     setAnneeConstruction,
     result,
     setResult,
+    adjustedPrice,
+    setAdjustedPrice,
     modelInputSnapshot,
     setModelInputSnapshot,
     agencyFeeMode,
@@ -153,7 +155,8 @@ export default function Home() {
   function handleAgencyFeeModeChange(next: AgencyFeeMode) {
     setAgencyFeeMode(next);
     if (next === "fixed" && result) {
-      setAgencyFeeFixed(agencyFeeAmountFromRate(result.price, agencyFeeRate));
+      const basePrice = adjustedPrice ?? result.price;
+      setAgencyFeeFixed(agencyFeeAmountFromRate(basePrice, agencyFeeRate));
     }
   }
 
@@ -168,6 +171,7 @@ export default function Home() {
   function handlePropertyTypeChange(next: PropertyType) {
     setPropertyType(next);
     setResult(null);
+    setAdjustedPrice(null);
     setModelInputSnapshot(null);
     setError(null);
   }
@@ -177,6 +181,7 @@ export default function Home() {
     setLoading(true);
     setError(null);
     setResult(null);
+    setAdjustedPrice(null);
     setModelInputSnapshot(null);
 
     const endpoint =
@@ -238,6 +243,7 @@ export default function Home() {
         anneeConstruction: Number(anneeConstruction),
       });
       setResult(data);
+      setAdjustedPrice(Math.round(data.price));
       setFormExpanded(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("errors.unknown"));
@@ -257,25 +263,30 @@ export default function Home() {
         </div>
 
           {result && (() => {
+            const displayPrice = adjustedPrice ?? Math.round(result.price);
+            const rangeLow = Math.round(result.price_low);
+            const rangeHigh = Math.round(result.price_high);
+            const modelPrice = Math.round(result.price);
+            const isAdjusted = displayPrice !== modelPrice;
             const feeAmount = agencyFeeAmount(
-              result.price,
+              displayPrice,
               agencyFeeMode,
               agencyFeeRate,
               agencyFeeFixed,
             );
             const priceFai = priceWithAgencyFees(
-              result.price,
+              displayPrice,
               agencyFeeMode,
               agencyFeeRate,
               agencyFeeFixed,
             );
-            const effectiveRate = effectiveAgencyFeeRate(result.price, feeAmount);
+            const effectiveRate = effectiveAgencyFeeRate(displayPrice, feeAmount);
             const notaryRange = getNotaryFeeRangeByAge(notaryPropertyAge);
-            const notaryAmount = notaryFeeAmount(result.price, notaryFeeRate);
+            const notaryAmount = notaryFeeAmount(displayPrice, notaryFeeRate);
             const totalFeesAmount = feeAmount + notaryAmount;
             const totalBudget = priceFai + notaryAmount;
             const surfaceUsed = modelInputSnapshot?.sbati ?? 0;
-            const pricePerSqm = formatPricePerSqm(result.price, surfaceUsed);
+            const pricePerSqm = formatPricePerSqm(displayPrice, surfaceUsed);
 
             return (
             <section
@@ -366,17 +377,51 @@ export default function Home() {
 
               <div className="grid gap-6 border-b border-stone-700 py-5 sm:grid-cols-2">
                 <div className="min-w-0">
-                  <p className="text-xs font-medium uppercase tracking-[0.15em] text-stone-400">
-                    {resultTitle(modelInputSnapshot?.propertyType ?? propertyType)}
+                  <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-xs font-medium uppercase tracking-[0.15em] text-stone-400">
+                    <span>
+                      {resultTitle(modelInputSnapshot?.propertyType ?? propertyType)}
+                    </span>
+                    <span className="font-normal normal-case tracking-normal text-stone-500">
+                      · {t("result.excludingAgencyFees")}
+                    </span>
                   </p>
                   <div className="mt-2 flex flex-wrap items-end gap-x-8 gap-y-3">
                     <div>
                       <p className="font-sans text-3xl font-semibold tracking-tight sm:text-4xl">
-                        {formatPrice(result.price)}
+                        {formatPrice(displayPrice)}
                       </p>
-                      <p className="mt-1 text-sm text-stone-400">
-                        {t("result.excludingAgencyFees")}
-                      </p>
+                      {rangeHigh > rangeLow && (
+                        <label className="mt-4 block">
+                          <span className="text-xs text-stone-400">
+                            {t("result.adjustWithinRange")}
+                          </span>
+                          <input
+                            type="range"
+                            min={rangeLow}
+                            max={rangeHigh}
+                            step={1000}
+                            value={Math.min(rangeHigh, Math.max(rangeLow, displayPrice))}
+                            onChange={(e) => setAdjustedPrice(Number(e.target.value))}
+                            aria-valuemin={rangeLow}
+                            aria-valuemax={rangeHigh}
+                            aria-valuenow={displayPrice}
+                            className="mt-2 h-1.5 w-full cursor-pointer appearance-none rounded-full bg-stone-600 accent-white"
+                          />
+                          <div className="mt-1 flex justify-between text-xs text-stone-500">
+                            <span>{formatPrice(rangeLow)}</span>
+                            <span>{formatPrice(rangeHigh)}</span>
+                          </div>
+                          {isAdjusted && (
+                            <button
+                              type="button"
+                              onClick={() => setAdjustedPrice(modelPrice)}
+                              className="mt-2 text-xs text-stone-300 underline decoration-stone-500 underline-offset-2 transition hover:text-white"
+                            >
+                              {t("result.resetToModelPrice")}
+                            </button>
+                          )}
+                        </label>
+                      )}
                     </div>
                     {pricePerSqm && (
                       <div>
