@@ -29,7 +29,8 @@ export type ModelInputSnapshot = {
   propertyType: PropertyType;
   address: string;
   sbati: number;
-  nblocdep: number;
+  nbParking: number;
+  nbCave: number;
   dpeMedian: number;
   anneeConstruction: number;
 };
@@ -44,8 +45,10 @@ type EstimateSessionContextValue = {
   setAddress: Dispatch<SetStateAction<string>>;
   sbati: string;
   setSbati: Dispatch<SetStateAction<string>>;
-  nblocdep: string;
-  setNblocdep: Dispatch<SetStateAction<string>>;
+  nbParking: string;
+  setNbParking: Dispatch<SetStateAction<string>>;
+  nbCave: string;
+  setNbCave: Dispatch<SetStateAction<string>>;
   dpeMedian: string;
   setDpeMedian: Dispatch<SetStateAction<string>>;
   anneeConstruction: string;
@@ -76,7 +79,8 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
   const [propertyType, setPropertyType] = useState<PropertyType>("APARTMENT");
   const [address, setAddress] = useState("");
   const [sbati, setSbati] = useState("");
-  const [nblocdep, setNblocdep] = useState("");
+  const [nbParking, setNbParking] = useState("");
+  const [nbCave, setNbCave] = useState("");
   const [dpeMedian, setDpeMedian] = useState("");
   const [anneeConstruction, setAnneeConstruction] = useState("");
   const [result, setResult] = useState<PredictResult | null>(null);
@@ -98,8 +102,10 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       setAddress,
       sbati,
       setSbati,
-      nblocdep,
-      setNblocdep,
+      nbParking,
+      setNbParking,
+      nbCave,
+      setNbCave,
       dpeMedian,
       setDpeMedian,
       anneeConstruction,
@@ -125,7 +131,8 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       propertyType,
       address,
       sbati,
-      nblocdep,
+      nbParking,
+      nbCave,
       dpeMedian,
       anneeConstruction,
       result,

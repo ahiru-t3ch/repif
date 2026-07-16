@@ -37,6 +37,8 @@ const DPE_OPTIONS = [
   { value: 7, label: "G" },
 ] as const;
 
+const OUTBUILDING_COUNT_OPTIONS = [0, 1, 2, 3, 4, 5] as const;
+
 const COMPANY_URL = "https://www.ahiru-t3ch.com/";
 
 const darkInputClassName =
@@ -69,8 +71,10 @@ export default function Home() {
     setAddress,
     sbati,
     setSbati,
-    nblocdep,
-    setNblocdep,
+    nbParking,
+    setNbParking,
+    nbCave,
+    setNbCave,
     dpeMedian,
     setDpeMedian,
     anneeConstruction,
@@ -184,7 +188,7 @@ export default function Home() {
       property_type: propertyType,
       address: address.trim(),
       sbati: Number(sbati),
-      nblocdep: Number(nblocdep),
+      nblocdep: Number(nbParking) + Number(nbCave),
       dpe_median: Number(dpeMedian),
       annee_construction: Number(anneeConstruction),
     };
@@ -225,7 +229,8 @@ export default function Home() {
         propertyType,
         address: address.trim(),
         sbati: Number(sbati),
-        nblocdep: Number(nblocdep),
+        nbParking: Number(nbParking),
+        nbCave: Number(nbCave),
         dpeMedian: Number(dpeMedian),
         anneeConstruction: Number(anneeConstruction),
       });
@@ -327,9 +332,15 @@ export default function Home() {
                         </dd>
                       </div>
                       <div className="flex flex-wrap gap-x-2">
-                        <dt className="text-stone-400">{t("form.outbuildings")} :</dt>
+                        <dt className="text-stone-400">{t("form.parking")} :</dt>
                         <dd className="font-medium text-white">
-                          {modelInputSnapshot.nblocdep}
+                          {modelInputSnapshot.nbParking}
+                        </dd>
+                      </div>
+                      <div className="flex flex-wrap gap-x-2">
+                        <dt className="text-stone-400">{t("form.cave")} :</dt>
+                        <dd className="font-medium text-white">
+                          {modelInputSnapshot.nbCave}
                         </dd>
                       </div>
                       <div className="flex flex-wrap gap-x-2">
@@ -648,21 +659,52 @@ export default function Home() {
                     <span
                       className={`${labelClassName} flex items-center gap-1.5 normal-case`}
                     >
-                      {t("form.outbuildings")}
-                      <FieldHint text={t("form.outbuildingsHint")} />
+                      {t("form.parking")}
+                      <FieldHint text={t("form.parkingHint")} />
                     </span>
-                    <input
-                      type="number"
-                      value={nblocdep}
-                      onChange={(e) => setNblocdep(e.target.value)}
-                      min={0}
+                    <select
+                      value={nbParking}
+                      onChange={(e) => setNbParking(e.target.value)}
                       required
                       className={inputClassName}
-                    />
+                    >
+                      <option value="" disabled>
+                        {t("form.dpeSelect")}
+                      </option>
+                      {OUTBUILDING_COUNT_OPTIONS.map((count) => (
+                        <option key={count} value={count}>
+                          {count}
+                        </option>
+                      ))}
+                    </select>
                   </label>
                 </div>
 
                 <div className="grid gap-5 sm:grid-cols-2">
+                  <label className="flex flex-col gap-2">
+                    <span
+                      className={`${labelClassName} flex items-center gap-1.5 normal-case`}
+                    >
+                      {t("form.cave")}
+                      <FieldHint text={t("form.caveHint")} />
+                    </span>
+                    <select
+                      value={nbCave}
+                      onChange={(e) => setNbCave(e.target.value)}
+                      required
+                      className={inputClassName}
+                    >
+                      <option value="" disabled>
+                        {t("form.dpeSelect")}
+                      </option>
+                      {OUTBUILDING_COUNT_OPTIONS.map((count) => (
+                        <option key={count} value={count}>
+                          {count}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
                   <label className="flex flex-col gap-2">
                     <span className={labelClassName}>{t("form.dpe")}</span>
                     <select
@@ -681,7 +723,9 @@ export default function Home() {
                       ))}
                     </select>
                   </label>
+                </div>
 
+                <div className="grid gap-5 sm:grid-cols-2">
                   <label className="flex flex-col gap-2">
                     <span className={labelClassName}>{t("form.year")}</span>
                     <input
