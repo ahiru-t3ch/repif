@@ -28,6 +28,7 @@ from app.predictor import (  # loads models within API startup on first import
     predict_price_house,
 )
 from app.geocoding import GeocodingError, geocode_address, suggest_addresses
+from app.metrics import price_bounds
 from app.database import Base, engine, get_db
 from app import models
 from fastapi import HTTPException
@@ -170,6 +171,8 @@ def _predict_and_save(
     except UnsupportedLocationError as exc:
         raise HTTPException(status_code=400, detail=LOCATION_NOT_COVERED) from exc
 
+    price_low, price_high = price_bounds(price, input.property_type)
+
     prediction = models.Prediction(
         property_type=input.property_type,
         sbati=input.sbati,
@@ -188,6 +191,8 @@ def _predict_and_save(
 
     return PredictOutput(
         price=price,
+        price_low=price_low,
+        price_high=price_high,
         input_address=input.address.strip(),
         geocoded_address=geocoded.label.strip(),
         geocode_score=geocoded.score,

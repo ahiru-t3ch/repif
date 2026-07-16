@@ -15,3 +15,10 @@ __pycache__/
 
 .git/
 .gitignore
+
+# Models / metrics live on the Coolify volume (or Compose bind mount), not in the image
+*.joblib
+models_back/*.joblib
+models_back/*.json
+!models_back/.gitkeep
+!models_back/README.md

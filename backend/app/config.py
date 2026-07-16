@@ -12,6 +12,7 @@ OPENAPI_URL = "/openapi.json"
 MODEL_DIR = Path(__file__).resolve().parent.parent / "models_back"
 DEFAULT_MODEL_APARTMENT = "apartment_dev_20260621_220900.joblib"
 DEFAULT_MODEL_HOUSE = "house_dev_20260621_220900.joblib"
+DEFAULT_MODEL_METRICS = "metrics_dev.json"
 
 
 def _env_flag(name: str, *, default: bool = False) -> bool:
@@ -49,3 +50,12 @@ def model_path_apartment() -> Path:
 
 def model_path_house() -> Path:
     return MODEL_DIR / model_house_filename()
+
+
+def model_metrics_filename() -> str:
+    value = os.getenv("MODEL_METRICS", DEFAULT_MODEL_METRICS).strip()
+    return value or DEFAULT_MODEL_METRICS
+
+
+def model_path_metrics() -> Path:
+    return MODEL_DIR / model_metrics_filename()

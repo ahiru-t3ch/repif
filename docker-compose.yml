@@ -27,6 +27,7 @@ services:
       ENABLE_DOCS: ${ENABLE_DOCS:-true}
       MODEL_APARTMENT: ${MODEL_APARTMENT:-apartment_dev_20260621_220900.joblib}
       MODEL_HOUSE: ${MODEL_HOUSE:-house_dev_20260621_220900.joblib}
+      MODEL_METRICS: ${MODEL_METRICS:-metrics_dev.json}
       RATE_LIMIT_PREDICT: ${RATE_LIMIT_PREDICT:-10/minute}
       RATE_LIMIT_PREDICTIONS: ${RATE_LIMIT_PREDICTIONS:-60/minute}
     ports:

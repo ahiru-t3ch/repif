@@ -128,6 +128,7 @@ Copy `.env.sample` to `.env`. **Never commit `.env`.**
 | `ENABLE_DOCS` | `true` → `/docs` enabled; `false` → disabled. Default if unset: **`false`**. Compose sets `true` for local dev; use `false` on Coolify prod. |
 | `MODEL_APARTMENT` | Filename in `models_back/` (default `apartment_dev_20260621_220900.joblib`) |
 | `MODEL_HOUSE` | Filename in `models_back/` (default `house_dev_20260621_220900.joblib`) |
+| `MODEL_METRICS` | Metrics JSON in `models_back/` (default `metrics_dev.json`) — supplies `mape_pct` for indicative price ranges |
 | `RATE_LIMIT_PREDICT` | Max prediction requests per IP (default `10/minute`) — slowapi format |
 | `RATE_LIMIT_PREDICTIONS` | Max history list requests per IP (default `60/minute`) |
 
@@ -150,6 +151,7 @@ Place model files in `backend/models_back/` on the host (Compose bind-mounts tha
 ```bash
 cp ml/models/apartment_dev_*.joblib backend/models_back/
 cp ml/models/house_dev_*.joblib backend/models_back/
+cp ml/models/metrics_dev_*.json backend/models_back/
 ```
 
 Optional in root `.env`: `MODEL_APARTMENT` / `MODEL_HOUSE` to pick another filename without rebuilding.
@@ -256,6 +258,7 @@ BACKEND_JWT_AUDIENCE=repif-backend
 ENABLE_DOCS=false
 MODEL_APARTMENT=apartment_dev_20260621_220900.joblib
 MODEL_HOUSE=house_dev_20260621_220900.joblib
+MODEL_METRICS=metrics_dev_20260716_120000.json
 ```
 
 **`DATABASE_URL`:** Coolify often generates `postgres://…`. SQLAlchemy requires **`postgresql://`** (replace the scheme only; keep user, password, host, port, db).
