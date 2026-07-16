@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 
 import { DpeRentalAlert } from "@/components/DpeRentalAlert";
 import {
@@ -386,12 +385,6 @@ export default function Home() {
                       </div>
                     )}
                   </div>
-                  <Link
-                    href="/explication-prix"
-                    className="mt-2 inline-block text-sm text-stone-300 underline decoration-stone-500 underline-offset-2 transition hover:text-white"
-                  >
-                    {t("result.priceExplanationLink")}
-                  </Link>
                   <div className="mt-4">
                     <DpeRentalAlert
                       dpeValue={String(modelInputSnapshot?.dpeMedian ?? "")}

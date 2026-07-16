@@ -34,7 +34,15 @@ export function SiteHeader() {
           </div>
         </Link>
 
-        <LanguageSwitcher />
+        <nav className="flex shrink-0 items-center gap-3 sm:gap-5">
+          <Link
+            href="/about"
+            className="text-sm font-medium text-muted transition hover:text-foreground"
+          >
+            {t("nav.about")}
+          </Link>
+          <LanguageSwitcher />
+        </nav>
       </div>
     </header>
   );

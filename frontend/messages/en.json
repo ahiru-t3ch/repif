@@ -5,6 +5,9 @@
     "subtitle": "France",
     "description": "Indicative property price estimates from French open data (DVF+ and energy performance records). Not a formal appraisal."
   },
+  "nav": {
+    "about": "About"
+  },
   "lang": {
     "label": "Language",
     "fr": "Français",
@@ -68,7 +71,6 @@
     "totalFeesAmount": "Total fees (agency + notary):",
     "totalBudget": "Estimated total budget",
     "totalBudgetHint": "FAI price + notary fees.",
-    "priceExplanationLink": "How this price is calculated",
     "matchScore": "Address match score:",
     "inputAddress": "Address entered:",
     "geocodedAddress": "Estimate based on:",
@@ -83,12 +85,11 @@
     "prefix": "Hawk Prix Immo by",
     "company": "Ahiru-T3ch"
   },
-  "explanation": {
-    "title": "How this price is calculated",
-    "back": "Back to estimate",
+  "about": {
+    "title": "About",
     "intro": "Hawk Prix Immo provides an indicative, non-binding estimate based on open data and a statistical model.",
     "modelTitle": "Model and data",
-    "modelBody": "The estimate uses an XGBoost model trained on DVF+ sales (Cerema), enriched with ADEME energy performance (DPE) data. Inputs include living area, outbuildings, location, energy class, and year built.",
+    "modelBody": "The estimate uses an XGBoost model trained on DVF+ sales (Cerema), enriched with ADEME energy performance (DPE) data. Inputs include living area, outbuildings (cellars and parking spaces or garages), location, energy class, and year built.",
     "geocodeTitle": "Address and geocoding",
     "geocodeBody": "Your address is geocoded via the French national address base (Géoplateforme BAN). The match score reflects how closely your input matches the address used for the estimate.",
     "agencyFeesTitle": "Price excluding agency fees",
