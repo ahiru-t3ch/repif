@@ -23,10 +23,14 @@ import {
 } from "@/lib/compound-savings";
 import {
   DEFAULT_AGENCY_FEE_RATE,
+  DEFAULT_ANNUAL_CHARGES,
   DEFAULT_LOAN_DOWN_PAYMENT,
   DEFAULT_LOAN_DURATION_YEARS,
   DEFAULT_LOAN_INSURANCE_RATE,
   DEFAULT_LOAN_INTEREST_RATE,
+  DEFAULT_NET_SALARY,
+  DEFAULT_PROPERTY_APPRECIATION,
+  DEFAULT_PROPERTY_TAX,
   createEmptyWorkLine,
   useEstimateSession,
   type PredictResult,
@@ -35,7 +39,12 @@ import {
 import { dpeValueToLetter } from "@/lib/dpe-rental";
 import { useI18n } from "@/lib/i18n/context";
 import {
+  buyNetWorth,
+  defaultMonthlyRent,
   loanPrincipal,
+  MAX_DEBT_RATIO_PCT,
+  monthlyInvestableWhenRenting,
+  monthlyOwnershipCosts,
   monthlyTotalPayment,
   totalCreditCost,
 } from "@/lib/mortgage";
@@ -99,10 +108,20 @@ export default function Home() {
     setLoanInterestRate,
     loanInsuranceRate,
     setLoanInsuranceRate,
+    loanRent,
+    setLoanRent,
+    loanAnnualCharges,
+    setLoanAnnualCharges,
+    loanPropertyTax,
+    setLoanPropertyTax,
+    loanNetSalary,
+    setLoanNetSalary,
     savingsRate,
     setSavingsRate,
     savingsInflation,
     setSavingsInflation,
+    propertyAppreciation,
+    setPropertyAppreciation,
     modelInputSnapshot,
     setModelInputSnapshot,
     agencyFeeMode,
@@ -193,11 +212,16 @@ export default function Home() {
     setLoanDurationYears(DEFAULT_LOAN_DURATION_YEARS);
     setLoanInterestRate(DEFAULT_LOAN_INTEREST_RATE);
     setLoanInsuranceRate(DEFAULT_LOAN_INSURANCE_RATE);
+    setLoanRent(null);
+    setLoanAnnualCharges(DEFAULT_ANNUAL_CHARGES);
+    setLoanPropertyTax(DEFAULT_PROPERTY_TAX);
+    setLoanNetSalary(DEFAULT_NET_SALARY);
   }
 
   function resetSavingsDefaults() {
     setSavingsRate(DEFAULT_SAVINGS_RATE);
     setSavingsInflation(DEFAULT_INFLATION_RATE);
+    setPropertyAppreciation(DEFAULT_PROPERTY_APPRECIATION);
   }
 
   function handlePropertyTypeChange(next: PropertyType) {
@@ -799,6 +823,19 @@ export default function Home() {
               loanDurationYears,
               loanInsuranceRate,
             );
+            const rentMonthly = loanRent ?? defaultMonthlyRent(displayPrice);
+            const ownerMonthlyCost =
+              monthly + monthlyOwnershipCosts(loanAnnualCharges, loanPropertyTax);
+            const remainingBudget = loanNetSalary - ownerMonthlyCost;
+            const debtRatioPct =
+              loanNetSalary > 0
+                ? (ownerMonthlyCost / loanNetSalary) * 100
+                : null;
+            const remainingBudgetPct =
+              debtRatioPct !== null ? 100 - debtRatioPct : null;
+            const minRemainingPct = 100 - MAX_DEBT_RATIO_PCT;
+            const overDebtLimit =
+              debtRatioPct !== null && debtRatioPct > MAX_DEBT_RATIO_PCT;
 
             return (
               <section className="rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
@@ -867,6 +904,67 @@ export default function Home() {
                   </label>
                 </div>
 
+                <div className="mt-6 border-t border-border pt-5">
+                  <p className="text-xs font-medium uppercase tracking-[0.15em] text-muted">
+                    {t("result.loanOwnershipTitle")}
+                  </p>
+                  <p className="mt-2 text-sm text-muted">
+                    {t("result.loanOwnershipHint")}
+                  </p>
+                  <div className="mt-4 grid gap-4 sm:grid-cols-3">
+                    <label className="flex flex-col gap-2">
+                      <span className={labelClassName}>{t("result.loanRent")}</span>
+                      <input
+                        type="number"
+                        min={0}
+                        step={50}
+                        value={rentMonthly || ""}
+                        onChange={(e) =>
+                          setLoanRent(Math.max(0, Number(e.target.value) || 0))
+                        }
+                        className={inputClassName}
+                      />
+                      <span className="text-xs text-muted">
+                        {t("result.loanRentNote")}
+                      </span>
+                    </label>
+                    <label className="flex flex-col gap-2">
+                      <span className={labelClassName}>
+                        {t("result.loanAnnualCharges")}
+                      </span>
+                      <input
+                        type="number"
+                        min={0}
+                        step={100}
+                        value={loanAnnualCharges || ""}
+                        onChange={(e) =>
+                          setLoanAnnualCharges(
+                            Math.max(0, Number(e.target.value) || 0),
+                          )
+                        }
+                        className={inputClassName}
+                      />
+                    </label>
+                    <label className="flex flex-col gap-2">
+                      <span className={labelClassName}>
+                        {t("result.loanPropertyTax")}
+                      </span>
+                      <input
+                        type="number"
+                        min={0}
+                        step={100}
+                        value={loanPropertyTax || ""}
+                        onChange={(e) =>
+                          setLoanPropertyTax(
+                            Math.max(0, Number(e.target.value) || 0),
+                          )
+                        }
+                        className={inputClassName}
+                      />
+                    </label>
+                  </div>
+                </div>
+
                 <div className="mt-4 space-y-2 border-t border-border pt-4">
                   <p className="text-sm text-muted">
                     {t("result.loanPrincipal")}{" "}
@@ -880,15 +978,90 @@ export default function Home() {
                       {formatPrice(Math.round(creditCost))}
                     </span>
                   </p>
-                  <p>
-                    <span className="text-xs font-medium uppercase tracking-[0.15em] text-muted">
-                      {t("result.loanMonthly")}
-                    </span>
-                    <span className="mt-2 block font-sans text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-                      {formatPrice(Math.round(monthly))}
-                    </span>
-                  </p>
-                  <p className="text-xs text-muted">{t("result.loanMonthlyHint")}</p>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <p>
+                      <span className="text-xs font-medium uppercase tracking-[0.15em] text-muted">
+                        {t("result.loanMonthly")}
+                      </span>
+                      <span className="mt-2 block font-sans text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+                        {formatPrice(Math.round(monthly))}
+                      </span>
+                      <span className="mt-1 block text-xs text-muted">
+                        {t("result.loanMonthlyHint")}
+                      </span>
+                    </p>
+                    <p>
+                      <span className="text-xs font-medium uppercase tracking-[0.15em] text-muted">
+                        {t("result.loanOwnerMonthly")}
+                      </span>
+                      <span className="mt-2 block font-sans text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+                        {formatPrice(Math.round(ownerMonthlyCost))}
+                      </span>
+                      <span className="mt-1 block text-xs text-muted">
+                        {t("result.loanOwnerMonthlyHint")}
+                      </span>
+                    </p>
+                  </div>
+
+                  <div className="grid gap-4 border-t border-border pt-4 sm:grid-cols-2">
+                    <label className="flex flex-col gap-2">
+                      <span className={labelClassName}>{t("result.loanNetSalary")}</span>
+                      <input
+                        type="number"
+                        min={0}
+                        step={100}
+                        value={loanNetSalary || ""}
+                        onChange={(e) =>
+                          setLoanNetSalary(Math.max(0, Number(e.target.value) || 0))
+                        }
+                        className={inputClassName}
+                      />
+                      <span className="text-xs text-muted">
+                        {t("result.loanNetSalaryHint")}
+                      </span>
+                    </label>
+                    <p>
+                      <span className="text-xs font-medium uppercase tracking-[0.15em] text-muted">
+                        {t("result.loanRemainingBudget")}
+                      </span>
+                      <span
+                        className={`mt-2 block font-sans text-2xl font-semibold tracking-tight sm:text-3xl ${
+                          overDebtLimit ? "text-red-700" : "text-foreground"
+                        }`}
+                      >
+                        {loanNetSalary > 0
+                          ? formatPrice(Math.round(remainingBudget))
+                          : "—"}
+                      </span>
+                      {remainingBudgetPct !== null && debtRatioPct !== null && (
+                        <>
+                          <span
+                            className={`mt-1 block text-sm font-medium ${
+                              overDebtLimit ? "text-red-700" : "text-foreground"
+                            }`}
+                          >
+                            {t("result.loanRemainingBudgetPct", {
+                              pct: formatFeeRate(remainingBudgetPct),
+                              minPct: String(minRemainingPct),
+                            })}
+                          </span>
+                          <span
+                            className={`mt-1 block text-sm font-medium ${
+                              overDebtLimit ? "text-red-700" : "text-foreground"
+                            }`}
+                          >
+                            {t("result.loanDebtRatio", {
+                              pct: formatFeeRate(debtRatioPct),
+                              maxPct: String(MAX_DEBT_RATIO_PCT),
+                            })}
+                          </span>
+                        </>
+                      )}
+                      <span className="mt-1 block text-xs text-muted">
+                        {t("result.loanRemainingBudgetHint")}
+                      </span>
+                    </p>
+                  </div>
                 </div>
               </section>
             );
@@ -917,8 +1090,16 @@ export default function Home() {
                 loanInsuranceRate,
               ),
             );
+            const rentMonthly = loanRent ?? defaultMonthlyRent(displayPrice);
             const initialCapital = loanDownPayment;
-            const monthlyDeposit = loanMonthly;
+            const monthlyDeposit = Math.round(
+              monthlyInvestableWhenRenting(
+                loanMonthly,
+                rentMonthly,
+                loanAnnualCharges,
+                loanPropertyTax,
+              ),
+            );
             const years = Math.max(1, Math.round(loanDurationYears));
             const snap = savingsSnapshot(
               initialCapital,
@@ -946,60 +1127,107 @@ export default function Home() {
                 </p>
                 <p className="mt-2 text-sm text-muted">{t("result.savingsHint")}</p>
 
-                <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <p className={labelClassName}>{t("result.savingsInitial")}</p>
-                    <p className="mt-2 text-sm font-medium text-foreground">
-                      {formatPrice(initialCapital)}
-                    </p>
+                <div className="mt-4 space-y-4">
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <div>
+                      <p className={labelClassName}>{t("result.savingsInitial")}</p>
+                      <p className="mt-2 text-sm font-medium text-foreground">
+                        {formatPrice(initialCapital)}
+                      </p>
+                      <p className="mt-1 text-xs text-muted">
+                        {t("result.savingsInitialNote")}
+                      </p>
+                    </div>
+                    <div>
+                      <p className={labelClassName}>{t("result.savingsMonthly")}</p>
+                      <p className="mt-2 text-sm font-medium text-foreground">
+                        {formatPrice(monthlyDeposit)}
+                      </p>
+                      <p className="mt-1 text-xs text-muted">
+                        {t("result.savingsMonthlyNote")}
+                      </p>
+                    </div>
+                    <div>
+                      <p className={labelClassName}>{t("result.savingsYears")}</p>
+                      <p className="mt-2 text-sm font-medium text-foreground">
+                        {years}
+                      </p>
+                      <p className="mt-1 text-xs text-muted">
+                        {t("result.savingsYearsNote")}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className={labelClassName}>{t("result.savingsMonthly")}</p>
-                    <p className="mt-2 text-sm font-medium text-foreground">
-                      {formatPrice(monthlyDeposit)}
-                    </p>
-                    <p className="mt-1 text-xs text-muted">
-                      {t("result.savingsMonthlyNote")}
-                    </p>
+
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <div>
+                      <p className={labelClassName}>{t("result.loanRent")}</p>
+                      <p className="mt-2 text-sm font-medium text-foreground">
+                        {formatPrice(rentMonthly)}
+                      </p>
+                      <p className="mt-1 text-xs text-muted">
+                        {t("result.savingsOwnershipEditNote")}
+                      </p>
+                    </div>
+                    <div>
+                      <p className={labelClassName}>
+                        {t("result.loanAnnualCharges")}
+                      </p>
+                      <p className="mt-2 text-sm font-medium text-foreground">
+                        {formatPrice(loanAnnualCharges)}
+                      </p>
+                      <p className="mt-1 text-xs text-muted">
+                        {t("result.savingsOwnershipEditNote")}
+                      </p>
+                    </div>
+                    <div>
+                      <p className={labelClassName}>
+                        {t("result.loanPropertyTax")}
+                      </p>
+                      <p className="mt-2 text-sm font-medium text-foreground">
+                        {formatPrice(loanPropertyTax)}
+                      </p>
+                      <p className="mt-1 text-xs text-muted">
+                        {t("result.savingsOwnershipEditNote")}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className={labelClassName}>{t("result.savingsYears")}</p>
-                    <p className="mt-2 text-sm font-medium text-foreground">
-                      {years}
-                    </p>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <label className="flex flex-col gap-2">
+                      <span className={labelClassName}>
+                        {t("result.savingsRate")}
+                      </span>
+                      <input
+                        type="number"
+                        min={0}
+                        max={20}
+                        step={0.1}
+                        value={savingsRate}
+                        onChange={(e) =>
+                          setSavingsRate(Math.max(0, Number(e.target.value) || 0))
+                        }
+                        className={inputClassName}
+                      />
+                    </label>
+                    <label className="flex flex-col gap-2">
+                      <span className={labelClassName}>
+                        {t("result.savingsInflation")}
+                      </span>
+                      <input
+                        type="number"
+                        min={0}
+                        max={15}
+                        step={0.1}
+                        value={savingsInflation}
+                        onChange={(e) =>
+                          setSavingsInflation(
+                            Math.max(0, Number(e.target.value) || 0),
+                          )
+                        }
+                        className={inputClassName}
+                      />
+                    </label>
                   </div>
-                  <label className="flex flex-col gap-2">
-                    <span className={labelClassName}>
-                      {t("result.savingsRate")}
-                    </span>
-                    <input
-                      type="number"
-                      min={0}
-                      max={20}
-                      step={0.1}
-                      value={savingsRate}
-                      onChange={(e) =>
-                        setSavingsRate(Math.max(0, Number(e.target.value) || 0))
-                      }
-                      className={inputClassName}
-                    />
-                  </label>
-                  <label className="flex flex-col gap-2">
-                    <span className={labelClassName}>
-                      {t("result.savingsInflation")}
-                    </span>
-                    <input
-                      type="number"
-                      min={0}
-                      max={15}
-                      step={0.1}
-                      value={savingsInflation}
-                      onChange={(e) =>
-                        setSavingsInflation(Math.max(0, Number(e.target.value) || 0))
-                      }
-                      className={inputClassName}
-                    />
-                  </label>
                 </div>
 
                 <SavingsChart
@@ -1048,6 +1276,128 @@ export default function Home() {
                     })}
                   </p>
                   <p className="text-xs text-muted">{t("result.savingsRatesNote")}</p>
+                </div>
+              </section>
+            );
+          })()}
+
+          {result && (() => {
+            const displayPrice = adjustedPrice ?? Math.round(result.price);
+            const worksTotal = workLines.reduce(
+              (sum, line) => sum + Math.max(0, line.amount),
+              0,
+            );
+            const priceFai = priceWithAgencyFees(
+              displayPrice,
+              agencyFeeMode,
+              agencyFeeRate,
+              agencyFeeFixed,
+            );
+            const notaryAmount = notaryFeeAmount(displayPrice, notaryFeeRate);
+            const projectBudget = priceFai + notaryAmount + worksTotal;
+            const principal = loanPrincipal(projectBudget, loanDownPayment);
+            const years = Math.max(1, Math.round(loanDurationYears));
+            const loanMonthly = Math.round(
+              monthlyTotalPayment(
+                principal,
+                loanInterestRate,
+                loanDurationYears,
+                loanInsuranceRate,
+              ),
+            );
+            const rentMonthly = loanRent ?? defaultMonthlyRent(displayPrice);
+            const monthlyDeposit = Math.round(
+              monthlyInvestableWhenRenting(
+                loanMonthly,
+                rentMonthly,
+                loanAnnualCharges,
+                loanPropertyTax,
+              ),
+            );
+            const rentWealth = savingsSnapshot(
+              loanDownPayment,
+              monthlyDeposit,
+              savingsRate,
+              years,
+            ).futureValue;
+            const buyWealth = buyNetWorth(
+              displayPrice,
+              propertyAppreciation,
+              years,
+              principal,
+              loanInterestRate,
+              loanDurationYears,
+            );
+            const gap = Math.abs(buyWealth - rentWealth);
+            const preferBuy = buyWealth >= rentWealth;
+
+            return (
+              <section className="rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
+                <p className="text-xs font-medium uppercase tracking-[0.15em] text-muted">
+                  {t("result.verdictTitle")}
+                </p>
+                <p className="mt-2 text-sm text-muted">{t("result.verdictHint")}</p>
+
+                <label className="mt-4 flex max-w-xs flex-col gap-2">
+                  <span className={labelClassName}>
+                    {t("result.verdictAppreciation")}
+                  </span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={15}
+                    step={0.1}
+                    value={propertyAppreciation}
+                    onChange={(e) =>
+                      setPropertyAppreciation(
+                        Math.max(0, Number(e.target.value) || 0),
+                      )
+                    }
+                    className={inputClassName}
+                  />
+                  <span className="text-xs text-muted">
+                    {t("result.verdictAppreciationNote")}
+                  </span>
+                </label>
+
+                <div className="mt-6 grid gap-6 sm:grid-cols-2">
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-[0.15em] text-muted">
+                      {t("result.verdictBuy")}
+                    </p>
+                    <p className="mt-2 font-sans text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+                      {formatPrice(Math.round(buyWealth))}
+                    </p>
+                    <p className="mt-1 text-xs text-muted">
+                      {t("result.verdictBuyHint")}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-[0.15em] text-muted">
+                      {t("result.verdictRent")}
+                    </p>
+                    <p className="mt-2 font-sans text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+                      {formatPrice(Math.round(rentWealth))}
+                    </p>
+                    <p className="mt-1 text-xs text-muted">
+                      {t("result.verdictRentHint")}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-6 border-t border-border pt-5">
+                  <p className="font-sans text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+                    {preferBuy
+                      ? t("result.verdictPreferBuy", {
+                          years: String(years),
+                          gap: formatPrice(Math.round(gap)),
+                        })
+                      : t("result.verdictPreferRent", {
+                          years: String(years),
+                          gap: formatPrice(Math.round(gap)),
+                        })}
+                  </p>
+                  <p className="mt-3 text-xs text-muted">{t("result.verdictDisclaimer")}</p>
                 </div>
               </section>
             );

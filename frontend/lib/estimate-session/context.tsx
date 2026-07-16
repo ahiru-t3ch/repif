@@ -15,10 +15,14 @@ import {
   type AgencyFeeMode,
 } from "@/lib/agency-fees";
 import {
+  DEFAULT_ANNUAL_CHARGES,
   DEFAULT_LOAN_DOWN_PAYMENT,
   DEFAULT_LOAN_DURATION_YEARS,
   DEFAULT_LOAN_INSURANCE_RATE,
   DEFAULT_LOAN_INTEREST_RATE,
+  DEFAULT_NET_SALARY,
+  DEFAULT_PROPERTY_APPRECIATION,
+  DEFAULT_PROPERTY_TAX,
 } from "@/lib/mortgage";
 import {
   DEFAULT_INFLATION_RATE,
@@ -68,10 +72,14 @@ export const DEFAULT_AGENCY_FEE_RATE = AGENCY_FEE_PERCENT.defaultRate;
 export const DEFAULT_NOTARY_FEE_RATE: number = NOTARY_OLD.default;
 
 export {
+  DEFAULT_ANNUAL_CHARGES,
   DEFAULT_LOAN_DOWN_PAYMENT,
   DEFAULT_LOAN_DURATION_YEARS,
   DEFAULT_LOAN_INSURANCE_RATE,
   DEFAULT_LOAN_INTEREST_RATE,
+  DEFAULT_NET_SALARY,
+  DEFAULT_PROPERTY_APPRECIATION,
+  DEFAULT_PROPERTY_TAX,
 };
 
 export { DEFAULT_INFLATION_RATE, DEFAULT_SAVINGS_RATE };
@@ -105,10 +113,21 @@ type EstimateSessionContextValue = {
   setLoanInterestRate: Dispatch<SetStateAction<number>>;
   loanInsuranceRate: number;
   setLoanInsuranceRate: Dispatch<SetStateAction<number>>;
+  /** null = follow defaultMonthlyRent(propertyPrice) */
+  loanRent: number | null;
+  setLoanRent: Dispatch<SetStateAction<number | null>>;
+  loanAnnualCharges: number;
+  setLoanAnnualCharges: Dispatch<SetStateAction<number>>;
+  loanPropertyTax: number;
+  setLoanPropertyTax: Dispatch<SetStateAction<number>>;
+  loanNetSalary: number;
+  setLoanNetSalary: Dispatch<SetStateAction<number>>;
   savingsRate: number;
   setSavingsRate: Dispatch<SetStateAction<number>>;
   savingsInflation: number;
   setSavingsInflation: Dispatch<SetStateAction<number>>;
+  propertyAppreciation: number;
+  setPropertyAppreciation: Dispatch<SetStateAction<number>>;
   modelInputSnapshot: ModelInputSnapshot | null;
   setModelInputSnapshot: Dispatch<SetStateAction<ModelInputSnapshot | null>>;
   agencyFeeMode: AgencyFeeMode;
@@ -150,8 +169,17 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
   const [loanInsuranceRate, setLoanInsuranceRate] = useState(
     DEFAULT_LOAN_INSURANCE_RATE,
   );
+  const [loanRent, setLoanRent] = useState<number | null>(null);
+  const [loanAnnualCharges, setLoanAnnualCharges] = useState(
+    DEFAULT_ANNUAL_CHARGES,
+  );
+  const [loanPropertyTax, setLoanPropertyTax] = useState(DEFAULT_PROPERTY_TAX);
+  const [loanNetSalary, setLoanNetSalary] = useState(DEFAULT_NET_SALARY);
   const [savingsRate, setSavingsRate] = useState(DEFAULT_SAVINGS_RATE);
   const [savingsInflation, setSavingsInflation] = useState(DEFAULT_INFLATION_RATE);
+  const [propertyAppreciation, setPropertyAppreciation] = useState(
+    DEFAULT_PROPERTY_APPRECIATION,
+  );
   const [modelInputSnapshot, setModelInputSnapshot] =
     useState<ModelInputSnapshot | null>(null);
   const [agencyFeeMode, setAgencyFeeMode] = useState<AgencyFeeMode>("percent");
@@ -192,10 +220,20 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       setLoanInterestRate,
       loanInsuranceRate,
       setLoanInsuranceRate,
+      loanRent,
+      setLoanRent,
+      loanAnnualCharges,
+      setLoanAnnualCharges,
+      loanPropertyTax,
+      setLoanPropertyTax,
+      loanNetSalary,
+      setLoanNetSalary,
       savingsRate,
       setSavingsRate,
       savingsInflation,
       setSavingsInflation,
+      propertyAppreciation,
+      setPropertyAppreciation,
       modelInputSnapshot,
       setModelInputSnapshot,
       agencyFeeMode,
@@ -226,8 +264,13 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       loanDurationYears,
       loanInterestRate,
       loanInsuranceRate,
+      loanRent,
+      loanAnnualCharges,
+      loanPropertyTax,
+      loanNetSalary,
       savingsRate,
       savingsInflation,
+      propertyAppreciation,
       modelInputSnapshot,
       agencyFeeMode,
       agencyFeeRate,
