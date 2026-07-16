@@ -37,6 +37,14 @@ DEFAULT_FEATURES = [
 
 DEFAULT_CATEGORICAL_FEATURES = ["l_codinsee"]
 
+# XGBoost monotone_constraints: +1 increasing, -1 decreasing, 0 unconstrained.
+# sbati: larger living area → higher price.
+# dpe_median: A=1 … G=7, so worse energy class (higher value) → lower price.
+DEFAULT_MONOTONE_CONSTRAINTS = {
+    "sbati": 1,
+    "dpe_median": -1,
+}
+
 PARAM_DIST = {
     "n_estimators": randint(200, 1200),
     "max_depth": randint(3, 10),
@@ -47,6 +55,11 @@ PARAM_DIST = {
     "gamma": uniform(0, 5),
     "reg_lambda": uniform(0, 5),
 }
+
+
+def monotone_constraints_tuple(features: list[str]) -> tuple[int, ...]:
+    """Build XGBoost monotone_constraints in the same order as ``features``."""
+    return tuple(DEFAULT_MONOTONE_CONSTRAINTS.get(col, 0) for col in features)
 
 
 def merge_dvf_dpe(
@@ -295,11 +308,14 @@ def train_model_dev(
     )
 
     started = time.perf_counter()
+    constraints = monotone_constraints_tuple(features)
+    logger.info("Monotone constraints: %s", dict(zip(features, constraints)))
     search = RandomizedSearchCV(
         XGBRegressor(
             random_state=random_state,
             n_jobs=model_n_jobs,
             enable_categorical=True,
+            monotone_constraints=constraints,
         ),
         param_distributions=PARAM_DIST,
         n_iter=n_iter,

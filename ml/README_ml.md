@@ -315,6 +315,12 @@ have plenty of RAM; each parallel job holds its own data copy.
 
 `sbati`, `nblocdep`, `lat`, `lon`, `l_codinsee`, `dpe_median`, `annee_construction`
 
+**Monotone constraints** (see `DEFAULT_MONOTONE_CONSTRAINTS`):
+
+- `sbati`: `+1` (larger living area → higher price)
+- `dpe_median`: `-1` (A=1 … G=7; worse energy class → lower price)
+- other features: unconstrained (`0`)
+
 Government field names are kept as-is. Convert predictions back to euros with `np.exp()`.
 
 ## Limitations and caveats
