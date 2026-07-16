@@ -14,6 +14,16 @@ import {
   AGENCY_FEE_PERCENT,
   type AgencyFeeMode,
 } from "@/lib/agency-fees";
+import {
+  DEFAULT_LOAN_DOWN_PAYMENT,
+  DEFAULT_LOAN_DURATION_YEARS,
+  DEFAULT_LOAN_INSURANCE_RATE,
+  DEFAULT_LOAN_INTEREST_RATE,
+} from "@/lib/mortgage";
+import {
+  DEFAULT_INFLATION_RATE,
+  DEFAULT_SAVINGS_RATE,
+} from "@/lib/compound-savings";
 import { NOTARY_OLD, type NotaryPropertyAge } from "@/lib/notary-fees";
 
 export type PropertyType = "APARTMENT" | "HOUSE";
@@ -37,8 +47,34 @@ export type ModelInputSnapshot = {
   anneeConstruction: number;
 };
 
+export type WorkLine = {
+  id: string;
+  label: string;
+  amount: number;
+};
+
+export function createEmptyWorkLine(): WorkLine {
+  return {
+    id:
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `work-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+    label: "",
+    amount: 0,
+  };
+}
+
 export const DEFAULT_AGENCY_FEE_RATE = AGENCY_FEE_PERCENT.defaultRate;
 export const DEFAULT_NOTARY_FEE_RATE: number = NOTARY_OLD.default;
+
+export {
+  DEFAULT_LOAN_DOWN_PAYMENT,
+  DEFAULT_LOAN_DURATION_YEARS,
+  DEFAULT_LOAN_INSURANCE_RATE,
+  DEFAULT_LOAN_INTEREST_RATE,
+};
+
+export { DEFAULT_INFLATION_RATE, DEFAULT_SAVINGS_RATE };
 
 type EstimateSessionContextValue = {
   propertyType: PropertyType;
@@ -59,6 +95,20 @@ type EstimateSessionContextValue = {
   setResult: Dispatch<SetStateAction<PredictResult | null>>;
   adjustedPrice: number | null;
   setAdjustedPrice: Dispatch<SetStateAction<number | null>>;
+  workLines: WorkLine[];
+  setWorkLines: Dispatch<SetStateAction<WorkLine[]>>;
+  loanDownPayment: number;
+  setLoanDownPayment: Dispatch<SetStateAction<number>>;
+  loanDurationYears: number;
+  setLoanDurationYears: Dispatch<SetStateAction<number>>;
+  loanInterestRate: number;
+  setLoanInterestRate: Dispatch<SetStateAction<number>>;
+  loanInsuranceRate: number;
+  setLoanInsuranceRate: Dispatch<SetStateAction<number>>;
+  savingsRate: number;
+  setSavingsRate: Dispatch<SetStateAction<number>>;
+  savingsInflation: number;
+  setSavingsInflation: Dispatch<SetStateAction<number>>;
   modelInputSnapshot: ModelInputSnapshot | null;
   setModelInputSnapshot: Dispatch<SetStateAction<ModelInputSnapshot | null>>;
   agencyFeeMode: AgencyFeeMode;
@@ -89,6 +139,19 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
   const [anneeConstruction, setAnneeConstruction] = useState("");
   const [result, setResult] = useState<PredictResult | null>(null);
   const [adjustedPrice, setAdjustedPrice] = useState<number | null>(null);
+  const [workLines, setWorkLines] = useState<WorkLine[]>([]);
+  const [loanDownPayment, setLoanDownPayment] = useState(DEFAULT_LOAN_DOWN_PAYMENT);
+  const [loanDurationYears, setLoanDurationYears] = useState(
+    DEFAULT_LOAN_DURATION_YEARS,
+  );
+  const [loanInterestRate, setLoanInterestRate] = useState(
+    DEFAULT_LOAN_INTEREST_RATE,
+  );
+  const [loanInsuranceRate, setLoanInsuranceRate] = useState(
+    DEFAULT_LOAN_INSURANCE_RATE,
+  );
+  const [savingsRate, setSavingsRate] = useState(DEFAULT_SAVINGS_RATE);
+  const [savingsInflation, setSavingsInflation] = useState(DEFAULT_INFLATION_RATE);
   const [modelInputSnapshot, setModelInputSnapshot] =
     useState<ModelInputSnapshot | null>(null);
   const [agencyFeeMode, setAgencyFeeMode] = useState<AgencyFeeMode>("percent");
@@ -119,6 +182,20 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       setResult,
       adjustedPrice,
       setAdjustedPrice,
+      workLines,
+      setWorkLines,
+      loanDownPayment,
+      setLoanDownPayment,
+      loanDurationYears,
+      setLoanDurationYears,
+      loanInterestRate,
+      setLoanInterestRate,
+      loanInsuranceRate,
+      setLoanInsuranceRate,
+      savingsRate,
+      setSavingsRate,
+      savingsInflation,
+      setSavingsInflation,
       modelInputSnapshot,
       setModelInputSnapshot,
       agencyFeeMode,
@@ -144,6 +221,13 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       anneeConstruction,
       result,
       adjustedPrice,
+      workLines,
+      loanDownPayment,
+      loanDurationYears,
+      loanInterestRate,
+      loanInsuranceRate,
+      savingsRate,
+      savingsInflation,
       modelInputSnapshot,
       agencyFeeMode,
       agencyFeeRate,

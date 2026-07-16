@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 import { DpeRentalAlert } from "@/components/DpeRentalAlert";
 import { FieldHint } from "@/components/FieldHint";
+import { SavingsChart } from "@/components/SavingsChart";
 import {
   AGENCY_FEE_PERCENT,
   agencyFeeAmount,
@@ -14,13 +15,30 @@ import {
   type AgencyFeeMode,
 } from "@/lib/agency-fees";
 import {
+  DEFAULT_INFLATION_RATE,
+  DEFAULT_SAVINGS_RATE,
+  inflationAdjustedValue,
+  savingsSnapshot,
+  yearlySeries,
+} from "@/lib/compound-savings";
+import {
   DEFAULT_AGENCY_FEE_RATE,
+  DEFAULT_LOAN_DOWN_PAYMENT,
+  DEFAULT_LOAN_DURATION_YEARS,
+  DEFAULT_LOAN_INSURANCE_RATE,
+  DEFAULT_LOAN_INTEREST_RATE,
+  createEmptyWorkLine,
   useEstimateSession,
   type PredictResult,
   type PropertyType,
 } from "@/lib/estimate-session/context";
 import { dpeValueToLetter } from "@/lib/dpe-rental";
 import { useI18n } from "@/lib/i18n/context";
+import {
+  loanPrincipal,
+  monthlyTotalPayment,
+  totalCreditCost,
+} from "@/lib/mortgage";
 import {
   getNotaryFeeRangeByAge,
   inferNotaryPropertyAge,
@@ -71,6 +89,20 @@ export default function Home() {
     setResult,
     adjustedPrice,
     setAdjustedPrice,
+    workLines,
+    setWorkLines,
+    loanDownPayment,
+    setLoanDownPayment,
+    loanDurationYears,
+    setLoanDurationYears,
+    loanInterestRate,
+    setLoanInterestRate,
+    loanInsuranceRate,
+    setLoanInsuranceRate,
+    savingsRate,
+    setSavingsRate,
+    savingsInflation,
+    setSavingsInflation,
     modelInputSnapshot,
     setModelInputSnapshot,
     agencyFeeMode,
@@ -156,10 +188,25 @@ export default function Home() {
     return type === "APARTMENT" ? t("result.estimateApartment") : t("result.estimateHouse");
   }
 
+  function resetLoanDefaults() {
+    setLoanDownPayment(DEFAULT_LOAN_DOWN_PAYMENT);
+    setLoanDurationYears(DEFAULT_LOAN_DURATION_YEARS);
+    setLoanInterestRate(DEFAULT_LOAN_INTEREST_RATE);
+    setLoanInsuranceRate(DEFAULT_LOAN_INSURANCE_RATE);
+  }
+
+  function resetSavingsDefaults() {
+    setSavingsRate(DEFAULT_SAVINGS_RATE);
+    setSavingsInflation(DEFAULT_INFLATION_RATE);
+  }
+
   function handlePropertyTypeChange(next: PropertyType) {
     setPropertyType(next);
     setResult(null);
     setAdjustedPrice(null);
+    setWorkLines([]);
+    resetLoanDefaults();
+    resetSavingsDefaults();
     setModelInputSnapshot(null);
     setError(null);
   }
@@ -170,6 +217,9 @@ export default function Home() {
     setError(null);
     setResult(null);
     setAdjustedPrice(null);
+    setWorkLines([]);
+    resetLoanDefaults();
+    resetSavingsDefaults();
     setModelInputSnapshot(null);
 
     const endpoint =
@@ -232,6 +282,7 @@ export default function Home() {
       });
       setResult(data);
       setAdjustedPrice(Math.round(data.price));
+      setWorkLines([createEmptyWorkLine()]);
       setFormExpanded(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("errors.unknown"));
@@ -603,6 +654,402 @@ export default function Home() {
                 </div>
               </div>
             </section>
+            );
+          })()}
+
+          {result && (() => {
+            const displayPrice = adjustedPrice ?? Math.round(result.price);
+            const worksTotal = workLines.reduce(
+              (sum, line) => sum + Math.max(0, line.amount),
+              0,
+            );
+            const priceFai = priceWithAgencyFees(
+              displayPrice,
+              agencyFeeMode,
+              agencyFeeRate,
+              agencyFeeFixed,
+            );
+            const notaryAmount = notaryFeeAmount(displayPrice, notaryFeeRate);
+            const priceWithWorks = priceFai + notaryAmount + worksTotal;
+
+            function updateWorkLine(
+              id: string,
+              patch: Partial<{ label: string; amount: number }>,
+            ) {
+              setWorkLines((lines) =>
+                lines.map((line) => (line.id === id ? { ...line, ...patch } : line)),
+              );
+            }
+
+            function removeWorkLine(id: string) {
+              setWorkLines((lines) => {
+                const next = lines.filter((line) => line.id !== id);
+                return next.length > 0 ? next : [createEmptyWorkLine()];
+              });
+            }
+
+            return (
+              <section className="rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
+                <p className="text-xs font-medium uppercase tracking-[0.15em] text-muted">
+                  {t("result.worksTitle")}
+                </p>
+                <p className="mt-2 text-sm text-muted">{t("result.worksHint")}</p>
+
+                <ul className="mt-4 space-y-3">
+                  {workLines.map((line) => (
+                    <li
+                      key={line.id}
+                      className="flex flex-col gap-2 sm:flex-row sm:items-center"
+                    >
+                      <input
+                        type="text"
+                        value={line.label}
+                        onChange={(e) =>
+                          updateWorkLine(line.id, { label: e.target.value })
+                        }
+                        placeholder={t("result.worksLabelPlaceholder")}
+                        aria-label={t("result.worksLabelPlaceholder")}
+                        className={`${inputClassName} min-w-0 flex-1`}
+                      />
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min={0}
+                          step={100}
+                          value={line.amount || ""}
+                          onChange={(e) =>
+                            updateWorkLine(line.id, {
+                              amount: Math.max(0, Number(e.target.value) || 0),
+                            })
+                          }
+                          placeholder={t("result.worksAmountPlaceholder")}
+                          aria-label={t("result.worksAmountPlaceholder")}
+                          className={`${inputClassName} w-full sm:w-36`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeWorkLine(line.id)}
+                          className="shrink-0 rounded-lg px-2.5 py-2 text-xs text-muted transition hover:bg-stone-100 hover:text-foreground"
+                          aria-label={t("result.worksRemoveLine")}
+                        >
+                          {t("result.worksRemoveLine")}
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setWorkLines((lines) => [...lines, createEmptyWorkLine()])
+                  }
+                  className="mt-3 text-sm font-medium text-foreground underline-offset-2 transition hover:underline"
+                >
+                  {t("result.worksAddLine")}
+                </button>
+
+                <div className="mt-4 space-y-2 border-t border-border pt-4">
+                  <p className="text-sm text-muted">
+                    {t("result.worksTotal")}{" "}
+                    <span className="font-medium text-foreground">
+                      {formatPrice(worksTotal)}
+                    </span>
+                  </p>
+                  <p>
+                    <span className="text-xs font-medium uppercase tracking-[0.15em] text-muted">
+                      {t("result.worksNewPrice")}
+                    </span>
+                    <span className="mt-2 block font-sans text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+                      {formatPrice(priceWithWorks)}
+                    </span>
+                  </p>
+                  <p className="text-xs text-muted">
+                    {t("result.worksNewPriceHint")}
+                  </p>
+                </div>
+              </section>
+            );
+          })()}
+
+          {result && (() => {
+            const displayPrice = adjustedPrice ?? Math.round(result.price);
+            const worksTotal = workLines.reduce(
+              (sum, line) => sum + Math.max(0, line.amount),
+              0,
+            );
+            const priceFai = priceWithAgencyFees(
+              displayPrice,
+              agencyFeeMode,
+              agencyFeeRate,
+              agencyFeeFixed,
+            );
+            const notaryAmount = notaryFeeAmount(displayPrice, notaryFeeRate);
+            const projectBudget = priceFai + notaryAmount + worksTotal;
+            const principal = loanPrincipal(projectBudget, loanDownPayment);
+            const monthly = monthlyTotalPayment(
+              principal,
+              loanInterestRate,
+              loanDurationYears,
+              loanInsuranceRate,
+            );
+            const creditCost = totalCreditCost(
+              principal,
+              loanInterestRate,
+              loanDurationYears,
+              loanInsuranceRate,
+            );
+
+            return (
+              <section className="rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
+                <p className="text-xs font-medium uppercase tracking-[0.15em] text-muted">
+                  {t("result.loanTitle")}
+                </p>
+                <p className="mt-2 text-sm text-muted">{t("result.loanHint")}</p>
+
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <label className="flex flex-col gap-2">
+                    <span className={labelClassName}>{t("result.loanDownPayment")}</span>
+                    <input
+                      type="number"
+                      min={0}
+                      step={1000}
+                      value={loanDownPayment || ""}
+                      onChange={(e) =>
+                        setLoanDownPayment(Math.max(0, Number(e.target.value) || 0))
+                      }
+                      className={inputClassName}
+                    />
+                  </label>
+                  <label className="flex flex-col gap-2">
+                    <span className={labelClassName}>{t("result.loanDuration")}</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={35}
+                      step={1}
+                      value={loanDurationYears || ""}
+                      onChange={(e) =>
+                        setLoanDurationYears(
+                          Math.min(35, Math.max(1, Number(e.target.value) || 1)),
+                        )
+                      }
+                      className={inputClassName}
+                    />
+                  </label>
+                  <label className="flex flex-col gap-2">
+                    <span className={labelClassName}>{t("result.loanInterestRate")}</span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={20}
+                      step={0.05}
+                      value={loanInterestRate}
+                      onChange={(e) =>
+                        setLoanInterestRate(Math.max(0, Number(e.target.value) || 0))
+                      }
+                      className={inputClassName}
+                    />
+                  </label>
+                  <label className="flex flex-col gap-2">
+                    <span className={labelClassName}>{t("result.loanInsuranceRate")}</span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={5}
+                      step={0.01}
+                      value={loanInsuranceRate}
+                      onChange={(e) =>
+                        setLoanInsuranceRate(Math.max(0, Number(e.target.value) || 0))
+                      }
+                      className={inputClassName}
+                    />
+                  </label>
+                </div>
+
+                <div className="mt-4 space-y-2 border-t border-border pt-4">
+                  <p className="text-sm text-muted">
+                    {t("result.loanPrincipal")}{" "}
+                    <span className="font-medium text-foreground">
+                      {formatPrice(principal)}
+                    </span>
+                  </p>
+                  <p className="text-sm text-muted">
+                    {t("result.loanCreditCost")}{" "}
+                    <span className="font-medium text-foreground">
+                      {formatPrice(Math.round(creditCost))}
+                    </span>
+                  </p>
+                  <p>
+                    <span className="text-xs font-medium uppercase tracking-[0.15em] text-muted">
+                      {t("result.loanMonthly")}
+                    </span>
+                    <span className="mt-2 block font-sans text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+                      {formatPrice(Math.round(monthly))}
+                    </span>
+                  </p>
+                  <p className="text-xs text-muted">{t("result.loanMonthlyHint")}</p>
+                </div>
+              </section>
+            );
+          })()}
+
+          {result && (() => {
+            const displayPrice = adjustedPrice ?? Math.round(result.price);
+            const worksTotal = workLines.reduce(
+              (sum, line) => sum + Math.max(0, line.amount),
+              0,
+            );
+            const priceFai = priceWithAgencyFees(
+              displayPrice,
+              agencyFeeMode,
+              agencyFeeRate,
+              agencyFeeFixed,
+            );
+            const notaryAmount = notaryFeeAmount(displayPrice, notaryFeeRate);
+            const projectBudget = priceFai + notaryAmount + worksTotal;
+            const principal = loanPrincipal(projectBudget, loanDownPayment);
+            const loanMonthly = Math.round(
+              monthlyTotalPayment(
+                principal,
+                loanInterestRate,
+                loanDurationYears,
+                loanInsuranceRate,
+              ),
+            );
+            const initialCapital = loanDownPayment;
+            const monthlyDeposit = loanMonthly;
+            const years = Math.max(1, Math.round(loanDurationYears));
+            const snap = savingsSnapshot(
+              initialCapital,
+              monthlyDeposit,
+              savingsRate,
+              years,
+            );
+            const series = yearlySeries(
+              initialCapital,
+              monthlyDeposit,
+              savingsRate,
+              years,
+            );
+            const realFutureValue = inflationAdjustedValue(
+              snap.futureValue,
+              savingsInflation,
+              years,
+            );
+            const interestShare = Math.round(snap.interestSharePct);
+
+            return (
+              <section className="rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
+                <p className="text-xs font-medium uppercase tracking-[0.15em] text-muted">
+                  {t("result.savingsTitle")}
+                </p>
+                <p className="mt-2 text-sm text-muted">{t("result.savingsHint")}</p>
+
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <p className={labelClassName}>{t("result.savingsInitial")}</p>
+                    <p className="mt-2 text-sm font-medium text-foreground">
+                      {formatPrice(initialCapital)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className={labelClassName}>{t("result.savingsMonthly")}</p>
+                    <p className="mt-2 text-sm font-medium text-foreground">
+                      {formatPrice(monthlyDeposit)}
+                    </p>
+                    <p className="mt-1 text-xs text-muted">
+                      {t("result.savingsMonthlyNote")}
+                    </p>
+                  </div>
+                  <div>
+                    <p className={labelClassName}>{t("result.savingsYears")}</p>
+                    <p className="mt-2 text-sm font-medium text-foreground">
+                      {years}
+                    </p>
+                  </div>
+                  <label className="flex flex-col gap-2">
+                    <span className={labelClassName}>
+                      {t("result.savingsRate")}
+                    </span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={20}
+                      step={0.1}
+                      value={savingsRate}
+                      onChange={(e) =>
+                        setSavingsRate(Math.max(0, Number(e.target.value) || 0))
+                      }
+                      className={inputClassName}
+                    />
+                  </label>
+                  <label className="flex flex-col gap-2">
+                    <span className={labelClassName}>
+                      {t("result.savingsInflation")}
+                    </span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={15}
+                      step={0.1}
+                      value={savingsInflation}
+                      onChange={(e) =>
+                        setSavingsInflation(Math.max(0, Number(e.target.value) || 0))
+                      }
+                      className={inputClassName}
+                    />
+                  </label>
+                </div>
+
+                <SavingsChart
+                  series={series}
+                  contributionsLabel={t("result.savingsChartContributions")}
+                  interestLabel={t("result.savingsChartInterest")}
+                />
+
+                <div className="mt-4 space-y-2 border-t border-border pt-4">
+                  <p className="text-sm text-muted">
+                    {t("result.savingsContributions")}{" "}
+                    <span className="font-medium text-foreground">
+                      {formatPrice(Math.round(snap.totalContributions))}
+                    </span>
+                  </p>
+                  <p className="text-sm text-muted">
+                    {t("result.savingsInterest")}{" "}
+                    <span className="font-medium text-foreground">
+                      {formatPrice(Math.round(snap.totalInterest))}
+                    </span>
+                  </p>
+                  <p className="text-sm text-muted">
+                    {t("result.savingsFinalNominal")}{" "}
+                    <span className="font-medium text-foreground">
+                      {formatPrice(Math.round(snap.futureValue))}
+                    </span>
+                  </p>
+                  <p>
+                    <span className="text-xs font-medium uppercase tracking-[0.15em] text-muted">
+                      {t("result.savingsFinalReal")}
+                    </span>
+                    <span className="mt-2 block font-sans text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+                      {formatPrice(Math.round(realFutureValue))}
+                    </span>
+                  </p>
+                  <p className="text-xs text-muted">
+                    {t("result.savingsInflationHint", {
+                      inflation: formatFeeRate(savingsInflation),
+                    })}
+                  </p>
+                  <p className="text-xs text-muted">
+                    {t("result.savingsInsight", {
+                      years: String(years),
+                      rate: formatFeeRate(savingsRate),
+                      share: String(interestShare),
+                    })}
+                  </p>
+                  <p className="text-xs text-muted">{t("result.savingsRatesNote")}</p>
+                </div>
+              </section>
             );
           })()}
 
