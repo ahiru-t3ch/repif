@@ -8,6 +8,7 @@ from typing import List
 from app.auth import JwtAuthMiddleware, is_auth_enabled
 from app.config import DOCS_URL, OPENAPI_URL, REDOC_URL, is_docs_enabled
 from app.rate_limit import (
+    RATE_LIMIT_METRICS,
     RATE_LIMIT_PREDICT,
     RATE_LIMIT_PREDICTIONS,
     RATE_LIMIT_SUGGEST,
@@ -16,6 +17,7 @@ from app.rate_limit import (
 )
 from app.schemas import (
     AddressSuggestion,
+    MetricsOutput,
     PredictInput,
     PredictOutput,
     PredictionRecord,
@@ -28,7 +30,7 @@ from app.predictor import (  # loads models within API startup on first import
     predict_price_house,
 )
 from app.geocoding import GeocodingError, geocode_address, suggest_addresses
-from app.metrics import price_bounds
+from app.metrics import get_holdout_metrics, price_bounds
 from app.database import Base, engine, get_db
 from app import models
 from fastapi import HTTPException
@@ -134,6 +136,13 @@ def suggest_geocode(
             for item in suggestions
         ]
     )
+
+
+@app.get("/metrics", response_model=MetricsOutput)
+@limiter.limit(RATE_LIMIT_METRICS)
+def model_metrics(request: Request):
+    """Return hold-out metrics (R², MAE, MAPE) for apartment and house models."""
+    return MetricsOutput(**get_holdout_metrics())
 
 
 @app.get("/predictions", response_model=List[PredictionRecord])

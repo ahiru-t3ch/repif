@@ -13,6 +13,7 @@ load_dotenv()
 RATE_LIMIT_PREDICT = os.getenv("RATE_LIMIT_PREDICT", "10/minute").strip()
 RATE_LIMIT_PREDICTIONS = os.getenv("RATE_LIMIT_PREDICTIONS", "60/minute").strip()
 RATE_LIMIT_SUGGEST = os.getenv("RATE_LIMIT_SUGGEST", "60/minute").strip()
+RATE_LIMIT_METRICS = os.getenv("RATE_LIMIT_METRICS", "60/minute").strip()
 
 
 def get_client_ip(request: Request) -> str:

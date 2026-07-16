@@ -1,4 +1,3 @@
-from operator import gt
 from pydantic import BaseModel, Field
 from datetime import datetime
 from typing import Literal
@@ -48,3 +47,14 @@ class AddressSuggestion(BaseModel):
 
 class SuggestOutput(BaseModel):
     suggestions: list[AddressSuggestion]
+
+
+class ModelHoldoutMetrics(BaseModel):
+    r2: float
+    mae_eur: float = Field(..., ge=0)
+    mape_pct: float = Field(..., ge=0)
+
+
+class MetricsOutput(BaseModel):
+    apartment: ModelHoldoutMetrics
+    house: ModelHoldoutMetrics

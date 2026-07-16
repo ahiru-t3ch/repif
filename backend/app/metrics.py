@@ -1,11 +1,11 @@
-"""Hold-out metrics used for indicative price ranges (MAPE)."""
+"""Hold-out metrics used for indicative price ranges and the About page."""
 
 from __future__ import annotations
 
 import json
 import logging
 from pathlib import Path
-from typing import Literal
+from typing import Literal, TypedDict
 
 from app.config import model_path_metrics
 
@@ -19,7 +19,36 @@ _METRICS_KEY_BY_PROPERTY: dict[PropertyKind, str] = {
 }
 
 
-def _load_mape_pct_by_model(path: Path) -> dict[str, float]:
+class ModelHoldoutMetrics(TypedDict):
+    r2: float
+    mae_eur: float
+    mape_pct: float
+
+
+def _parse_model_metrics(entry: object, *, model_name: str) -> ModelHoldoutMetrics:
+    if not isinstance(entry, dict):
+        raise ValueError(f"Invalid metrics file (metrics.{model_name} must be an object)")
+
+    required = ("r2", "mae_eur", "mape_pct")
+    missing = [key for key in required if key not in entry]
+    if missing:
+        raise ValueError(
+            f"Invalid metrics file (missing metrics.{model_name}.{missing[0]})"
+        )
+
+    parsed: ModelHoldoutMetrics = {
+        "r2": float(entry["r2"]),
+        "mae_eur": float(entry["mae_eur"]),
+        "mape_pct": float(entry["mape_pct"]),
+    }
+    if parsed["mape_pct"] < 0:
+        raise ValueError(
+            f"mape_pct for {model_name} must be >= 0, got {parsed['mape_pct']}"
+        )
+    return parsed
+
+
+def _load_metrics_by_model(path: Path) -> dict[str, ModelHoldoutMetrics]:
     if not path.is_file():
         raise FileNotFoundError(f"Model metrics file not found: {path}")
 
@@ -28,33 +57,36 @@ def _load_mape_pct_by_model(path: Path) -> dict[str, float]:
     if not isinstance(metrics, dict):
         raise ValueError(f"Invalid metrics file (missing 'metrics' object): {path}")
 
-    mape_by_model: dict[str, float] = {}
+    by_model: dict[str, ModelHoldoutMetrics] = {}
     for model_name in ("apartment", "house"):
-        entry = metrics.get(model_name)
-        if not isinstance(entry, dict) or "mape_pct" not in entry:
-            raise ValueError(
-                f"Invalid metrics file (missing metrics.{model_name}.mape_pct): {path}"
-            )
-        mape = float(entry["mape_pct"])
-        if mape < 0:
-            raise ValueError(f"mape_pct for {model_name} must be >= 0, got {mape}")
-        mape_by_model[model_name] = mape
+        by_model[model_name] = _parse_model_metrics(
+            metrics.get(model_name),
+            model_name=model_name,
+        )
 
     logger.info(
-        "Loaded model MAPE from %s: apartment=%.1f%%, house=%.1f%%",
+        "Loaded model metrics from %s: apartment mape=%.1f%%, house mape=%.1f%%",
         path,
-        mape_by_model["apartment"],
-        mape_by_model["house"],
+        by_model["apartment"]["mape_pct"],
+        by_model["house"]["mape_pct"],
     )
-    return mape_by_model
+    return by_model
 
 
-_mape_pct_by_model = _load_mape_pct_by_model(model_path_metrics())
+_metrics_by_model = _load_metrics_by_model(model_path_metrics())
+
+
+def get_holdout_metrics() -> dict[str, ModelHoldoutMetrics]:
+    """Return hold-out metrics for apartment and house models."""
+    return {
+        "apartment": dict(_metrics_by_model["apartment"]),
+        "house": dict(_metrics_by_model["house"]),
+    }
 
 
 def mape_pct_for(property_type: PropertyKind) -> float:
     key = _METRICS_KEY_BY_PROPERTY[property_type]
-    return _mape_pct_by_model[key]
+    return _metrics_by_model[key]["mape_pct"]
 
 
 def price_bounds(price: float, property_type: PropertyKind) -> tuple[float, float]:
