@@ -39,6 +39,7 @@ import {
   type PredictResult,
   type PropertyType,
 } from "@/lib/estimate-session/context";
+import { applyAmenityUplift, isBalconyApplicable } from "@/lib/amenity-uplift";
 import { dpeValueToLetter } from "@/lib/dpe-rental";
 import { useI18n } from "@/lib/i18n/context";
 import {
@@ -211,6 +212,12 @@ export default function Home() {
     setDpeMedian,
     anneeConstruction,
     setAnneeConstruction,
+    hasBalcony,
+    setHasBalcony,
+    hasGarden,
+    setHasGarden,
+    hasPool,
+    setHasPool,
     result,
     setResult,
     adjustedPrice,
@@ -500,6 +507,9 @@ export default function Home() {
     setPropertyType(next);
     setResult(null);
     setAdjustedPrice(null);
+    setHasBalcony(false);
+    setHasGarden(false);
+    setHasPool(false);
     resetFinanceSectionToggles();
     resetAllFinanceDefaults();
     setModelInputSnapshot(null);
@@ -558,6 +568,20 @@ export default function Home() {
       }
 
       const data: PredictResult = await response.json();
+      const upliftedPrice = applyAmenityUplift(
+        data.price,
+        data.price_high,
+        propertyType,
+        {
+          balcony: hasBalcony,
+          garden: hasGarden,
+          pool: hasPool,
+        },
+      );
+      const adjustedResult: PredictResult = {
+        ...data,
+        price: upliftedPrice,
+      };
       const notaryAge = inferNotaryPropertyAge(Number(anneeConstruction));
       const notaryRange = getNotaryFeeRangeByAge(notaryAge);
       setAgencyFeeMode("percent");
@@ -573,9 +597,12 @@ export default function Home() {
         nbCave: Number(nbCave),
         dpeMedian: Number(dpeMedian),
         anneeConstruction: Number(anneeConstruction),
+        hasBalcony,
+        hasGarden,
+        hasPool,
       });
-      setResult(data);
-      setAdjustedPrice(Math.round(data.price));
+      setResult(adjustedResult);
+      setAdjustedPrice(Math.round(upliftedPrice));
       setWorkLines([createEmptyWorkLine()]);
       setFormExpanded(false);
     } catch (err) {
@@ -704,6 +731,28 @@ export default function Home() {
                           {modelInputSnapshot.nbCave}
                         </dd>
                       </div>
+                      {(modelInputSnapshot.hasBalcony ||
+                        modelInputSnapshot.hasGarden ||
+                        modelInputSnapshot.hasPool) && (
+                        <div className="flex flex-wrap gap-x-2">
+                          <dt className="text-stone-400">
+                            {t("form.amenities")} :
+                          </dt>
+                          <dd className="font-medium text-white">
+                            {[
+                              modelInputSnapshot.hasBalcony
+                                ? t("form.balcony")
+                                : null,
+                              modelInputSnapshot.hasGarden
+                                ? t("form.garden")
+                                : null,
+                              modelInputSnapshot.hasPool ? t("form.pool") : null,
+                            ]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </dd>
+                        </div>
+                      )}
                       <div className="flex flex-wrap gap-x-2">
                         <dt className="text-stone-400">{t("form.dpe")} :</dt>
                         <dd className="font-medium text-white">
@@ -2229,6 +2278,56 @@ export default function Home() {
                     />
                   </label>
                 </div>
+
+                <fieldset className="space-y-3">
+                  <legend className={`${labelClassName} flex items-center gap-1.5 normal-case`}>
+                    {t("form.amenities")}
+                    <FieldHint
+                      text={
+                        propertyType === "HOUSE"
+                          ? t("form.amenitiesHintHouse")
+                          : t("form.amenitiesHintApartment")
+                      }
+                    />
+                  </legend>
+                  <div
+                    className={`grid gap-3 ${
+                      isBalconyApplicable(propertyType)
+                        ? "sm:grid-cols-3"
+                        : "sm:grid-cols-2"
+                    }`}
+                  >
+                    {isBalconyApplicable(propertyType) && (
+                      <label className="flex items-center gap-2 text-sm text-foreground">
+                        <input
+                          type="checkbox"
+                          checked={hasBalcony}
+                          onChange={(e) => setHasBalcony(e.target.checked)}
+                          className="h-4 w-4 rounded border-border"
+                        />
+                        {t("form.balcony")}
+                      </label>
+                    )}
+                    <label className="flex items-center gap-2 text-sm text-foreground">
+                      <input
+                        type="checkbox"
+                        checked={hasGarden}
+                        onChange={(e) => setHasGarden(e.target.checked)}
+                        className="h-4 w-4 rounded border-border"
+                      />
+                      {t("form.garden")}
+                    </label>
+                    <label className="flex items-center gap-2 text-sm text-foreground">
+                      <input
+                        type="checkbox"
+                        checked={hasPool}
+                        onChange={(e) => setHasPool(e.target.checked)}
+                        className="h-4 w-4 rounded border-border"
+                      />
+                      {t("form.pool")}
+                    </label>
+                  </div>
+                </fieldset>
 
                 <button
                   type="submit"

@@ -18,6 +18,9 @@ export type ShareScenarioPayload = {
   nbCave: string;
   dpeMedian: string;
   anneeConstruction: string;
+  hasBalcony: boolean;
+  hasGarden: boolean;
+  hasPool: boolean;
   result: PredictResult;
   adjustedPrice: number | null;
   workLines: WorkLine[];

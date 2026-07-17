@@ -52,6 +52,9 @@ export type ModelInputSnapshot = {
   nbCave: number;
   dpeMedian: number;
   anneeConstruction: number;
+  hasBalcony: boolean;
+  hasGarden: boolean;
+  hasPool: boolean;
 };
 
 export type WorkLine = {
@@ -97,6 +100,9 @@ export type EstimateSessionSnapshot = {
   nbCave: string;
   dpeMedian: string;
   anneeConstruction: string;
+  hasBalcony: boolean;
+  hasGarden: boolean;
+  hasPool: boolean;
   result: PredictResult | null;
   adjustedPrice: number | null;
   workLines: WorkLine[];
@@ -144,6 +150,12 @@ type EstimateSessionContextValue = {
   setDpeMedian: Dispatch<SetStateAction<string>>;
   anneeConstruction: string;
   setAnneeConstruction: Dispatch<SetStateAction<string>>;
+  hasBalcony: boolean;
+  setHasBalcony: Dispatch<SetStateAction<boolean>>;
+  hasGarden: boolean;
+  setHasGarden: Dispatch<SetStateAction<boolean>>;
+  hasPool: boolean;
+  setHasPool: Dispatch<SetStateAction<boolean>>;
   result: PredictResult | null;
   setResult: Dispatch<SetStateAction<PredictResult | null>>;
   adjustedPrice: number | null;
@@ -223,6 +235,9 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
   const [nbCave, setNbCave] = useState("");
   const [dpeMedian, setDpeMedian] = useState("");
   const [anneeConstruction, setAnneeConstruction] = useState("");
+  const [hasBalcony, setHasBalcony] = useState(false);
+  const [hasGarden, setHasGarden] = useState(false);
+  const [hasPool, setHasPool] = useState(false);
   const [result, setResult] = useState<PredictResult | null>(null);
   const [adjustedPrice, setAdjustedPrice] = useState<number | null>(null);
   const [workLines, setWorkLines] = useState<WorkLine[]>([]);
@@ -282,6 +297,9 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       nbCave,
       dpeMedian,
       anneeConstruction,
+      hasBalcony,
+      hasGarden,
+      hasPool,
       result,
       adjustedPrice,
       workLines,
@@ -321,6 +339,9 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
     nbCave,
     dpeMedian,
     anneeConstruction,
+    hasBalcony,
+    hasGarden,
+    hasPool,
     result,
     adjustedPrice,
     workLines,
@@ -361,6 +382,9 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
     setNbCave(snapshot.nbCave);
     setDpeMedian(snapshot.dpeMedian);
     setAnneeConstruction(snapshot.anneeConstruction);
+    setHasBalcony(Boolean(snapshot.hasBalcony));
+    setHasGarden(Boolean(snapshot.hasGarden));
+    setHasPool(Boolean(snapshot.hasPool));
     setResult(snapshot.result);
     setAdjustedPrice(snapshot.adjustedPrice);
     setWorkLines(snapshot.workLines ?? []);
@@ -410,6 +434,12 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       setDpeMedian,
       anneeConstruction,
       setAnneeConstruction,
+      hasBalcony,
+      setHasBalcony,
+      hasGarden,
+      setHasGarden,
+      hasPool,
+      setHasPool,
       result,
       setResult,
       adjustedPrice,
@@ -483,6 +513,9 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       nbCave,
       dpeMedian,
       anneeConstruction,
+      hasBalcony,
+      hasGarden,
+      hasPool,
       result,
       adjustedPrice,
       workLines,

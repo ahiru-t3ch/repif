@@ -94,6 +94,21 @@ export default function AboutPage() {
             </p>
           </section>
 
+          <section className="space-y-2">
+            <h2 className="text-sm font-medium uppercase tracking-wide text-foreground">
+              {t("about.amenitiesTitle")}
+            </h2>
+            <p className="text-sm leading-relaxed text-muted">
+              {t("about.amenitiesBody")}
+            </p>
+            <p className="text-sm leading-relaxed text-muted">
+              {t("about.amenitiesApartment")}
+            </p>
+            <p className="text-sm leading-relaxed text-muted">
+              {t("about.amenitiesHouse")}
+            </p>
+          </section>
+
           <section className="space-y-3">
             <h2 className="text-sm font-medium uppercase tracking-wide text-foreground">
               {t("about.metricsTitle")}
