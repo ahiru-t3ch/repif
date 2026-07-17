@@ -16,10 +16,12 @@ import {
 } from "@/lib/agency-fees";
 import {
   DEFAULT_ANNUAL_CHARGES,
+  DEFAULT_EXCEPTIONAL_CHARGES_PCT,
   DEFAULT_LOAN_DOWN_PAYMENT,
   DEFAULT_LOAN_DURATION_YEARS,
   DEFAULT_LOAN_INSURANCE_RATE,
   DEFAULT_LOAN_INTEREST_RATE,
+  DEFAULT_MAINTENANCE_PCT,
   DEFAULT_NET_SALARY,
   DEFAULT_PROPERTY_APPRECIATION,
   DEFAULT_PROPERTY_TAX,
@@ -73,10 +75,12 @@ export const DEFAULT_NOTARY_FEE_RATE: number = NOTARY_OLD.default;
 
 export {
   DEFAULT_ANNUAL_CHARGES,
+  DEFAULT_EXCEPTIONAL_CHARGES_PCT,
   DEFAULT_LOAN_DOWN_PAYMENT,
   DEFAULT_LOAN_DURATION_YEARS,
   DEFAULT_LOAN_INSURANCE_RATE,
   DEFAULT_LOAN_INTEREST_RATE,
+  DEFAULT_MAINTENANCE_PCT,
   DEFAULT_NET_SALARY,
   DEFAULT_PROPERTY_APPRECIATION,
   DEFAULT_PROPERTY_TAX,
@@ -105,6 +109,18 @@ type EstimateSessionContextValue = {
   setAdjustedPrice: Dispatch<SetStateAction<number | null>>;
   workLines: WorkLine[];
   setWorkLines: Dispatch<SetStateAction<WorkLine[]>>;
+  showWorksSection: boolean;
+  setShowWorksSection: Dispatch<SetStateAction<boolean>>;
+  showOwnershipSection: boolean;
+  setShowOwnershipSection: Dispatch<SetStateAction<boolean>>;
+  showLoanSection: boolean;
+  setShowLoanSection: Dispatch<SetStateAction<boolean>>;
+  showLivingBudgetSection: boolean;
+  setShowLivingBudgetSection: Dispatch<SetStateAction<boolean>>;
+  showSavingsSection: boolean;
+  setShowSavingsSection: Dispatch<SetStateAction<boolean>>;
+  showVerdictSection: boolean;
+  setShowVerdictSection: Dispatch<SetStateAction<boolean>>;
   loanDownPayment: number;
   setLoanDownPayment: Dispatch<SetStateAction<number>>;
   loanDurationYears: number;
@@ -118,6 +134,14 @@ type EstimateSessionContextValue = {
   setLoanRent: Dispatch<SetStateAction<number | null>>;
   loanAnnualCharges: number;
   setLoanAnnualCharges: Dispatch<SetStateAction<number>>;
+  exceptionalChargesEnabled: boolean;
+  setExceptionalChargesEnabled: Dispatch<SetStateAction<boolean>>;
+  exceptionalChargesPct: number;
+  setExceptionalChargesPct: Dispatch<SetStateAction<number>>;
+  maintenanceEnabled: boolean;
+  setMaintenanceEnabled: Dispatch<SetStateAction<boolean>>;
+  maintenancePct: number;
+  setMaintenancePct: Dispatch<SetStateAction<number>>;
   loanPropertyTax: number;
   setLoanPropertyTax: Dispatch<SetStateAction<number>>;
   loanNetSalary: number;
@@ -159,6 +183,12 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
   const [result, setResult] = useState<PredictResult | null>(null);
   const [adjustedPrice, setAdjustedPrice] = useState<number | null>(null);
   const [workLines, setWorkLines] = useState<WorkLine[]>([]);
+  const [showWorksSection, setShowWorksSection] = useState(false);
+  const [showOwnershipSection, setShowOwnershipSection] = useState(false);
+  const [showLoanSection, setShowLoanSection] = useState(false);
+  const [showLivingBudgetSection, setShowLivingBudgetSection] = useState(false);
+  const [showSavingsSection, setShowSavingsSection] = useState(false);
+  const [showVerdictSection, setShowVerdictSection] = useState(false);
   const [loanDownPayment, setLoanDownPayment] = useState(DEFAULT_LOAN_DOWN_PAYMENT);
   const [loanDurationYears, setLoanDurationYears] = useState(
     DEFAULT_LOAN_DURATION_YEARS,
@@ -173,6 +203,13 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
   const [loanAnnualCharges, setLoanAnnualCharges] = useState(
     DEFAULT_ANNUAL_CHARGES,
   );
+  const [exceptionalChargesEnabled, setExceptionalChargesEnabled] =
+    useState(false);
+  const [exceptionalChargesPct, setExceptionalChargesPct] = useState(
+    DEFAULT_EXCEPTIONAL_CHARGES_PCT,
+  );
+  const [maintenanceEnabled, setMaintenanceEnabled] = useState(false);
+  const [maintenancePct, setMaintenancePct] = useState(DEFAULT_MAINTENANCE_PCT);
   const [loanPropertyTax, setLoanPropertyTax] = useState(DEFAULT_PROPERTY_TAX);
   const [loanNetSalary, setLoanNetSalary] = useState(DEFAULT_NET_SALARY);
   const [savingsRate, setSavingsRate] = useState(DEFAULT_SAVINGS_RATE);
@@ -212,6 +249,18 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       setAdjustedPrice,
       workLines,
       setWorkLines,
+      showWorksSection,
+      setShowWorksSection,
+      showOwnershipSection,
+      setShowOwnershipSection,
+      showLoanSection,
+      setShowLoanSection,
+      showLivingBudgetSection,
+      setShowLivingBudgetSection,
+      showSavingsSection,
+      setShowSavingsSection,
+      showVerdictSection,
+      setShowVerdictSection,
       loanDownPayment,
       setLoanDownPayment,
       loanDurationYears,
@@ -224,6 +273,14 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       setLoanRent,
       loanAnnualCharges,
       setLoanAnnualCharges,
+      exceptionalChargesEnabled,
+      setExceptionalChargesEnabled,
+      exceptionalChargesPct,
+      setExceptionalChargesPct,
+      maintenanceEnabled,
+      setMaintenanceEnabled,
+      maintenancePct,
+      setMaintenancePct,
       loanPropertyTax,
       setLoanPropertyTax,
       loanNetSalary,
@@ -260,12 +317,22 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       result,
       adjustedPrice,
       workLines,
+      showWorksSection,
+      showOwnershipSection,
+      showLoanSection,
+      showLivingBudgetSection,
+      showSavingsSection,
+      showVerdictSection,
       loanDownPayment,
       loanDurationYears,
       loanInterestRate,
       loanInsuranceRate,
       loanRent,
       loanAnnualCharges,
+      exceptionalChargesEnabled,
+      exceptionalChargesPct,
+      maintenanceEnabled,
+      maintenancePct,
       loanPropertyTax,
       loanNetSalary,
       savingsRate,

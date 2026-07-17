@@ -1,5 +1,7 @@
 export const DEFAULT_SAVINGS_RATE = 3;
 export const DEFAULT_INFLATION_RATE = 2;
+/** Horizon used for the investing comparison when buying cash (no mortgage). */
+export const DEFAULT_CASH_SAVINGS_YEARS = 10;
 
 export type SavingsSnapshot = {
   futureValue: number;

@@ -8,6 +8,10 @@ export const DEFAULT_RENT_MONTHLY_PCT = 0.35;
 export const DEFAULT_ANNUAL_CHARGES = 0;
 export const DEFAULT_PROPERTY_TAX = 0;
 export const DEFAULT_NET_SALARY = 0;
+/** Default exceptional charges as % of annual condo charges. */
+export const DEFAULT_EXCEPTIONAL_CHARGES_PCT = 10;
+/** Default annual maintenance as % of property value. */
+export const DEFAULT_MAINTENANCE_PCT = 1;
 /** Usual French bank max debt-to-income ratio (%). */
 export const MAX_DEBT_RATIO_PCT = 33;
 /** Default annual property appreciation for buy-vs-rent (%). */
@@ -27,8 +31,39 @@ export function defaultMonthlyRent(propertyPrice: number): number {
 export function monthlyOwnershipCosts(
   annualCharges: number,
   propertyTax: number,
+  annualMaintenance = 0,
 ): number {
-  return (Math.max(0, annualCharges) + Math.max(0, propertyTax)) / 12;
+  return (
+    (Math.max(0, annualCharges) +
+      Math.max(0, propertyTax) +
+      Math.max(0, annualMaintenance)) /
+    12
+  );
+}
+
+/** Annual charges including optional exceptional buffer (% of condo charges). */
+export function effectiveAnnualCharges(
+  annualCharges: number,
+  includeExceptional: boolean,
+  exceptionalPct: number,
+): number {
+  const base = Math.max(0, annualCharges);
+  if (!includeExceptional) {
+    return base;
+  }
+  return base * (1 + Math.max(0, exceptionalPct) / 100);
+}
+
+/** Annual maintenance budget as % of property value. */
+export function annualMaintenanceBudget(
+  propertyPrice: number,
+  include: boolean,
+  maintenancePct: number,
+): number {
+  if (!include) {
+    return 0;
+  }
+  return (Math.max(0, propertyPrice) * Math.max(0, maintenancePct)) / 100;
 }
 
 /**
@@ -40,12 +75,13 @@ export function monthlyInvestableWhenRenting(
   rent: number,
   annualCharges: number,
   propertyTax: number,
+  annualMaintenance = 0,
 ): number {
   return Math.max(
     0,
     Math.max(0, loanMonthly) -
       Math.max(0, rent) +
-      monthlyOwnershipCosts(annualCharges, propertyTax),
+      monthlyOwnershipCosts(annualCharges, propertyTax, annualMaintenance),
   );
 }
 
