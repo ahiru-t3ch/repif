@@ -52,6 +52,7 @@ import {
   monthlyInvestableWhenRenting,
   monthlyOwnershipCosts,
   monthlyTotalPayment,
+  rentSavedOverYears,
   totalCreditCost,
 } from "@/lib/mortgage";
 import {
@@ -2004,7 +2005,7 @@ export default function Home() {
               savingsRate,
               years,
             ).futureValue;
-            const buyWealth = buyNetWorth(
+            const buyPropertyWealth = buyNetWorth(
               displayPrice,
               propertyAppreciation,
               years,
@@ -2012,6 +2013,20 @@ export default function Home() {
               loanInterestRate,
               buysCash ? years : loanDurationYears,
             );
+            const ownershipMonthly = showOwnershipSection
+              ? monthlyOwnershipCosts(
+                  annualChargesEff,
+                  loanPropertyTax,
+                  maintenanceAnnual,
+                )
+              : 0;
+            const rentSaved = rentSavedOverYears(
+              rentMonthly,
+              years,
+              loanMonthly,
+              ownershipMonthly,
+            );
+            const buyWealth = buyPropertyWealth + rentSaved;
             const gap = Math.abs(buyWealth - rentWealth);
             const preferBuy = buyWealth >= rentWealth;
 
@@ -2045,6 +2060,12 @@ export default function Home() {
                   </span>
                 </label>
 
+                <p className="mt-4 text-sm text-muted">
+                  {t("result.verdictRentUsed", {
+                    rent: formatPrice(rentMonthly),
+                  })}
+                </p>
+
                 <div className="mt-6 grid gap-6 sm:grid-cols-2">
                   <div>
                     <p className="text-xs font-medium uppercase tracking-[0.15em] text-muted">
@@ -2052,6 +2073,12 @@ export default function Home() {
                     </p>
                     <p className="mt-2 font-sans text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
                       {formatPrice(Math.round(buyWealth))}
+                    </p>
+                    <p className="mt-1 text-xs text-muted">
+                      {t("result.verdictBuyBreakdown", {
+                        property: formatPrice(Math.round(buyPropertyWealth)),
+                        rentSaved: formatPrice(Math.round(rentSaved)),
+                      })}
                     </p>
                     <p className="mt-1 text-xs text-muted">
                       {t("result.verdictBuyHint")}

@@ -204,3 +204,30 @@ export function buyNetWorth(
     )
   );
 }
+
+/**
+ * Monthly cash left over when owning vs renting.
+ * Positive only if rent would have cost more than the buy-side housing payment.
+ */
+export function monthlyRentSurplusWhenBuying(
+  monthlyRent: number,
+  loanMonthly: number,
+  ownershipMonthly = 0,
+): number {
+  const buyHousingCost = Math.max(0, loanMonthly) + Math.max(0, ownershipMonthly);
+  return Math.max(0, Math.max(0, monthlyRent) - buyHousingCost);
+}
+
+/** Cumulative rent surplus kept when owning instead of renting. */
+export function rentSavedOverYears(
+  monthlyRent: number,
+  years: number,
+  loanMonthly = 0,
+  ownershipMonthly = 0,
+): number {
+  const months = Math.max(0, Math.round(years * 12));
+  return (
+    monthlyRentSurplusWhenBuying(monthlyRent, loanMonthly, ownershipMonthly) *
+    months
+  );
+}
