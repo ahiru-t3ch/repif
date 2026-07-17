@@ -11,6 +11,8 @@ const PREDICT_LIMIT = Number(process.env.RATE_LIMIT_PREDICT_PER_MIN ?? 10);
 const PREDICTIONS_LIMIT = Number(process.env.RATE_LIMIT_PREDICTIONS_PER_MIN ?? 60);
 const SUGGEST_LIMIT = Number(process.env.RATE_LIMIT_SUGGEST_PER_MIN ?? 60);
 const METRICS_LIMIT = Number(process.env.RATE_LIMIT_METRICS_PER_MIN ?? 60);
+const SHARE_CREATE_LIMIT = Number(process.env.RATE_LIMIT_SHARE_CREATE_PER_MIN ?? 20);
+const SHARE_GET_LIMIT = Number(process.env.RATE_LIMIT_SHARE_GET_PER_MIN ?? 60);
 const WINDOW_MS = 60_000;
 
 export function getClientIp(request: NextRequest | Request): string {
@@ -46,7 +48,7 @@ function checkLimit(key: string, limit: number): { ok: true } | { ok: false; ret
 
 export function enforceRateLimit(
   request: NextRequest,
-  kind: "predict" | "predictions" | "suggest" | "metrics",
+  kind: "predict" | "predictions" | "suggest" | "metrics" | "shareCreate" | "shareGet",
 ): { ok: true } | { ok: false; retryAfter: number } {
   const limit =
     kind === "predict"
@@ -55,7 +57,11 @@ export function enforceRateLimit(
         ? PREDICTIONS_LIMIT
         : kind === "suggest"
           ? SUGGEST_LIMIT
-          : METRICS_LIMIT;
+          : kind === "metrics"
+            ? METRICS_LIMIT
+            : kind === "shareCreate"
+              ? SHARE_CREATE_LIMIT
+              : SHARE_GET_LIMIT;
   const ip = getClientIp(request);
   return checkLimit(`${kind}:${ip}`, limit);
 }

@@ -2,6 +2,7 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useMemo,
   useState,
@@ -88,6 +89,46 @@ export {
 
 export { DEFAULT_INFLATION_RATE, DEFAULT_SAVINGS_RATE };
 
+export type EstimateSessionSnapshot = {
+  propertyType: PropertyType;
+  address: string;
+  sbati: string;
+  nbParking: string;
+  nbCave: string;
+  dpeMedian: string;
+  anneeConstruction: string;
+  result: PredictResult | null;
+  adjustedPrice: number | null;
+  workLines: WorkLine[];
+  showWorksSection: boolean;
+  showOwnershipSection: boolean;
+  showLoanSection: boolean;
+  showLivingBudgetSection: boolean;
+  showSavingsSection: boolean;
+  showVerdictSection: boolean;
+  loanDownPayment: number;
+  loanDurationYears: number;
+  loanInterestRate: number;
+  loanInsuranceRate: number;
+  loanRent: number | null;
+  loanAnnualCharges: number;
+  exceptionalChargesEnabled: boolean;
+  exceptionalChargesPct: number;
+  maintenanceEnabled: boolean;
+  maintenancePct: number;
+  loanPropertyTax: number;
+  loanNetSalary: number;
+  savingsRate: number;
+  savingsInflation: number;
+  propertyAppreciation: number;
+  modelInputSnapshot: ModelInputSnapshot | null;
+  agencyFeeMode: AgencyFeeMode;
+  agencyFeeRate: number;
+  agencyFeeFixed: number;
+  notaryFeeRate: number;
+  notaryPropertyAge: NotaryPropertyAge;
+};
+
 type EstimateSessionContextValue = {
   propertyType: PropertyType;
   setPropertyType: Dispatch<SetStateAction<PropertyType>>;
@@ -166,6 +207,8 @@ type EstimateSessionContextValue = {
   setNotaryPropertyAge: Dispatch<SetStateAction<NotaryPropertyAge>>;
   error: string | null;
   setError: Dispatch<SetStateAction<string | null>>;
+  getShareSnapshot: () => EstimateSessionSnapshot | null;
+  hydrateFromShare: (snapshot: EstimateSessionSnapshot) => void;
 };
 
 const EstimateSessionContext = createContext<EstimateSessionContextValue | null>(
@@ -226,6 +269,130 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
   const [notaryPropertyAge, setNotaryPropertyAge] =
     useState<NotaryPropertyAge>("OLD");
   const [error, setError] = useState<string | null>(null);
+
+  const getShareSnapshot = useCallback((): EstimateSessionSnapshot | null => {
+    if (!result) {
+      return null;
+    }
+    return {
+      propertyType,
+      address,
+      sbati,
+      nbParking,
+      nbCave,
+      dpeMedian,
+      anneeConstruction,
+      result,
+      adjustedPrice,
+      workLines,
+      showWorksSection,
+      showOwnershipSection,
+      showLoanSection,
+      showLivingBudgetSection,
+      showSavingsSection,
+      showVerdictSection,
+      loanDownPayment,
+      loanDurationYears,
+      loanInterestRate,
+      loanInsuranceRate,
+      loanRent,
+      loanAnnualCharges,
+      exceptionalChargesEnabled,
+      exceptionalChargesPct,
+      maintenanceEnabled,
+      maintenancePct,
+      loanPropertyTax,
+      loanNetSalary,
+      savingsRate,
+      savingsInflation,
+      propertyAppreciation,
+      modelInputSnapshot,
+      agencyFeeMode,
+      agencyFeeRate,
+      agencyFeeFixed,
+      notaryFeeRate,
+      notaryPropertyAge,
+    };
+  }, [
+    propertyType,
+    address,
+    sbati,
+    nbParking,
+    nbCave,
+    dpeMedian,
+    anneeConstruction,
+    result,
+    adjustedPrice,
+    workLines,
+    showWorksSection,
+    showOwnershipSection,
+    showLoanSection,
+    showLivingBudgetSection,
+    showSavingsSection,
+    showVerdictSection,
+    loanDownPayment,
+    loanDurationYears,
+    loanInterestRate,
+    loanInsuranceRate,
+    loanRent,
+    loanAnnualCharges,
+    exceptionalChargesEnabled,
+    exceptionalChargesPct,
+    maintenanceEnabled,
+    maintenancePct,
+    loanPropertyTax,
+    loanNetSalary,
+    savingsRate,
+    savingsInflation,
+    propertyAppreciation,
+    modelInputSnapshot,
+    agencyFeeMode,
+    agencyFeeRate,
+    agencyFeeFixed,
+    notaryFeeRate,
+    notaryPropertyAge,
+  ]);
+
+  const hydrateFromShare = useCallback((snapshot: EstimateSessionSnapshot) => {
+    setPropertyType(snapshot.propertyType);
+    setAddress(snapshot.address);
+    setSbati(snapshot.sbati);
+    setNbParking(snapshot.nbParking);
+    setNbCave(snapshot.nbCave);
+    setDpeMedian(snapshot.dpeMedian);
+    setAnneeConstruction(snapshot.anneeConstruction);
+    setResult(snapshot.result);
+    setAdjustedPrice(snapshot.adjustedPrice);
+    setWorkLines(snapshot.workLines ?? []);
+    setShowWorksSection(Boolean(snapshot.showWorksSection));
+    setShowOwnershipSection(Boolean(snapshot.showOwnershipSection));
+    setShowLoanSection(Boolean(snapshot.showLoanSection));
+    setShowLivingBudgetSection(Boolean(snapshot.showLivingBudgetSection));
+    setShowSavingsSection(Boolean(snapshot.showSavingsSection));
+    setShowVerdictSection(Boolean(snapshot.showVerdictSection));
+    setLoanDownPayment(snapshot.loanDownPayment);
+    setLoanDurationYears(snapshot.loanDurationYears);
+    setLoanInterestRate(snapshot.loanInterestRate);
+    setLoanInsuranceRate(snapshot.loanInsuranceRate);
+    setLoanRent(snapshot.loanRent);
+    setLoanAnnualCharges(snapshot.loanAnnualCharges);
+    setExceptionalChargesEnabled(Boolean(snapshot.exceptionalChargesEnabled));
+    setExceptionalChargesPct(snapshot.exceptionalChargesPct);
+    setMaintenanceEnabled(Boolean(snapshot.maintenanceEnabled));
+    setMaintenancePct(snapshot.maintenancePct);
+    setLoanPropertyTax(snapshot.loanPropertyTax);
+    setLoanNetSalary(snapshot.loanNetSalary);
+    setSavingsRate(snapshot.savingsRate);
+    setSavingsInflation(snapshot.savingsInflation);
+    setPropertyAppreciation(snapshot.propertyAppreciation);
+    setModelInputSnapshot(snapshot.modelInputSnapshot);
+    setAgencyFeeMode(snapshot.agencyFeeMode);
+    setAgencyFeeRate(snapshot.agencyFeeRate);
+    setAgencyFeeFixed(snapshot.agencyFeeFixed);
+    setNotaryFeeRate(snapshot.notaryFeeRate);
+    setNotaryPropertyAge(snapshot.notaryPropertyAge);
+    setError(null);
+  }, []);
 
   const value = useMemo<EstimateSessionContextValue>(
     () => ({
@@ -305,6 +472,8 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       setNotaryPropertyAge,
       error,
       setError,
+      getShareSnapshot,
+      hydrateFromShare,
     }),
     [
       propertyType,
@@ -345,6 +514,8 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       notaryFeeRate,
       notaryPropertyAge,
       error,
+      getShareSnapshot,
+      hydrateFromShare,
     ],
   );
 

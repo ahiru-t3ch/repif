@@ -59,6 +59,10 @@ import {
   notaryFeeAmount,
   type NotaryPropertyAge,
 } from "@/lib/notary-fees";
+import {
+  SHARE_PAYLOAD_VERSION,
+  createShareScenario,
+} from "@/lib/share-scenario";
 
 const DPE_OPTIONS = [
   { value: 1, label: "A" },
@@ -131,6 +135,61 @@ function FinanceSectionToggle({
           }`}
         />
       </button>
+    </div>
+  );
+}
+
+function ShareScenarioControls({
+  variant,
+  status,
+  message,
+  onShare,
+  buttonLabel,
+  creatingLabel,
+  copiedLabel,
+}: {
+  variant: "dark" | "light";
+  status: "idle" | "loading" | "copied" | "error";
+  message: string | null;
+  onShare: () => void;
+  buttonLabel: string;
+  creatingLabel: string;
+  copiedLabel: string;
+}) {
+  const isDark = variant === "dark";
+  return (
+    <div className={`flex flex-col ${isDark ? "items-end" : "items-stretch sm:items-start"} gap-1`}>
+      <button
+        type="button"
+        onClick={onShare}
+        disabled={status === "loading"}
+        className={
+          isDark
+            ? "rounded-md border border-stone-500 px-3 py-1.5 text-sm font-medium text-white transition hover:border-stone-300 hover:bg-stone-800 disabled:cursor-wait disabled:opacity-60"
+            : "rounded-md bg-stone-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-stone-800 disabled:cursor-wait disabled:opacity-60"
+        }
+      >
+        {status === "loading"
+          ? creatingLabel
+          : status === "copied"
+            ? copiedLabel
+            : buttonLabel}
+      </button>
+      {message && (
+        <p
+          className={`text-xs ${
+            status === "error"
+              ? isDark
+                ? "text-amber-300"
+                : "text-red-700"
+              : isDark
+                ? "text-stone-400"
+                : "text-muted"
+          } ${isDark ? "" : "break-all"}`}
+        >
+          {message}
+        </p>
+      )}
     </div>
   );
 }
@@ -214,8 +273,13 @@ export default function Home() {
     setNotaryPropertyAge,
     error,
     setError,
+    getShareSnapshot,
   } = useEstimateSession();
   const [loading, setLoading] = useState(false);
+  const [shareStatus, setShareStatus] = useState<
+    "idle" | "loading" | "copied" | "error"
+  >("idle");
+  const [shareMessage, setShareMessage] = useState<string | null>(null);
   const [formExpanded, setFormExpanded] = useState(() => !result);
   const resultRef = useRef<HTMLElement>(null);
   const formSectionRef = useRef<HTMLElement>(null);
@@ -225,6 +289,41 @@ export default function Home() {
     requestAnimationFrame(() => {
       formSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
+  }
+
+  async function handleShareScenario() {
+    const snapshot = getShareSnapshot();
+    if (!snapshot?.result) {
+      return;
+    }
+
+    setShareStatus("loading");
+    setShareMessage(null);
+    try {
+      const created = await createShareScenario({
+        v: SHARE_PAYLOAD_VERSION,
+        ...snapshot,
+        result: snapshot.result,
+      });
+      const url = `${window.location.origin}${created.url_path}`;
+      try {
+        await navigator.clipboard.writeText(url);
+        setShareStatus("copied");
+        setShareMessage(t("share.copied"));
+      } catch {
+        setShareStatus("copied");
+        setShareMessage(url);
+      }
+      window.setTimeout(() => {
+        setShareStatus("idle");
+        setShareMessage(null);
+      }, 4000);
+    } catch (err) {
+      setShareStatus("error");
+      setShareMessage(
+        err instanceof Error ? err.message : t("share.error"),
+      );
+    }
   }
 
   useEffect(() => {
@@ -527,6 +626,20 @@ export default function Home() {
               ref={resultRef}
               className="scroll-mt-24 rounded-2xl border border-stone-800 bg-accent px-6 py-7 text-white sm:px-8"
             >
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-stone-700 pb-4">
+                <p className="text-xs font-medium uppercase tracking-[0.15em] text-stone-400">
+                  {t("share.resultLabel")}
+                </p>
+                <ShareScenarioControls
+                  variant="dark"
+                  status={shareStatus}
+                  message={shareMessage}
+                  onShare={() => void handleShareScenario()}
+                  buttonLabel={t("share.button")}
+                  creatingLabel={t("share.creating")}
+                  copiedLabel={t("share.copiedShort")}
+                />
+              </div>
               <div className="grid gap-6 border-b border-stone-700 pb-5 sm:grid-cols-2">
                 <div className="min-w-0 space-y-2 text-sm leading-relaxed text-stone-300">
                   <p>
@@ -1925,6 +2038,30 @@ export default function Home() {
               </div>
             );
               })()}
+            </section>
+          )}
+
+          {result && (
+            <section className="rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-foreground">
+                    {t("share.bottomTitle")}
+                  </p>
+                  <p className="mt-1 text-sm text-muted">
+                    {t("share.bottomHint")}
+                  </p>
+                </div>
+                <ShareScenarioControls
+                  variant="light"
+                  status={shareStatus}
+                  message={shareMessage}
+                  onShare={() => void handleShareScenario()}
+                  buttonLabel={t("share.button")}
+                  creatingLabel={t("share.creating")}
+                  copiedLabel={t("share.copiedShort")}
+                />
+              </div>
             </section>
           )}
 

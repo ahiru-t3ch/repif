@@ -57,6 +57,32 @@ export function middleware(request: NextRequest) {
     }
   }
 
+  if (path === "/api/shares" && request.method === "POST") {
+    const result = enforceRateLimit(request, "shareCreate");
+    if (!result.ok) {
+      return NextResponse.json(
+        { detail: "Too many requests. Try again later." },
+        {
+          status: 429,
+          headers: { "Retry-After": String(result.retryAfter) },
+        },
+      );
+    }
+  }
+
+  if (path.startsWith("/api/shares/") && request.method === "GET") {
+    const result = enforceRateLimit(request, "shareGet");
+    if (!result.ok) {
+      return NextResponse.json(
+        { detail: "Too many requests. Try again later." },
+        {
+          status: 429,
+          headers: { "Retry-After": String(result.retryAfter) },
+        },
+      );
+    }
+  }
+
   return NextResponse.next();
 }
 
@@ -66,5 +92,7 @@ export const config = {
     "/api/predictions",
     "/api/geocode/suggest",
     "/api/metrics",
+    "/api/shares",
+    "/api/shares/:path*",
   ],
 };

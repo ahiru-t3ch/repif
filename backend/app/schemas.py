@@ -58,3 +58,21 @@ class ModelHoldoutMetrics(BaseModel):
 class MetricsOutput(BaseModel):
     apartment: ModelHoldoutMetrics
     house: ModelHoldoutMetrics
+
+
+class ShareCreateInput(BaseModel):
+    """Opaque scenario snapshot produced by the frontend (versioned)."""
+
+    payload: dict
+
+
+class ShareCreateOutput(BaseModel):
+    code: str
+    url_path: str
+    expires_at: datetime
+
+
+class ShareGetOutput(BaseModel):
+    code: str
+    payload: dict
+    expires_at: datetime

@@ -11,6 +11,8 @@ from app.rate_limit import (
     RATE_LIMIT_METRICS,
     RATE_LIMIT_PREDICT,
     RATE_LIMIT_PREDICTIONS,
+    RATE_LIMIT_SHARE_CREATE,
+    RATE_LIMIT_SHARE_GET,
     RATE_LIMIT_SUGGEST,
     limiter,
     rate_limit_exceeded_handler,
@@ -21,6 +23,9 @@ from app.schemas import (
     PredictInput,
     PredictOutput,
     PredictionRecord,
+    ShareCreateInput,
+    ShareCreateOutput,
+    ShareGetOutput,
     SuggestOutput,
 )
 from app.predictor import (  # loads models within API startup on first import
@@ -33,6 +38,7 @@ from app.geocoding import GeocodingError, geocode_address, suggest_addresses
 from app.metrics import get_holdout_metrics, price_bounds
 from app.database import Base, engine, get_db
 from app import models
+from app.shares import create_shared_scenario, get_shared_scenario
 from fastapi import HTTPException
 from slowapi.errors import RateLimitExceeded
 
@@ -226,3 +232,29 @@ def predict_house(request: Request, input: PredictInput, db: Session = Depends(g
         raise HTTPException(status_code=400, detail="Invalid property type")
 
     return _predict_and_save(input, db, predict_price_house)
+
+
+@app.post("/shares", response_model=ShareCreateOutput)
+@limiter.limit(RATE_LIMIT_SHARE_CREATE)
+def create_share(
+    request: Request,
+    body: ShareCreateInput,
+    db: Session = Depends(get_db),
+):
+    row = create_shared_scenario(db, body.payload)
+    return ShareCreateOutput(
+        code=row.code,
+        url_path=f"/r/{row.code}",
+        expires_at=row.expires_at,
+    )
+
+
+@app.get("/shares/{code}", response_model=ShareGetOutput)
+@limiter.limit(RATE_LIMIT_SHARE_GET)
+def read_share(request: Request, code: str, db: Session = Depends(get_db)):
+    row = get_shared_scenario(db, code)
+    return ShareGetOutput(
+        code=row.code,
+        payload=row.payload,
+        expires_at=row.expires_at,
+    )

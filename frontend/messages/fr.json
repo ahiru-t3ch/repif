@@ -8,6 +8,19 @@
   "nav": {
     "about": "À propos"
   },
+  "share": {
+    "button": "Partager le scénario",
+    "creating": "Création du lien…",
+    "copiedShort": "Lien copié",
+    "copied": "Lien court copié dans le presse-papiers.",
+    "error": "Impossible de créer le lien de partage.",
+    "resultLabel": "Votre estimation",
+    "bottomTitle": "Partager ce scénario",
+    "bottomHint": "Envoie le prix, les travaux, le crédit, le placement… via un lien court.",
+    "loading": "Ouverture du scénario partagé…",
+    "notFound": "Ce lien de partage est invalide ou a expiré.",
+    "backHome": "Retour à l'estimation"
+  },
   "lang": {
     "label": "Langue",
     "fr": "Français",

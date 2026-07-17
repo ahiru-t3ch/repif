@@ -8,6 +8,19 @@
   "nav": {
     "about": "About"
   },
+  "share": {
+    "button": "Share scenario",
+    "creating": "Creating link…",
+    "copiedShort": "Link copied",
+    "copied": "Short link copied to the clipboard.",
+    "error": "Could not create the share link.",
+    "resultLabel": "Your estimate",
+    "bottomTitle": "Share this scenario",
+    "bottomHint": "Send the price, works, mortgage, investing comparison… via a short link.",
+    "loading": "Opening shared scenario…",
+    "notFound": "This share link is invalid or has expired.",
+    "backHome": "Back to estimate"
+  },
   "lang": {
     "label": "Language",
     "fr": "Français",
