@@ -1594,15 +1594,16 @@ export default function Home() {
                       maintenanceAnnual,
                     )
                   : 0;
-                const referenceMonthlyCost = loanMonthly + ownershipMonthly;
-                const remainingBudget = loanNetSalary - referenceMonthlyCost;
-                const debtRatioPct =
-                  loanNetSalary > 0
-                    ? (referenceMonthlyCost / loanNetSalary) * 100
-                    : null;
+                const totalMonthlyCost = loanMonthly + ownershipMonthly;
+                const remainingBudget = loanNetSalary - totalMonthlyCost;
                 const remainingBudgetPct =
-                  debtRatioPct !== null ? 100 - debtRatioPct : null;
-                const minRemainingPct = 100 - MAX_DEBT_RATIO_PCT;
+                  loanNetSalary > 0
+                    ? (remainingBudget / loanNetSalary) * 100
+                    : null;
+                const debtRatioPct =
+                  showLoanSection && loanNetSalary > 0
+                    ? (loanMonthly / loanNetSalary) * 100
+                    : null;
                 const overDebtLimit =
                   debtRatioPct !== null && debtRatioPct > MAX_DEBT_RATIO_PCT;
 
@@ -1611,67 +1612,44 @@ export default function Home() {
                     <p className="text-sm text-muted">
                       {t("result.livingBudgetHint")}
                     </p>
-                    <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                      <label className="flex flex-col gap-2">
-                        <span className={labelClassName}>
-                          {t("result.loanNetSalary")}
-                        </span>
-                        <input
-                          type="number"
-                          min={0}
-                          step={100}
-                          value={loanNetSalary || ""}
-                          onChange={(e) =>
-                            setLoanNetSalary(
-                              Math.max(0, Number(e.target.value) || 0),
-                            )
-                          }
-                          className={inputClassName}
-                        />
-                        <span className="text-xs text-muted">
-                          {t("result.loanNetSalaryHint")}
-                        </span>
-                      </label>
-                      <div>
-                        <p className="text-xs font-medium uppercase tracking-[0.15em] text-muted">
-                          {t("result.livingBudgetReferenceCost")}
-                        </p>
-                        <p className="mt-2 font-sans text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-                          {formatPrice(Math.round(referenceMonthlyCost))}
-                        </p>
-                        <p className="mt-1 text-xs text-muted">
-                          {t("result.livingBudgetReferenceCostHint")}
-                        </p>
-                      </div>
-                    </div>
+                    <label className="mt-4 flex max-w-md flex-col gap-2">
+                      <span className={labelClassName}>
+                        {t("result.loanNetSalary")}
+                      </span>
+                      <input
+                        type="number"
+                        min={0}
+                        step={100}
+                        value={loanNetSalary || ""}
+                        onChange={(e) =>
+                          setLoanNetSalary(
+                            Math.max(0, Number(e.target.value) || 0),
+                          )
+                        }
+                        className={inputClassName}
+                      />
+                      <span className="text-xs text-muted">
+                        {t("result.loanNetSalaryHint")}
+                      </span>
+                    </label>
 
-                    <div className="mt-5 border-t border-border pt-5">
-                      <p className="text-xs font-medium uppercase tracking-[0.15em] text-muted">
-                        {t("result.loanRemainingBudget")}
-                      </p>
-                      <p
-                        className={`mt-2 font-sans text-2xl font-semibold tracking-tight sm:text-3xl ${
-                          overDebtLimit ? "text-red-700" : "text-foreground"
-                        }`}
-                      >
-                        {loanNetSalary > 0
-                          ? formatPrice(Math.round(remainingBudget))
-                          : "—"}
-                      </p>
-                      {remainingBudgetPct !== null && debtRatioPct !== null && (
-                        <>
+                    {showLoanSection && (
+                      <div className="mt-5 border-t border-border pt-5">
+                        <p className="text-xs font-medium uppercase tracking-[0.15em] text-muted">
+                          {t("result.loanDebtRatioTitle")}
+                        </p>
+                        <p
+                          className={`mt-2 font-sans text-2xl font-semibold tracking-tight sm:text-3xl ${
+                            overDebtLimit ? "text-red-700" : "text-foreground"
+                          }`}
+                        >
+                          {debtRatioPct !== null
+                            ? `${formatFeeRate(debtRatioPct)} %`
+                            : "—"}
+                        </p>
+                        {debtRatioPct !== null && (
                           <p
                             className={`mt-2 text-sm font-medium ${
-                              overDebtLimit ? "text-red-700" : "text-foreground"
-                            }`}
-                          >
-                            {t("result.loanRemainingBudgetPct", {
-                              pct: formatFeeRate(remainingBudgetPct),
-                              minPct: String(minRemainingPct),
-                            })}
-                          </p>
-                          <p
-                            className={`mt-1 text-sm font-medium ${
                               overDebtLimit ? "text-red-700" : "text-foreground"
                             }`}
                           >
@@ -1680,11 +1658,49 @@ export default function Home() {
                               maxPct: String(MAX_DEBT_RATIO_PCT),
                             })}
                           </p>
-                        </>
-                      )}
-                      <p className="mt-2 text-xs text-muted">
-                        {t("result.loanRemainingBudgetHint")}
-                      </p>
+                        )}
+                        <p className="mt-2 text-xs text-muted">
+                          {t("result.loanDebtRatioHint", {
+                            monthly: formatPrice(Math.round(loanMonthly)),
+                          })}
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="mt-5 border-t border-border pt-5">
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div>
+                          <p className="text-xs font-medium uppercase tracking-[0.15em] text-muted">
+                            {t("result.livingBudgetReferenceCost")}
+                          </p>
+                          <p className="mt-2 font-sans text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+                            {formatPrice(Math.round(totalMonthlyCost))}
+                          </p>
+                          <p className="mt-1 text-xs text-muted">
+                            {t("result.livingBudgetReferenceCostHint")}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium uppercase tracking-[0.15em] text-muted">
+                            {t("result.loanRemainingBudget")}
+                          </p>
+                          <p className="mt-2 font-sans text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+                            {loanNetSalary > 0
+                              ? formatPrice(Math.round(remainingBudget))
+                              : "—"}
+                          </p>
+                          {remainingBudgetPct !== null && (
+                            <p className="mt-2 text-sm font-medium text-foreground">
+                              {t("result.loanRemainingBudgetPct", {
+                                pct: formatFeeRate(remainingBudgetPct),
+                              })}
+                            </p>
+                          )}
+                          <p className="mt-2 text-xs text-muted">
+                            {t("result.loanRemainingBudgetHint")}
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 );
