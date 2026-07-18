@@ -817,10 +817,12 @@ export default function Home() {
                         modelInputSnapshot.apartmentFloor && (
                           <div className="flex flex-wrap gap-x-2">
                             <dt className="text-stone-400">
-                              {t("form.floor")} :
+                              {t("form.floorElevator")} :
                             </dt>
                             <dd className="font-medium text-white">
-                              {t(`form.floorOption.${modelInputSnapshot.apartmentFloor}`)}
+                              {t(
+                                `form.floorOption.${modelInputSnapshot.apartmentFloor}`,
+                              )}
                               {" · "}
                               {modelInputSnapshot.hasElevator
                                 ? t("form.elevatorYes")
@@ -2808,13 +2810,13 @@ export default function Home() {
                     </legend>
                     <div className="grid gap-4 sm:grid-cols-2">
                       <label className="flex flex-col gap-2">
-                        <span className={labelClassName}>{t("form.floor")}</span>
                         <select
                           value={apartmentFloor}
                           onChange={(e) =>
                             setApartmentFloor(e.target.value as ApartmentFloor)
                           }
                           className={inputClassName}
+                          aria-label={t("form.floorElevator")}
                         >
                           <option value="">{t("form.floorSelect")}</option>
                           {APARTMENT_FLOOR_OPTIONS.map((floor) => (
@@ -2824,7 +2826,7 @@ export default function Home() {
                           ))}
                         </select>
                       </label>
-                      <label className="flex items-center gap-2 self-end pb-3 text-sm text-foreground">
+                      <label className="flex items-center gap-2 self-center text-sm text-foreground">
                         <input
                           type="checkbox"
                           checked={hasElevator}
