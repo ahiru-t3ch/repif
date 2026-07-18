@@ -35,12 +35,14 @@ import {
   DEFAULT_MARGINAL_TAX_RATE,
   DEFAULT_NET_SALARY,
   DEFAULT_NOTARY_FEE_RATE,
+  DEFAULT_OCCUPANCY_RATE,
   DEFAULT_PROPERTY_APPRECIATION,
   DEFAULT_PROPERTY_TAX,
   DEFAULT_RENTAL_TAX_REGIME,
   createEmptyWorkLine,
   useEstimateSession,
   type MarginalTaxRate,
+  type OccupancyRate,
   type PredictResult,
   type PropertyType,
   type RentalTaxRegime,
@@ -62,11 +64,13 @@ import {
   cashOnCashReturn,
   defaultMonthlyRent,
   effectiveAnnualCharges,
+  effectiveMonthlyRent,
   grossRentalYield,
   loanPrincipal,
   MARGINAL_TAX_RATES,
   MAX_DEBT_RATIO_PCT,
   MICRO_FONCIER_GROSS_CEILING,
+  OCCUPANCY_RATE_OPTIONS,
   monthlyInvestmentCashFlow,
   monthlyInvestableWhenRenting,
   monthlyOwnershipCosts,
@@ -269,6 +273,8 @@ export default function Home() {
     setInvestmentTaxRegime,
     investmentMarginalTaxRate,
     setInvestmentMarginalTaxRate,
+    investmentOccupancyRate,
+    setInvestmentOccupancyRate,
     loanDownPayment,
     setLoanDownPayment,
     loanDurationYears,
@@ -506,6 +512,7 @@ export default function Home() {
   function resetInvestmentTaxDefaults() {
     setInvestmentTaxRegime(DEFAULT_RENTAL_TAX_REGIME);
     setInvestmentMarginalTaxRate(DEFAULT_MARGINAL_TAX_RATE);
+    setInvestmentOccupancyRate(DEFAULT_OCCUPANCY_RATE);
   }
 
   /** Full reset used on new estimate / property-type change. */
@@ -1796,6 +1803,10 @@ export default function Home() {
                   const projectBudget = purchaseCost + worksTotal;
                   const rentMonthly =
                     loanRent ?? defaultMonthlyRent(displayPrice);
+                  const effectiveRentMonthly = effectiveMonthlyRent(
+                    rentMonthly,
+                    investmentOccupancyRate,
+                  );
                   const annualChargesEff = showOwnershipSection
                     ? effectiveAnnualCharges(
                         loanAnnualCharges,
@@ -1836,16 +1847,16 @@ export default function Home() {
                     ? projectBudget
                     : Math.max(0, loanDownPayment);
                   const grossYield = grossRentalYield(
-                    rentMonthly,
+                    effectiveRentMonthly,
                     projectBudget,
                   );
                   const netYield = netRentalYield(
-                    rentMonthly,
+                    effectiveRentMonthly,
                     ownershipAnnual,
                     projectBudget,
                   );
                   const cashFlow = monthlyInvestmentCashFlow(
-                    rentMonthly,
+                    effectiveRentMonthly,
                     loanMonthly,
                     ownershipMonthly,
                   );
@@ -1857,14 +1868,14 @@ export default function Home() {
                         loanDurationYears,
                       );
                   const tax = annualRentalIncomeTax({
-                    monthlyRent: rentMonthly,
+                    monthlyRent: effectiveRentMonthly,
                     regime: investmentTaxRegime,
                     marginalTaxRatePct: investmentMarginalTaxRate,
                     annualOwnershipCosts: ownershipAnnual,
                     annualLoanInterest: annualInterest,
                   });
                   const netNetYield = netNetRentalYield(
-                    rentMonthly,
+                    effectiveRentMonthly,
                     ownershipAnnual,
                     tax.totalTax,
                     projectBudget,
@@ -1875,10 +1886,10 @@ export default function Home() {
                     cashFlowAfterTax,
                     equityInvested,
                   );
-                  const annualRent = rentMonthly * 12;
+                  const annualRentEffective = effectiveRentMonthly * 12;
                   const microCeilingExceeded =
                     investmentTaxRegime === "MICRO" &&
-                    annualRent > MICRO_FONCIER_GROSS_CEILING;
+                    annualRentEffective > MICRO_FONCIER_GROSS_CEILING;
 
                   const investmentDpe = String(
                     modelInputSnapshot?.dpeMedian ?? dpeMedian ?? "",
@@ -1912,17 +1923,45 @@ export default function Home() {
                             {t("result.investmentRentNote")}
                           </span>
                         </label>
-                        <div>
-                          <p className="text-xs font-medium uppercase tracking-[0.15em] text-muted">
-                            {t("result.investmentAcquisition")}
-                          </p>
-                          <p className="mt-2 font-sans text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-                            {formatPrice(Math.round(projectBudget))}
-                          </p>
-                          <p className="mt-1 text-xs text-muted">
-                            {t("result.investmentAcquisitionHint")}
-                          </p>
-                        </div>
+                        <label className="flex flex-col gap-2">
+                          <span className={labelClassName}>
+                            {t("result.investmentOccupancy")}
+                          </span>
+                          <select
+                            value={investmentOccupancyRate}
+                            onChange={(e) =>
+                              setInvestmentOccupancyRate(
+                                Number(e.target.value) as OccupancyRate,
+                              )
+                            }
+                            className={inputClassName}
+                          >
+                            {OCCUPANCY_RATE_OPTIONS.map((rate) => (
+                              <option key={rate} value={rate}>
+                                {rate} %
+                              </option>
+                            ))}
+                          </select>
+                          <span className="text-xs text-muted">
+                            {t("result.investmentOccupancyHint", {
+                              effective: formatPrice(
+                                Math.round(effectiveRentMonthly),
+                              ),
+                            })}
+                          </span>
+                        </label>
+                      </div>
+
+                      <div className="mt-4">
+                        <p className="text-xs font-medium uppercase tracking-[0.15em] text-muted">
+                          {t("result.investmentAcquisition")}
+                        </p>
+                        <p className="mt-2 font-sans text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+                          {formatPrice(Math.round(projectBudget))}
+                        </p>
+                        <p className="mt-1 text-xs text-muted">
+                          {t("result.investmentAcquisitionHint")}
+                        </p>
                       </div>
 
                       <div className="mt-4 grid gap-4 sm:grid-cols-2">

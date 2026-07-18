@@ -26,10 +26,12 @@ import {
   DEFAULT_MAINTENANCE_PCT,
   DEFAULT_MARGINAL_TAX_RATE,
   DEFAULT_NET_SALARY,
+  DEFAULT_OCCUPANCY_RATE,
   DEFAULT_PROPERTY_APPRECIATION,
   DEFAULT_PROPERTY_TAX,
   DEFAULT_RENTAL_TAX_REGIME,
   type MarginalTaxRate,
+  type OccupancyRate,
   type RentalTaxRegime,
 } from "@/lib/mortgage";
 import {
@@ -94,12 +96,13 @@ export {
   DEFAULT_MAINTENANCE_PCT,
   DEFAULT_MARGINAL_TAX_RATE,
   DEFAULT_NET_SALARY,
+  DEFAULT_OCCUPANCY_RATE,
   DEFAULT_PROPERTY_APPRECIATION,
   DEFAULT_PROPERTY_TAX,
   DEFAULT_RENTAL_TAX_REGIME,
 };
 
-export type { MarginalTaxRate, RentalTaxRegime };
+export type { MarginalTaxRate, OccupancyRate, RentalTaxRegime };
 
 export { DEFAULT_INFLATION_RATE, DEFAULT_SAVINGS_RATE };
 
@@ -128,6 +131,7 @@ export type EstimateSessionSnapshot = {
   showVerdictSection: boolean;
   investmentTaxRegime: RentalTaxRegime;
   investmentMarginalTaxRate: MarginalTaxRate;
+  investmentOccupancyRate: OccupancyRate;
   loanDownPayment: number;
   loanDurationYears: number;
   loanInterestRate: number;
@@ -200,6 +204,8 @@ type EstimateSessionContextValue = {
   setInvestmentTaxRegime: Dispatch<SetStateAction<RentalTaxRegime>>;
   investmentMarginalTaxRate: MarginalTaxRate;
   setInvestmentMarginalTaxRate: Dispatch<SetStateAction<MarginalTaxRate>>;
+  investmentOccupancyRate: OccupancyRate;
+  setInvestmentOccupancyRate: Dispatch<SetStateAction<OccupancyRate>>;
   loanDownPayment: number;
   setLoanDownPayment: Dispatch<SetStateAction<number>>;
   loanDurationYears: number;
@@ -281,6 +287,8 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
   );
   const [investmentMarginalTaxRate, setInvestmentMarginalTaxRate] =
     useState<MarginalTaxRate>(DEFAULT_MARGINAL_TAX_RATE);
+  const [investmentOccupancyRate, setInvestmentOccupancyRate] =
+    useState<OccupancyRate>(DEFAULT_OCCUPANCY_RATE);
   const [loanDownPayment, setLoanDownPayment] = useState(DEFAULT_LOAN_DOWN_PAYMENT);
   const [loanDurationYears, setLoanDurationYears] = useState(
     DEFAULT_LOAN_DURATION_YEARS,
@@ -348,6 +356,7 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       showVerdictSection,
       investmentTaxRegime,
       investmentMarginalTaxRate,
+      investmentOccupancyRate,
       loanDownPayment,
       loanDurationYears,
       loanInterestRate,
@@ -395,6 +404,7 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
     showVerdictSection,
     investmentTaxRegime,
     investmentMarginalTaxRate,
+    investmentOccupancyRate,
     loanDownPayment,
     loanDurationYears,
     loanInterestRate,
@@ -446,6 +456,9 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
     );
     setInvestmentMarginalTaxRate(
       snapshot.investmentMarginalTaxRate ?? DEFAULT_MARGINAL_TAX_RATE,
+    );
+    setInvestmentOccupancyRate(
+      snapshot.investmentOccupancyRate ?? DEFAULT_OCCUPANCY_RATE,
     );
     setLoanDownPayment(snapshot.loanDownPayment);
     setLoanDurationYears(snapshot.loanDurationYears);
@@ -521,6 +534,8 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       setInvestmentTaxRegime,
       investmentMarginalTaxRate,
       setInvestmentMarginalTaxRate,
+      investmentOccupancyRate,
+      setInvestmentOccupancyRate,
       loanDownPayment,
       setLoanDownPayment,
       loanDurationYears,
@@ -593,6 +608,7 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       showVerdictSection,
       investmentTaxRegime,
       investmentMarginalTaxRate,
+      investmentOccupancyRate,
       loanDownPayment,
       loanDurationYears,
       loanInterestRate,

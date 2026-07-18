@@ -299,6 +299,22 @@ export type MarginalTaxRate = (typeof MARGINAL_TAX_RATES)[number];
 /** Default household marginal income-tax bracket for the simple simulator. */
 export const DEFAULT_MARGINAL_TAX_RATE: MarginalTaxRate = 30;
 export const DEFAULT_RENTAL_TAX_REGIME: RentalTaxRegime = "MICRO";
+/** Default occupancy rate for rental investment simulations (%). */
+export const DEFAULT_OCCUPANCY_RATE = 70;
+/** Occupancy rate choices: 50% → 100% by steps of 5. */
+export const OCCUPANCY_RATE_OPTIONS = [
+  50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100,
+] as const;
+export type OccupancyRate = (typeof OCCUPANCY_RATE_OPTIONS)[number];
+
+/** Effective monthly rent after vacancy (occupancy %). */
+export function effectiveMonthlyRent(
+  monthlyRent: number,
+  occupancyRatePct: number,
+): number {
+  const occupancy = Math.min(100, Math.max(0, occupancyRatePct)) / 100;
+  return Math.max(0, monthlyRent) * occupancy;
+}
 
 /** Prélèvements sociaux on taxable rental income (%). */
 export const RENTAL_SOCIAL_CONTRIBUTIONS_PCT = 17.2;

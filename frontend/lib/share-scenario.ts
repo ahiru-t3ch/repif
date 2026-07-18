@@ -3,6 +3,7 @@ import type { ApartmentFloor } from "@/lib/amenity-uplift";
 import type {
   MarginalTaxRate,
   ModelInputSnapshot,
+  OccupancyRate,
   PredictResult,
   PropertyType,
   RentalTaxRegime,
@@ -38,6 +39,7 @@ export type ShareScenarioPayload = {
   showVerdictSection: boolean;
   investmentTaxRegime: RentalTaxRegime;
   investmentMarginalTaxRate: MarginalTaxRate;
+  investmentOccupancyRate: OccupancyRate;
   loanDownPayment: number;
   loanDurationYears: number;
   loanInterestRate: number;
