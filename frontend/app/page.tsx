@@ -33,6 +33,7 @@ import {
   DEFAULT_MAINTENANCE_PCT,
   DEFAULT_MARGINAL_TAX_RATE,
   DEFAULT_NET_SALARY,
+  DEFAULT_NOTARY_FEE_RATE,
   DEFAULT_PROPERTY_APPRECIATION,
   DEFAULT_PROPERTY_TAX,
   DEFAULT_RENTAL_TAX_REGIME,
@@ -326,6 +327,40 @@ export default function Home() {
     setFormExpanded(true);
     requestAnimationFrame(() => {
       formSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
+  /** Clear result + form + finance so the user can start a new simulation. */
+  function handleNewSimulation() {
+    setResult(null);
+    setAdjustedPrice(null);
+    setModelInputSnapshot(null);
+    setError(null);
+    setShareStatus("idle");
+    setShareMessage(null);
+    setAddress("");
+    setSbati("");
+    setNbParking("");
+    setNbCave("");
+    setDpeMedian("");
+    setAnneeConstruction("");
+    setHasBalcony(false);
+    setHasGarden(false);
+    setHasPool(false);
+    setHasElevator(false);
+    setApartmentFloor("");
+    setPropertyType("APARTMENT");
+    resetFinanceSectionToggles();
+    resetAllFinanceDefaults();
+    setAgencyFeeMode("percent");
+    setAgencyFeeRate(DEFAULT_AGENCY_FEE_RATE);
+    setAgencyFeeFixed(0);
+    setNotaryPropertyAge("OLD");
+    setNotaryFeeRate(DEFAULT_NOTARY_FEE_RATE);
+    setFormExpanded(true);
+    requestAnimationFrame(() => {
+      formSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      window.scrollTo({ top: 0, behavior: "smooth" });
     });
   }
 
@@ -2615,20 +2650,38 @@ export default function Home() {
                     )} · ${result.geocoded_address}`,
                   })}
                 </p>
-                <button
-                  type="button"
-                  onClick={handleExpandForm}
-                  className="rounded-lg border border-border bg-surface px-4 py-3 text-sm font-medium text-foreground transition hover:border-stone-400 hover:bg-stone-50"
-                >
-                  {t("form.expandForm")}
-                </button>
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <button
+                    type="button"
+                    onClick={handleExpandForm}
+                    className="rounded-lg border border-border bg-surface px-4 py-3 text-sm font-medium text-foreground transition hover:border-stone-400 hover:bg-stone-50 sm:flex-1"
+                  >
+                    {t("form.expandForm")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleNewSimulation}
+                    className="rounded-lg border border-border bg-surface px-4 py-3 text-sm font-medium text-foreground transition hover:border-stone-400 hover:bg-stone-50 sm:flex-1"
+                  >
+                    {t("form.newSimulation")}
+                  </button>
+                </div>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="flex flex-col gap-5">
                 {result && (
-                  <p className="rounded-lg border border-border bg-stone-50 px-3 py-2 text-sm text-muted">
-                    {t("form.editHint")}
-                  </p>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="rounded-lg border border-border bg-stone-50 px-3 py-2 text-sm text-muted sm:flex-1">
+                      {t("form.editHint")}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleNewSimulation}
+                      className="rounded-lg border border-border bg-surface px-4 py-2.5 text-sm font-medium text-foreground transition hover:border-stone-400 hover:bg-stone-50"
+                    >
+                      {t("form.newSimulation")}
+                    </button>
+                  </div>
                 )}
                 <label className="flex flex-col gap-2">
                   <span className={labelClassName}>{t("form.propertyType")}</span>

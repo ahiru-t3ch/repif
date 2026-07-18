@@ -65,6 +65,7 @@
     "year": "Year built",
     "submit": "Estimate price",
     "expandForm": "Edit criteria",
+    "newSimulation": "New simulation",
     "editHint": "Update the property details below, then click “Estimate price”.",
     "submitting": "Calculating…",
     "collapsedSummary": "Estimate shown for: {summary}"
