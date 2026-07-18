@@ -1865,11 +1865,19 @@ export default function Home() {
                     investmentTaxRegime === "MICRO" &&
                     annualRent > MICRO_FONCIER_GROSS_CEILING;
 
+                  const investmentDpe = String(
+                    modelInputSnapshot?.dpeMedian ?? dpeMedian ?? "",
+                  );
+
                   return (
                     <div className="mt-5 border-t border-border pt-5">
                       <p className="text-sm text-muted">
                         {t("result.investmentHint")}
                       </p>
+
+                      <div className="mt-4">
+                        <DpeRentalAlert dpeValue={investmentDpe} />
+                      </div>
 
                       <div className="mt-4 grid gap-4 sm:grid-cols-2">
                         <label className="flex flex-col gap-2">
