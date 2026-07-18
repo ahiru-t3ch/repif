@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 import { DpeRentalAlert } from "@/components/DpeRentalAlert";
 import { FieldHint } from "@/components/FieldHint";
+import { OptionalNumberInput } from "@/components/OptionalNumberInput";
 import { SavingsChart } from "@/components/SavingsChart";
 import {
   AGENCY_FEE_PERCENT,
@@ -1014,14 +1015,13 @@ export default function Home() {
                       <span className="text-xs text-stone-400">
                         {t("result.agencyFeesFixedAmount")}
                       </span>
-                      <input
-                        type="number"
+                      <OptionalNumberInput
                         min={0}
                         step={100}
-                        value={agencyFeeFixed || ""}
-                        onChange={(e) =>
-                          setAgencyFeeFixed(Math.max(0, Number(e.target.value) || 0))
-                        }
+                        value={agencyFeeFixed}
+                        onValueChange={setAgencyFeeFixed}
+                        emptyValue={0}
+                        blankWhenEmptyValue
                         className={darkInputClassName}
                       />
                       {result.price > 0 && feeAmount > 0 && (
@@ -1186,16 +1186,16 @@ export default function Home() {
                         className={`${inputClassName} min-w-0 flex-1`}
                       />
                       <div className="flex items-center gap-2">
-                        <input
-                          type="number"
+                        <OptionalNumberInput
                           min={0}
                           step={100}
-                          value={line.amount || ""}
-                          onChange={(e) =>
-                            updateWorkLine(line.id, {
-                              amount: Math.max(0, Number(e.target.value) || 0),
-                            })
+                          integer
+                          value={line.amount}
+                          onValueChange={(amount) =>
+                            updateWorkLine(line.id, { amount })
                           }
+                          emptyValue={0}
+                          blankWhenEmptyValue
                           placeholder={t("result.worksAmountPlaceholder")}
                           aria-label={t("result.worksAmountPlaceholder")}
                           className={`${inputClassName} w-full sm:w-36`}
@@ -1288,16 +1288,14 @@ export default function Home() {
                       <span className={labelClassName}>
                         {t("result.loanAnnualCharges")}
                       </span>
-                      <input
-                        type="number"
+                      <OptionalNumberInput
                         min={0}
                         step={100}
-                        value={loanAnnualCharges || ""}
-                        onChange={(e) =>
-                          setLoanAnnualCharges(
-                            Math.max(0, Number(e.target.value) || 0),
-                          )
-                        }
+                        integer
+                        value={loanAnnualCharges}
+                        onValueChange={setLoanAnnualCharges}
+                        emptyValue={0}
+                        blankWhenEmptyValue
                         className={inputClassName}
                       />
                     </label>
@@ -1305,16 +1303,14 @@ export default function Home() {
                       <span className={labelClassName}>
                         {t("result.loanPropertyTax")}
                       </span>
-                      <input
-                        type="number"
+                      <OptionalNumberInput
                         min={0}
                         step={100}
-                        value={loanPropertyTax || ""}
-                        onChange={(e) =>
-                          setLoanPropertyTax(
-                            Math.max(0, Number(e.target.value) || 0),
-                          )
-                        }
+                        integer
+                        value={loanPropertyTax}
+                        onValueChange={setLoanPropertyTax}
+                        emptyValue={0}
+                        blankWhenEmptyValue
                         className={inputClassName}
                       />
                     </label>
@@ -1333,17 +1329,14 @@ export default function Home() {
                           <span className={labelClassName}>
                             {t("result.exceptionalChargesPct")}
                           </span>
-                          <input
-                            type="number"
+                          <OptionalNumberInput
                             min={0}
                             max={100}
                             step={1}
+                            integer
                             value={exceptionalChargesPct}
-                            onChange={(e) =>
-                              setExceptionalChargesPct(
-                                Math.max(0, Number(e.target.value) || 0),
-                              )
-                            }
+                            onValueChange={setExceptionalChargesPct}
+                            emptyValue={DEFAULT_EXCEPTIONAL_CHARGES_PCT}
                             className={inputClassName}
                           />
                         </label>
@@ -1391,17 +1384,13 @@ export default function Home() {
                           <span className={labelClassName}>
                             {t("result.maintenancePct")}
                           </span>
-                          <input
-                            type="number"
+                          <OptionalNumberInput
                             min={0}
                             max={100}
                             step={0.1}
                             value={maintenancePct}
-                            onChange={(e) =>
-                              setMaintenancePct(
-                                Math.max(0, Number(e.target.value) || 0),
-                              )
-                            }
+                            onValueChange={setMaintenancePct}
+                            emptyValue={DEFAULT_MAINTENANCE_PCT}
                             className={inputClassName}
                           />
                         </label>
@@ -1507,59 +1496,52 @@ export default function Home() {
                 <div className="mt-4 grid gap-4 sm:grid-cols-2">
                   <label className="flex flex-col gap-2">
                     <span className={labelClassName}>{t("result.loanDownPayment")}</span>
-                    <input
-                      type="number"
+                    <OptionalNumberInput
                       min={0}
                       step={1000}
-                      value={loanDownPayment || ""}
+                      integer
+                      value={loanDownPayment}
+                      onValueChange={setLoanDownPayment}
+                      emptyValue={0}
+                      blankWhenEmptyValue
                       placeholder="0"
-                      onChange={(e) =>
-                        setLoanDownPayment(Math.max(0, Number(e.target.value) || 0))
-                      }
                       className={inputClassName}
                     />
                   </label>
                   <label className="flex flex-col gap-2">
                     <span className={labelClassName}>{t("result.loanDuration")}</span>
-                    <input
-                      type="number"
+                    <OptionalNumberInput
                       min={1}
                       max={35}
                       step={1}
-                      value={loanDurationYears || ""}
-                      onChange={(e) =>
-                        setLoanDurationYears(
-                          Math.min(35, Math.max(1, Number(e.target.value) || 1)),
-                        )
-                      }
+                      integer
+                      value={loanDurationYears}
+                      onValueChange={setLoanDurationYears}
+                      emptyValue={DEFAULT_LOAN_DURATION_YEARS}
                       className={inputClassName}
                     />
                   </label>
                   <label className="flex flex-col gap-2">
                     <span className={labelClassName}>{t("result.loanInterestRate")}</span>
-                    <input
-                      type="number"
+                    <OptionalNumberInput
                       min={0}
                       max={20}
                       step={0.05}
                       value={loanInterestRate}
-                      onChange={(e) =>
-                        setLoanInterestRate(Math.max(0, Number(e.target.value) || 0))
-                      }
+                      onValueChange={setLoanInterestRate}
+                      emptyValue={DEFAULT_LOAN_INTEREST_RATE}
                       className={inputClassName}
                     />
                   </label>
                   <label className="flex flex-col gap-2">
                     <span className={labelClassName}>{t("result.loanInsuranceRate")}</span>
-                    <input
-                      type="number"
+                    <OptionalNumberInput
                       min={0}
                       max={5}
                       step={0.01}
                       value={loanInsuranceRate}
-                      onChange={(e) =>
-                        setLoanInsuranceRate(Math.max(0, Number(e.target.value) || 0))
-                      }
+                      onValueChange={setLoanInsuranceRate}
+                      emptyValue={DEFAULT_LOAN_INSURANCE_RATE}
                       className={inputClassName}
                     />
                   </label>
@@ -1695,16 +1677,14 @@ export default function Home() {
                       <span className={labelClassName}>
                         {t("result.loanNetSalary")}
                       </span>
-                      <input
-                        type="number"
+                      <OptionalNumberInput
                         min={0}
                         step={100}
-                        value={loanNetSalary || ""}
-                        onChange={(e) =>
-                          setLoanNetSalary(
-                            Math.max(0, Number(e.target.value) || 0),
-                          )
-                        }
+                        integer
+                        value={loanNetSalary}
+                        onValueChange={setLoanNetSalary}
+                        emptyValue={0}
+                        blankWhenEmptyValue
                         className={inputClassName}
                       />
                       <span className="text-xs text-muted">
@@ -1919,16 +1899,13 @@ export default function Home() {
                           <span className={labelClassName}>
                             {t("result.investmentRent")}
                           </span>
-                          <input
-                            type="number"
+                          <OptionalNumberInput
                             min={0}
                             step={50}
-                            value={rentMonthly || ""}
-                            onChange={(e) =>
-                              setLoanRent(
-                                Math.max(0, Number(e.target.value) || 0),
-                              )
-                            }
+                            integer
+                            value={rentMonthly}
+                            onValueChange={setLoanRent}
+                            emptyValue={defaultMonthlyRent(displayPrice)}
                             className={inputClassName}
                           />
                           <span className="text-xs text-muted">
@@ -2277,14 +2254,13 @@ export default function Home() {
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     <label className="flex flex-col gap-2">
                       <span className={labelClassName}>{t("result.loanRent")}</span>
-                      <input
-                        type="number"
+                      <OptionalNumberInput
                         min={0}
                         step={50}
-                        value={rentMonthly || ""}
-                        onChange={(e) =>
-                          setLoanRent(Math.max(0, Number(e.target.value) || 0))
-                        }
+                        integer
+                        value={rentMonthly}
+                        onValueChange={setLoanRent}
+                        emptyValue={defaultMonthlyRent(displayPrice)}
                         className={inputClassName}
                       />
                       <span className="text-xs text-muted">
@@ -2339,15 +2315,13 @@ export default function Home() {
                       <span className={labelClassName}>
                         {t("result.savingsRate")}
                       </span>
-                      <input
-                        type="number"
+                      <OptionalNumberInput
                         min={0}
                         max={20}
                         step={0.1}
                         value={savingsRate}
-                        onChange={(e) =>
-                          setSavingsRate(Math.max(0, Number(e.target.value) || 0))
-                        }
+                        onValueChange={setSavingsRate}
+                        emptyValue={DEFAULT_SAVINGS_RATE}
                         className={inputClassName}
                       />
                     </label>
@@ -2355,17 +2329,13 @@ export default function Home() {
                       <span className={labelClassName}>
                         {t("result.savingsInflation")}
                       </span>
-                      <input
-                        type="number"
+                      <OptionalNumberInput
                         min={0}
                         max={15}
                         step={0.1}
                         value={savingsInflation}
-                        onChange={(e) =>
-                          setSavingsInflation(
-                            Math.max(0, Number(e.target.value) || 0),
-                          )
-                        }
+                        onValueChange={setSavingsInflation}
+                        emptyValue={DEFAULT_INFLATION_RATE}
                         className={inputClassName}
                       />
                     </label>
@@ -2529,17 +2499,13 @@ export default function Home() {
                   <span className={labelClassName}>
                     {t("result.verdictAppreciation")}
                   </span>
-                  <input
-                    type="number"
+                  <OptionalNumberInput
                     min={0}
                     max={15}
                     step={0.1}
                     value={propertyAppreciation}
-                    onChange={(e) =>
-                      setPropertyAppreciation(
-                        Math.max(0, Number(e.target.value) || 0),
-                      )
-                    }
+                    onValueChange={setPropertyAppreciation}
+                    emptyValue={DEFAULT_PROPERTY_APPRECIATION}
                     className={inputClassName}
                   />
                   <span className="text-xs text-muted">
