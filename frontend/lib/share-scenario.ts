@@ -1,11 +1,12 @@
 import type { AgencyFeeMode } from "@/lib/agency-fees";
-import type { NotaryPropertyAge } from "@/lib/notary-fees";
+import type { ApartmentFloor } from "@/lib/amenity-uplift";
 import type {
   ModelInputSnapshot,
   PredictResult,
   PropertyType,
   WorkLine,
 } from "@/lib/estimate-session/context";
+import type { NotaryPropertyAge } from "@/lib/notary-fees";
 
 export const SHARE_PAYLOAD_VERSION = 1 as const;
 
@@ -21,6 +22,8 @@ export type ShareScenarioPayload = {
   hasBalcony: boolean;
   hasGarden: boolean;
   hasPool: boolean;
+  hasElevator: boolean;
+  apartmentFloor: ApartmentFloor;
   result: PredictResult;
   adjustedPrice: number | null;
   workLines: WorkLine[];

@@ -39,7 +39,13 @@ import {
   type PredictResult,
   type PropertyType,
 } from "@/lib/estimate-session/context";
-import { applyAmenityUplift, isBalconyApplicable } from "@/lib/amenity-uplift";
+import {
+  APARTMENT_FLOOR_OPTIONS,
+  applyMarketAdjustments,
+  isBalconyApplicable,
+  isFloorAdjustmentApplicable,
+  type ApartmentFloor,
+} from "@/lib/amenity-uplift";
 import { dpeValueToLetter } from "@/lib/dpe-rental";
 import { useI18n } from "@/lib/i18n/context";
 import {
@@ -219,6 +225,10 @@ export default function Home() {
     setHasGarden,
     hasPool,
     setHasPool,
+    hasElevator,
+    setHasElevator,
+    apartmentFloor,
+    setApartmentFloor,
     result,
     setResult,
     adjustedPrice,
@@ -511,6 +521,8 @@ export default function Home() {
     setHasBalcony(false);
     setHasGarden(false);
     setHasPool(false);
+    setHasElevator(false);
+    setApartmentFloor("");
     resetFinanceSectionToggles();
     resetAllFinanceDefaults();
     setModelInputSnapshot(null);
@@ -569,14 +581,17 @@ export default function Home() {
       }
 
       const data: PredictResult = await response.json();
-      const upliftedPrice = applyAmenityUplift(
+      const upliftedPrice = applyMarketAdjustments(
         data.price,
+        data.price_low,
         data.price_high,
         propertyType,
         {
           balcony: hasBalcony,
           garden: hasGarden,
           pool: hasPool,
+          floor: apartmentFloor,
+          hasElevator,
         },
       );
       const adjustedResult: PredictResult = {
@@ -601,6 +616,8 @@ export default function Home() {
         hasBalcony,
         hasGarden,
         hasPool,
+        hasElevator,
+        apartmentFloor,
       });
       setResult(adjustedResult);
       setAdjustedPrice(Math.round(upliftedPrice));
@@ -754,6 +771,21 @@ export default function Home() {
                           </dd>
                         </div>
                       )}
+                      {modelInputSnapshot.propertyType === "APARTMENT" &&
+                        modelInputSnapshot.apartmentFloor && (
+                          <div className="flex flex-wrap gap-x-2">
+                            <dt className="text-stone-400">
+                              {t("form.floor")} :
+                            </dt>
+                            <dd className="font-medium text-white">
+                              {t(`form.floorOption.${modelInputSnapshot.apartmentFloor}`)}
+                              {" · "}
+                              {modelInputSnapshot.hasElevator
+                                ? t("form.elevatorYes")
+                                : t("form.elevatorNo")}
+                            </dd>
+                          </div>
+                        )}
                       <div className="flex flex-wrap gap-x-2">
                         <dt className="text-stone-400">{t("form.dpe")} :</dt>
                         <dd className="font-medium text-white">
@@ -2355,6 +2387,45 @@ export default function Home() {
                     </label>
                   </div>
                 </fieldset>
+
+                {isFloorAdjustmentApplicable(propertyType) && (
+                  <fieldset className="space-y-3">
+                    <legend
+                      className={`${labelClassName} flex items-center gap-1.5 normal-case`}
+                    >
+                      {t("form.floorElevator")}
+                      <FieldHint text={t("form.floorElevatorHint")} />
+                    </legend>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <label className="flex flex-col gap-2">
+                        <span className={labelClassName}>{t("form.floor")}</span>
+                        <select
+                          value={apartmentFloor}
+                          onChange={(e) =>
+                            setApartmentFloor(e.target.value as ApartmentFloor)
+                          }
+                          className={inputClassName}
+                        >
+                          <option value="">{t("form.floorSelect")}</option>
+                          {APARTMENT_FLOOR_OPTIONS.map((floor) => (
+                            <option key={floor} value={floor}>
+                              {t(`form.floorOption.${floor}`)}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="flex items-center gap-2 self-end pb-3 text-sm text-foreground">
+                        <input
+                          type="checkbox"
+                          checked={hasElevator}
+                          onChange={(e) => setHasElevator(e.target.checked)}
+                          className="h-4 w-4 rounded border-border"
+                        />
+                        {t("form.elevator")}
+                      </label>
+                    </div>
+                  </fieldset>
+                )}
 
                 <button
                   type="submit"

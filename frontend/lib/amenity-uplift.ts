@@ -18,37 +18,109 @@ const AMENITY_UPLIFT: Record<
   },
 };
 
+/** Floor band for apartments (empty = not specified → 0%). */
+export type ApartmentFloor =
+  | ""
+  | "GROUND"
+  | "FLOOR_1"
+  | "FLOOR_2_3"
+  | "FLOOR_4"
+  | "FLOOR_5_6"
+  | "TOP";
+
+export const APARTMENT_FLOOR_OPTIONS: Exclude<ApartmentFloor, "">[] = [
+  "GROUND",
+  "FLOOR_1",
+  "FLOOR_2_3",
+  "FLOOR_4",
+  "FLOOR_5_6",
+  "TOP",
+];
+
+/** Mid-range floor adjustments: [withElevator, withoutElevator]. */
+const FLOOR_ADJUSTMENT: Record<
+  Exclude<ApartmentFloor, "">,
+  { withElevator: number; withoutElevator: number }
+> = {
+  GROUND: { withElevator: -0.175, withoutElevator: -0.175 },
+  FLOOR_1: { withElevator: -0.075, withoutElevator: 0.075 },
+  FLOOR_2_3: { withElevator: 0, withoutElevator: 0 },
+  FLOOR_4: { withElevator: 0.075, withoutElevator: -0.075 },
+  FLOOR_5_6: { withElevator: 0.15, withoutElevator: -0.225 },
+  TOP: { withElevator: 0.225, withoutElevator: -0.275 },
+};
+
 export function isBalconyApplicable(propertyType: PropertyType): boolean {
   return propertyType === "APARTMENT";
 }
 
-/**
- * Raise the central estimate from checked amenities.
- * Premiums are additive on the base price, then capped at price_high (MAPE band).
- */
-export function applyAmenityUplift(
-  price: number,
-  priceHigh: number,
+export function isFloorAdjustmentApplicable(
+  propertyType: PropertyType,
+): boolean {
+  return propertyType === "APARTMENT";
+}
+
+function amenityAdjustmentPct(
   propertyType: PropertyType,
   amenities: { balcony: boolean; garden: boolean; pool: boolean },
 ): number {
   const rates = AMENITY_UPLIFT[propertyType];
-  let upliftPct = 0;
-
+  let pct = 0;
   if (amenities.balcony && isBalconyApplicable(propertyType)) {
-    upliftPct += rates.balcony;
+    pct += rates.balcony;
   }
   if (amenities.garden) {
-    upliftPct += rates.garden;
+    pct += rates.garden;
   }
   if (amenities.pool) {
-    upliftPct += rates.pool;
+    pct += rates.pool;
   }
+  return pct;
+}
 
-  if (upliftPct <= 0) {
+function floorAdjustmentPct(
+  propertyType: PropertyType,
+  floor: ApartmentFloor,
+  hasElevator: boolean,
+): number {
+  if (!isFloorAdjustmentApplicable(propertyType) || !floor) {
+    return 0;
+  }
+  const band = FLOOR_ADJUSTMENT[floor];
+  return hasElevator ? band.withElevator : band.withoutElevator;
+}
+
+/**
+ * Apply amenity + floor market adjustments on the model price,
+ * then clamp inside the MAPE band [priceLow, priceHigh].
+ */
+export function applyMarketAdjustments(
+  price: number,
+  priceLow: number,
+  priceHigh: number,
+  propertyType: PropertyType,
+  options: {
+    balcony: boolean;
+    garden: boolean;
+    pool: boolean;
+    floor?: ApartmentFloor;
+    hasElevator?: boolean;
+  },
+): number {
+  const totalPct =
+    amenityAdjustmentPct(propertyType, options) +
+    floorAdjustmentPct(
+      propertyType,
+      options.floor ?? "",
+      Boolean(options.hasElevator),
+    );
+
+  if (totalPct === 0) {
     return price;
   }
 
-  const uplifted = price * (1 + upliftPct);
-  return Math.min(uplifted, Math.max(price, priceHigh));
+  const adjusted = price * (1 + totalPct);
+  const low = Math.min(priceLow, priceHigh);
+  const high = Math.max(priceLow, priceHigh);
+  return Math.min(high, Math.max(low, adjusted));
 }

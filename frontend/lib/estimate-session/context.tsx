@@ -15,6 +15,7 @@ import {
   AGENCY_FEE_PERCENT,
   type AgencyFeeMode,
 } from "@/lib/agency-fees";
+import type { ApartmentFloor } from "@/lib/amenity-uplift";
 import {
   DEFAULT_ANNUAL_CHARGES,
   DEFAULT_EXCEPTIONAL_CHARGES_PCT,
@@ -55,6 +56,8 @@ export type ModelInputSnapshot = {
   hasBalcony: boolean;
   hasGarden: boolean;
   hasPool: boolean;
+  hasElevator: boolean;
+  apartmentFloor: ApartmentFloor;
 };
 
 export type WorkLine = {
@@ -103,6 +106,8 @@ export type EstimateSessionSnapshot = {
   hasBalcony: boolean;
   hasGarden: boolean;
   hasPool: boolean;
+  hasElevator: boolean;
+  apartmentFloor: ApartmentFloor;
   result: PredictResult | null;
   adjustedPrice: number | null;
   workLines: WorkLine[];
@@ -156,6 +161,10 @@ type EstimateSessionContextValue = {
   setHasGarden: Dispatch<SetStateAction<boolean>>;
   hasPool: boolean;
   setHasPool: Dispatch<SetStateAction<boolean>>;
+  hasElevator: boolean;
+  setHasElevator: Dispatch<SetStateAction<boolean>>;
+  apartmentFloor: ApartmentFloor;
+  setApartmentFloor: Dispatch<SetStateAction<ApartmentFloor>>;
   result: PredictResult | null;
   setResult: Dispatch<SetStateAction<PredictResult | null>>;
   adjustedPrice: number | null;
@@ -238,6 +247,8 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
   const [hasBalcony, setHasBalcony] = useState(false);
   const [hasGarden, setHasGarden] = useState(false);
   const [hasPool, setHasPool] = useState(false);
+  const [hasElevator, setHasElevator] = useState(false);
+  const [apartmentFloor, setApartmentFloor] = useState<ApartmentFloor>("");
   const [result, setResult] = useState<PredictResult | null>(null);
   const [adjustedPrice, setAdjustedPrice] = useState<number | null>(null);
   const [workLines, setWorkLines] = useState<WorkLine[]>([]);
@@ -300,6 +311,8 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       hasBalcony,
       hasGarden,
       hasPool,
+      hasElevator,
+      apartmentFloor,
       result,
       adjustedPrice,
       workLines,
@@ -342,6 +355,8 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
     hasBalcony,
     hasGarden,
     hasPool,
+    hasElevator,
+    apartmentFloor,
     result,
     adjustedPrice,
     workLines,
@@ -385,6 +400,8 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
     setHasBalcony(Boolean(snapshot.hasBalcony));
     setHasGarden(Boolean(snapshot.hasGarden));
     setHasPool(Boolean(snapshot.hasPool));
+    setHasElevator(Boolean(snapshot.hasElevator));
+    setApartmentFloor(snapshot.apartmentFloor ?? "");
     setResult(snapshot.result);
     setAdjustedPrice(snapshot.adjustedPrice);
     setWorkLines(snapshot.workLines ?? []);
@@ -440,6 +457,10 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       setHasGarden,
       hasPool,
       setHasPool,
+      hasElevator,
+      setHasElevator,
+      apartmentFloor,
+      setApartmentFloor,
       result,
       setResult,
       adjustedPrice,
@@ -516,6 +537,8 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       hasBalcony,
       hasGarden,
       hasPool,
+      hasElevator,
+      apartmentFloor,
       result,
       adjustedPrice,
       workLines,
