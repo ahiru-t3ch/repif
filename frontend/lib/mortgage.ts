@@ -231,3 +231,173 @@ export function rentSavedOverYears(
     months
   );
 }
+
+/** Gross rental yield (%) = annual rent / acquisition cost. */
+export function grossRentalYield(
+  monthlyRent: number,
+  acquisitionCost: number,
+): number | null {
+  const cost = Math.max(0, acquisitionCost);
+  if (cost <= 0) {
+    return null;
+  }
+  return ((Math.max(0, monthlyRent) * 12) / cost) * 100;
+}
+
+/**
+ * Net rental yield (%) before tax:
+ * (annual rent − annual ownership costs) / acquisition cost.
+ */
+export function netRentalYield(
+  monthlyRent: number,
+  annualOwnershipCosts: number,
+  acquisitionCost: number,
+): number | null {
+  const cost = Math.max(0, acquisitionCost);
+  if (cost <= 0) {
+    return null;
+  }
+  const netAnnual =
+    Math.max(0, monthlyRent) * 12 - Math.max(0, annualOwnershipCosts);
+  return (netAnnual / cost) * 100;
+}
+
+/** Monthly cash flow for a rental investment (can be negative). */
+export function monthlyInvestmentCashFlow(
+  monthlyRent: number,
+  loanMonthly: number,
+  ownershipMonthly = 0,
+): number {
+  return (
+    Math.max(0, monthlyRent) -
+    Math.max(0, loanMonthly) -
+    Math.max(0, ownershipMonthly)
+  );
+}
+
+/**
+ * Cash-on-cash return (%) = annual cash flow / equity invested.
+ * Equity = down payment with a loan, or full acquisition cost if cash.
+ */
+export function cashOnCashReturn(
+  monthlyCashFlow: number,
+  equityInvested: number,
+): number | null {
+  const equity = Math.max(0, equityInvested);
+  if (equity <= 0) {
+    return null;
+  }
+  return ((monthlyCashFlow * 12) / equity) * 100;
+}
+
+/** Simplified French unfurnished rental tax (revenus fonciers). */
+export type RentalTaxRegime = "MICRO" | "REEL";
+
+export const MARGINAL_TAX_RATES = [0, 11, 30, 41, 45] as const;
+export type MarginalTaxRate = (typeof MARGINAL_TAX_RATES)[number];
+
+/** Default household marginal income-tax bracket for the simple simulator. */
+export const DEFAULT_MARGINAL_TAX_RATE: MarginalTaxRate = 30;
+export const DEFAULT_RENTAL_TAX_REGIME: RentalTaxRegime = "MICRO";
+
+/** Prélèvements sociaux on taxable rental income (%). */
+export const RENTAL_SOCIAL_CONTRIBUTIONS_PCT = 17.2;
+/** Micro-foncier forfaitary abatement (%). */
+export const MICRO_FONCIER_ABATEMENT_PCT = 30;
+/** Micro-foncier gross annual rent ceiling (€). */
+export const MICRO_FONCIER_GROSS_CEILING = 15_000;
+
+/** Interest paid during the first 12 months of a constant-annuity loan. */
+export function annualLoanInterestFirstYear(
+  principal: number,
+  annualInterestRatePct: number,
+  durationYears: number,
+): number {
+  const capital = Math.max(0, principal);
+  const months = Math.max(0, Math.round(durationYears * 12));
+  if (capital <= 0 || months <= 0) {
+    return 0;
+  }
+
+  const monthlyRate = annualInterestRatePct / 100 / 12;
+  const payment = monthlyLoanPayment(
+    capital,
+    annualInterestRatePct,
+    durationYears,
+  );
+  let balance = capital;
+  let interestTotal = 0;
+  const monthsToCount = Math.min(12, months);
+
+  for (let i = 0; i < monthsToCount; i += 1) {
+    const interest = monthlyRate === 0 ? 0 : balance * monthlyRate;
+    interestTotal += interest;
+    balance = Math.max(0, balance - (payment - interest));
+  }
+
+  return interestTotal;
+}
+
+export type RentalIncomeTaxBreakdown = {
+  taxableBase: number;
+  incomeTax: number;
+  socialContributions: number;
+  totalTax: number;
+};
+
+/**
+ * Simplified annual tax on unfurnished rental income.
+ * Micro: 30% abatement, no itemized deductions.
+ * Réel: deduct ownership costs + first-year loan interest; deficit → tax 0.
+ */
+export function annualRentalIncomeTax(options: {
+  monthlyRent: number;
+  regime: RentalTaxRegime;
+  marginalTaxRatePct: number;
+  annualOwnershipCosts?: number;
+  annualLoanInterest?: number;
+}): RentalIncomeTaxBreakdown {
+  const annualRent = Math.max(0, options.monthlyRent) * 12;
+  const taxableBase =
+    options.regime === "MICRO"
+      ? annualRent * (1 - MICRO_FONCIER_ABATEMENT_PCT / 100)
+      : Math.max(
+          0,
+          annualRent -
+            Math.max(0, options.annualOwnershipCosts ?? 0) -
+            Math.max(0, options.annualLoanInterest ?? 0),
+        );
+
+  const tmi = Math.max(0, options.marginalTaxRatePct) / 100;
+  const social = RENTAL_SOCIAL_CONTRIBUTIONS_PCT / 100;
+  const incomeTax = taxableBase * tmi;
+  const socialContributions = taxableBase * social;
+
+  return {
+    taxableBase,
+    incomeTax,
+    socialContributions,
+    totalTax: incomeTax + socialContributions,
+  };
+}
+
+/**
+ * Net-net rental yield (%) after ownership costs and income tax
+ * (loan principal repayments excluded from the numerator).
+ */
+export function netNetRentalYield(
+  monthlyRent: number,
+  annualOwnershipCosts: number,
+  annualTax: number,
+  acquisitionCost: number,
+): number | null {
+  const cost = Math.max(0, acquisitionCost);
+  if (cost <= 0) {
+    return null;
+  }
+  const netAnnual =
+    Math.max(0, monthlyRent) * 12 -
+    Math.max(0, annualOwnershipCosts) -
+    Math.max(0, annualTax);
+  return (netAnnual / cost) * 100;
+}

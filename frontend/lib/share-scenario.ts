@@ -1,9 +1,11 @@
 import type { AgencyFeeMode } from "@/lib/agency-fees";
 import type { ApartmentFloor } from "@/lib/amenity-uplift";
 import type {
+  MarginalTaxRate,
   ModelInputSnapshot,
   PredictResult,
   PropertyType,
+  RentalTaxRegime,
   WorkLine,
 } from "@/lib/estimate-session/context";
 import type { NotaryPropertyAge } from "@/lib/notary-fees";
@@ -31,8 +33,11 @@ export type ShareScenarioPayload = {
   showOwnershipSection: boolean;
   showLoanSection: boolean;
   showLivingBudgetSection: boolean;
+  showInvestmentSection: boolean;
   showSavingsSection: boolean;
   showVerdictSection: boolean;
+  investmentTaxRegime: RentalTaxRegime;
+  investmentMarginalTaxRate: MarginalTaxRate;
   loanDownPayment: number;
   loanDurationYears: number;
   loanInterestRate: number;

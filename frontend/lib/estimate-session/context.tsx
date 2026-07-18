@@ -24,9 +24,13 @@ import {
   DEFAULT_LOAN_INSURANCE_RATE,
   DEFAULT_LOAN_INTEREST_RATE,
   DEFAULT_MAINTENANCE_PCT,
+  DEFAULT_MARGINAL_TAX_RATE,
   DEFAULT_NET_SALARY,
   DEFAULT_PROPERTY_APPRECIATION,
   DEFAULT_PROPERTY_TAX,
+  DEFAULT_RENTAL_TAX_REGIME,
+  type MarginalTaxRate,
+  type RentalTaxRegime,
 } from "@/lib/mortgage";
 import {
   DEFAULT_INFLATION_RATE,
@@ -88,10 +92,14 @@ export {
   DEFAULT_LOAN_INSURANCE_RATE,
   DEFAULT_LOAN_INTEREST_RATE,
   DEFAULT_MAINTENANCE_PCT,
+  DEFAULT_MARGINAL_TAX_RATE,
   DEFAULT_NET_SALARY,
   DEFAULT_PROPERTY_APPRECIATION,
   DEFAULT_PROPERTY_TAX,
+  DEFAULT_RENTAL_TAX_REGIME,
 };
+
+export type { MarginalTaxRate, RentalTaxRegime };
 
 export { DEFAULT_INFLATION_RATE, DEFAULT_SAVINGS_RATE };
 
@@ -115,8 +123,11 @@ export type EstimateSessionSnapshot = {
   showOwnershipSection: boolean;
   showLoanSection: boolean;
   showLivingBudgetSection: boolean;
+  showInvestmentSection: boolean;
   showSavingsSection: boolean;
   showVerdictSection: boolean;
+  investmentTaxRegime: RentalTaxRegime;
+  investmentMarginalTaxRate: MarginalTaxRate;
   loanDownPayment: number;
   loanDurationYears: number;
   loanInterestRate: number;
@@ -179,10 +190,16 @@ type EstimateSessionContextValue = {
   setShowLoanSection: Dispatch<SetStateAction<boolean>>;
   showLivingBudgetSection: boolean;
   setShowLivingBudgetSection: Dispatch<SetStateAction<boolean>>;
+  showInvestmentSection: boolean;
+  setShowInvestmentSection: Dispatch<SetStateAction<boolean>>;
   showSavingsSection: boolean;
   setShowSavingsSection: Dispatch<SetStateAction<boolean>>;
   showVerdictSection: boolean;
   setShowVerdictSection: Dispatch<SetStateAction<boolean>>;
+  investmentTaxRegime: RentalTaxRegime;
+  setInvestmentTaxRegime: Dispatch<SetStateAction<RentalTaxRegime>>;
+  investmentMarginalTaxRate: MarginalTaxRate;
+  setInvestmentMarginalTaxRate: Dispatch<SetStateAction<MarginalTaxRate>>;
   loanDownPayment: number;
   setLoanDownPayment: Dispatch<SetStateAction<number>>;
   loanDurationYears: number;
@@ -256,8 +273,14 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
   const [showOwnershipSection, setShowOwnershipSection] = useState(false);
   const [showLoanSection, setShowLoanSection] = useState(false);
   const [showLivingBudgetSection, setShowLivingBudgetSection] = useState(false);
+  const [showInvestmentSection, setShowInvestmentSection] = useState(false);
   const [showSavingsSection, setShowSavingsSection] = useState(false);
   const [showVerdictSection, setShowVerdictSection] = useState(false);
+  const [investmentTaxRegime, setInvestmentTaxRegime] = useState<RentalTaxRegime>(
+    DEFAULT_RENTAL_TAX_REGIME,
+  );
+  const [investmentMarginalTaxRate, setInvestmentMarginalTaxRate] =
+    useState<MarginalTaxRate>(DEFAULT_MARGINAL_TAX_RATE);
   const [loanDownPayment, setLoanDownPayment] = useState(DEFAULT_LOAN_DOWN_PAYMENT);
   const [loanDurationYears, setLoanDurationYears] = useState(
     DEFAULT_LOAN_DURATION_YEARS,
@@ -320,8 +343,11 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       showOwnershipSection,
       showLoanSection,
       showLivingBudgetSection,
+      showInvestmentSection,
       showSavingsSection,
       showVerdictSection,
+      investmentTaxRegime,
+      investmentMarginalTaxRate,
       loanDownPayment,
       loanDurationYears,
       loanInterestRate,
@@ -364,8 +390,11 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
     showOwnershipSection,
     showLoanSection,
     showLivingBudgetSection,
+    showInvestmentSection,
     showSavingsSection,
     showVerdictSection,
+    investmentTaxRegime,
+    investmentMarginalTaxRate,
     loanDownPayment,
     loanDurationYears,
     loanInterestRate,
@@ -409,8 +438,15 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
     setShowOwnershipSection(Boolean(snapshot.showOwnershipSection));
     setShowLoanSection(Boolean(snapshot.showLoanSection));
     setShowLivingBudgetSection(Boolean(snapshot.showLivingBudgetSection));
+    setShowInvestmentSection(Boolean(snapshot.showInvestmentSection));
     setShowSavingsSection(Boolean(snapshot.showSavingsSection));
     setShowVerdictSection(Boolean(snapshot.showVerdictSection));
+    setInvestmentTaxRegime(
+      snapshot.investmentTaxRegime ?? DEFAULT_RENTAL_TAX_REGIME,
+    );
+    setInvestmentMarginalTaxRate(
+      snapshot.investmentMarginalTaxRate ?? DEFAULT_MARGINAL_TAX_RATE,
+    );
     setLoanDownPayment(snapshot.loanDownPayment);
     setLoanDurationYears(snapshot.loanDurationYears);
     setLoanInterestRate(snapshot.loanInterestRate);
@@ -475,10 +511,16 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       setShowLoanSection,
       showLivingBudgetSection,
       setShowLivingBudgetSection,
+      showInvestmentSection,
+      setShowInvestmentSection,
       showSavingsSection,
       setShowSavingsSection,
       showVerdictSection,
       setShowVerdictSection,
+      investmentTaxRegime,
+      setInvestmentTaxRegime,
+      investmentMarginalTaxRate,
+      setInvestmentMarginalTaxRate,
       loanDownPayment,
       setLoanDownPayment,
       loanDurationYears,
@@ -546,8 +588,11 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       showOwnershipSection,
       showLoanSection,
       showLivingBudgetSection,
+      showInvestmentSection,
       showSavingsSection,
       showVerdictSection,
+      investmentTaxRegime,
+      investmentMarginalTaxRate,
       loanDownPayment,
       loanDurationYears,
       loanInterestRate,

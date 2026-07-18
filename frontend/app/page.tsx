@@ -31,13 +31,17 @@ import {
   DEFAULT_LOAN_INSURANCE_RATE,
   DEFAULT_LOAN_INTEREST_RATE,
   DEFAULT_MAINTENANCE_PCT,
+  DEFAULT_MARGINAL_TAX_RATE,
   DEFAULT_NET_SALARY,
   DEFAULT_PROPERTY_APPRECIATION,
   DEFAULT_PROPERTY_TAX,
+  DEFAULT_RENTAL_TAX_REGIME,
   createEmptyWorkLine,
   useEstimateSession,
+  type MarginalTaxRate,
   type PredictResult,
   type PropertyType,
+  type RentalTaxRegime,
 } from "@/lib/estimate-session/context";
 import {
   APARTMENT_FLOOR_OPTIONS,
@@ -50,14 +54,24 @@ import { dpeValueToLetter } from "@/lib/dpe-rental";
 import { useI18n } from "@/lib/i18n/context";
 import {
   buyNetWorth,
+  annualLoanInterestFirstYear,
   annualMaintenanceBudget,
+  annualRentalIncomeTax,
+  cashOnCashReturn,
   defaultMonthlyRent,
   effectiveAnnualCharges,
+  grossRentalYield,
   loanPrincipal,
+  MARGINAL_TAX_RATES,
   MAX_DEBT_RATIO_PCT,
+  MICRO_FONCIER_GROSS_CEILING,
+  monthlyInvestmentCashFlow,
   monthlyInvestableWhenRenting,
   monthlyOwnershipCosts,
   monthlyTotalPayment,
+  netNetRentalYield,
+  netRentalYield,
+  RENTAL_SOCIAL_CONTRIBUTIONS_PCT,
   rentSavedOverYears,
   totalCreditCost,
 } from "@/lib/mortgage";
@@ -243,10 +257,16 @@ export default function Home() {
     setShowLoanSection,
     showLivingBudgetSection,
     setShowLivingBudgetSection,
+    showInvestmentSection,
+    setShowInvestmentSection,
     showSavingsSection,
     setShowSavingsSection,
     showVerdictSection,
     setShowVerdictSection,
+    investmentTaxRegime,
+    setInvestmentTaxRegime,
+    investmentMarginalTaxRate,
+    setInvestmentMarginalTaxRate,
     loanDownPayment,
     setLoanDownPayment,
     loanDurationYears,
@@ -441,11 +461,15 @@ export default function Home() {
   function resetSavingsDefaults() {
     setSavingsRate(DEFAULT_SAVINGS_RATE);
     setSavingsInflation(DEFAULT_INFLATION_RATE);
-    setLoanRent(null);
   }
 
   function resetVerdictDefaults() {
     setPropertyAppreciation(DEFAULT_PROPERTY_APPRECIATION);
+  }
+
+  function resetInvestmentTaxDefaults() {
+    setInvestmentTaxRegime(DEFAULT_RENTAL_TAX_REGIME);
+    setInvestmentMarginalTaxRate(DEFAULT_MARGINAL_TAX_RATE);
   }
 
   /** Full reset used on new estimate / property-type change. */
@@ -459,6 +483,7 @@ export default function Home() {
   function resetAllFinanceDefaults() {
     resetWorksDefaults();
     resetLoanDefaults();
+    resetInvestmentTaxDefaults();
     resetSavingsDefaults();
     resetVerdictDefaults();
   }
@@ -468,6 +493,7 @@ export default function Home() {
     setShowOwnershipSection(false);
     setShowLoanSection(false);
     setShowLivingBudgetSection(false);
+    setShowInvestmentSection(false);
     setShowSavingsSection(false);
     setShowVerdictSection(false);
   }
@@ -500,10 +526,23 @@ export default function Home() {
     }
   }
 
+  function handleInvestmentToggle(next: boolean) {
+    setShowInvestmentSection(next);
+    if (!next) {
+      resetInvestmentTaxDefaults();
+      if (!showSavingsSection && !showVerdictSection) {
+        setLoanRent(null);
+      }
+    }
+  }
+
   function handleSavingsToggle(next: boolean) {
     setShowSavingsSection(next);
     if (!next) {
       resetSavingsDefaults();
+      if (!showInvestmentSection && !showVerdictSection) {
+        setLoanRent(null);
+      }
     }
   }
 
@@ -511,6 +550,9 @@ export default function Home() {
     setShowVerdictSection(next);
     if (!next) {
       resetVerdictDefaults();
+      if (!showInvestmentSection && !showSavingsSection) {
+        setLoanRent(null);
+      }
     }
   }
 
@@ -1705,6 +1747,358 @@ export default function Home() {
                   </div>
                 );
               })()}
+            </section>
+          )}
+
+          {result && (
+            <section className="rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
+              <FinanceSectionToggle
+                title={t("result.investmentToggleTitle")}
+                hint={t("result.investmentToggleHint")}
+                checked={showInvestmentSection}
+                onCheckedChange={handleInvestmentToggle}
+              />
+              {showInvestmentSection &&
+                (() => {
+                  const displayPrice = adjustedPrice ?? Math.round(result.price);
+                  const worksTotal = workLines.reduce(
+                    (sum, line) => sum + Math.max(0, line.amount),
+                    0,
+                  );
+                  const priceFai = priceWithAgencyFees(
+                    displayPrice,
+                    agencyFeeMode,
+                    agencyFeeRate,
+                    agencyFeeFixed,
+                  );
+                  const notaryAmount = notaryFeeAmount(
+                    displayPrice,
+                    notaryFeeRate,
+                  );
+                  const purchaseCost = priceFai + notaryAmount;
+                  const projectBudget = purchaseCost + worksTotal;
+                  const rentMonthly =
+                    loanRent ?? defaultMonthlyRent(displayPrice);
+                  const annualChargesEff = showOwnershipSection
+                    ? effectiveAnnualCharges(
+                        loanAnnualCharges,
+                        exceptionalChargesEnabled,
+                        exceptionalChargesPct,
+                      )
+                    : 0;
+                  const maintenanceAnnual = showOwnershipSection
+                    ? annualMaintenanceBudget(
+                        displayPrice,
+                        maintenanceEnabled,
+                        maintenancePct,
+                      )
+                    : 0;
+                  const propertyTaxAnnual = showOwnershipSection
+                    ? loanPropertyTax
+                    : 0;
+                  const ownershipAnnual =
+                    annualChargesEff + propertyTaxAnnual + maintenanceAnnual;
+                  const ownershipMonthly = monthlyOwnershipCosts(
+                    annualChargesEff,
+                    propertyTaxAnnual,
+                    maintenanceAnnual,
+                  );
+                  const buysCash = !showLoanSection;
+                  const principal = buysCash
+                    ? 0
+                    : loanPrincipal(projectBudget, loanDownPayment);
+                  const loanMonthly = buysCash
+                    ? 0
+                    : monthlyTotalPayment(
+                        principal,
+                        loanInterestRate,
+                        loanDurationYears,
+                        loanInsuranceRate,
+                      );
+                  const equityInvested = buysCash
+                    ? projectBudget
+                    : Math.max(0, loanDownPayment);
+                  const grossYield = grossRentalYield(
+                    rentMonthly,
+                    projectBudget,
+                  );
+                  const netYield = netRentalYield(
+                    rentMonthly,
+                    ownershipAnnual,
+                    projectBudget,
+                  );
+                  const cashFlow = monthlyInvestmentCashFlow(
+                    rentMonthly,
+                    loanMonthly,
+                    ownershipMonthly,
+                  );
+                  const annualInterest = buysCash
+                    ? 0
+                    : annualLoanInterestFirstYear(
+                        principal,
+                        loanInterestRate,
+                        loanDurationYears,
+                      );
+                  const tax = annualRentalIncomeTax({
+                    monthlyRent: rentMonthly,
+                    regime: investmentTaxRegime,
+                    marginalTaxRatePct: investmentMarginalTaxRate,
+                    annualOwnershipCosts: ownershipAnnual,
+                    annualLoanInterest: annualInterest,
+                  });
+                  const netNetYield = netNetRentalYield(
+                    rentMonthly,
+                    ownershipAnnual,
+                    tax.totalTax,
+                    projectBudget,
+                  );
+                  const cashFlowAfterTax =
+                    cashFlow - tax.totalTax / 12;
+                  const cashOnCashAfterTax = cashOnCashReturn(
+                    cashFlowAfterTax,
+                    equityInvested,
+                  );
+                  const annualRent = rentMonthly * 12;
+                  const microCeilingExceeded =
+                    investmentTaxRegime === "MICRO" &&
+                    annualRent > MICRO_FONCIER_GROSS_CEILING;
+
+                  return (
+                    <div className="mt-5 border-t border-border pt-5">
+                      <p className="text-sm text-muted">
+                        {t("result.investmentHint")}
+                      </p>
+
+                      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                        <label className="flex flex-col gap-2">
+                          <span className={labelClassName}>
+                            {t("result.investmentRent")}
+                          </span>
+                          <input
+                            type="number"
+                            min={0}
+                            step={50}
+                            value={rentMonthly || ""}
+                            onChange={(e) =>
+                              setLoanRent(
+                                Math.max(0, Number(e.target.value) || 0),
+                              )
+                            }
+                            className={inputClassName}
+                          />
+                          <span className="text-xs text-muted">
+                            {t("result.investmentRentNote")}
+                          </span>
+                        </label>
+                        <div>
+                          <p className="text-xs font-medium uppercase tracking-[0.15em] text-muted">
+                            {t("result.investmentAcquisition")}
+                          </p>
+                          <p className="mt-2 font-sans text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+                            {formatPrice(Math.round(projectBudget))}
+                          </p>
+                          <p className="mt-1 text-xs text-muted">
+                            {t("result.investmentAcquisitionHint")}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                        <label className="flex flex-col gap-2">
+                          <span className={labelClassName}>
+                            {t("result.investmentTaxRegime")}
+                          </span>
+                          <select
+                            value={investmentTaxRegime}
+                            onChange={(e) =>
+                              setInvestmentTaxRegime(
+                                e.target.value as RentalTaxRegime,
+                              )
+                            }
+                            className={inputClassName}
+                          >
+                            <option value="MICRO">
+                              {t("result.investmentTaxRegimeMicro")}
+                            </option>
+                            <option value="REEL">
+                              {t("result.investmentTaxRegimeReel")}
+                            </option>
+                          </select>
+                          <span className="text-xs text-muted">
+                            {investmentTaxRegime === "MICRO"
+                              ? t("result.investmentTaxRegimeMicroHint")
+                              : t("result.investmentTaxRegimeReelHint")}
+                          </span>
+                        </label>
+                        <label className="flex flex-col gap-2">
+                          <span className={labelClassName}>
+                            {t("result.investmentTaxBracket")}
+                          </span>
+                          <select
+                            value={investmentMarginalTaxRate}
+                            onChange={(e) =>
+                              setInvestmentMarginalTaxRate(
+                                Number(e.target.value) as MarginalTaxRate,
+                              )
+                            }
+                            className={inputClassName}
+                          >
+                            {MARGINAL_TAX_RATES.map((rate) => (
+                              <option key={rate} value={rate}>
+                                {rate} %
+                              </option>
+                            ))}
+                          </select>
+                          <span className="text-xs text-muted">
+                            {t("result.investmentTaxBracketHint", {
+                              social: formatFeeRate(
+                                RENTAL_SOCIAL_CONTRIBUTIONS_PCT,
+                              ),
+                            })}
+                          </span>
+                        </label>
+                      </div>
+
+                      {microCeilingExceeded && (
+                        <p className="mt-3 text-sm text-red-700">
+                          {t("result.investmentMicroCeilingWarning", {
+                            ceiling: formatPrice(MICRO_FONCIER_GROSS_CEILING),
+                          })}
+                        </p>
+                      )}
+
+                      {!showOwnershipSection && (
+                        <p className="mt-4 text-sm text-muted">
+                          {t("result.investmentOwnershipNote")}
+                        </p>
+                      )}
+                      {!showLoanSection && (
+                        <p className="mt-2 text-sm text-muted">
+                          {t("result.investmentLoanNote")}
+                        </p>
+                      )}
+
+                      <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        <div>
+                          <p className="text-xs font-medium uppercase tracking-[0.15em] text-muted">
+                            {t("result.investmentGrossYield")}
+                          </p>
+                          <p className="mt-2 font-sans text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+                            {grossYield !== null
+                              ? `${formatFeeRate(grossYield)} %`
+                              : "—"}
+                          </p>
+                          <p className="mt-1 text-xs text-muted">
+                            {t("result.investmentGrossYieldHint")}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium uppercase tracking-[0.15em] text-muted">
+                            {t("result.investmentNetYield")}
+                          </p>
+                          <p className="mt-2 font-sans text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+                            {netYield !== null
+                              ? `${formatFeeRate(netYield)} %`
+                              : "—"}
+                          </p>
+                          <p className="mt-1 text-xs text-muted">
+                            {t("result.investmentNetYieldHint")}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium uppercase tracking-[0.15em] text-muted">
+                            {t("result.investmentNetNetYield")}
+                          </p>
+                          <p className="mt-2 font-sans text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+                            {netNetYield !== null
+                              ? `${formatFeeRate(netNetYield)} %`
+                              : "—"}
+                          </p>
+                          <p className="mt-1 text-xs text-muted">
+                            {t("result.investmentNetNetYieldHint")}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                        <div>
+                          <p className="text-xs font-medium uppercase tracking-[0.15em] text-muted">
+                            {t("result.investmentAnnualTax")}
+                          </p>
+                          <p className="mt-2 font-sans text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+                            {formatPrice(Math.round(tax.totalTax))}
+                          </p>
+                          <p className="mt-1 text-xs text-muted">
+                            {t("result.investmentAnnualTaxHint", {
+                              income: formatPrice(Math.round(tax.incomeTax)),
+                              social: formatPrice(
+                                Math.round(tax.socialContributions),
+                              ),
+                            })}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium uppercase tracking-[0.15em] text-muted">
+                            {t("result.investmentCashFlow")}
+                          </p>
+                          <p
+                            className={`mt-2 font-sans text-2xl font-semibold tracking-tight sm:text-3xl ${
+                              cashFlow < 0 ? "text-red-700" : "text-foreground"
+                            }`}
+                          >
+                            {formatPrice(Math.round(cashFlow))}
+                          </p>
+                          <p className="mt-1 text-xs text-muted">
+                            {t("result.investmentCashFlowHint")}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium uppercase tracking-[0.15em] text-muted">
+                            {t("result.investmentCashFlowAfterTax")}
+                          </p>
+                          <p
+                            className={`mt-2 font-sans text-2xl font-semibold tracking-tight sm:text-3xl ${
+                              cashFlowAfterTax < 0
+                                ? "text-red-700"
+                                : "text-foreground"
+                            }`}
+                          >
+                            {formatPrice(Math.round(cashFlowAfterTax))}
+                          </p>
+                          <p className="mt-1 text-xs text-muted">
+                            {t("result.investmentCashFlowAfterTaxHint")}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium uppercase tracking-[0.15em] text-muted">
+                            {t("result.investmentCashOnCash")}
+                          </p>
+                          <p
+                            className={`mt-2 font-sans text-2xl font-semibold tracking-tight sm:text-3xl ${
+                              cashOnCashAfterTax !== null &&
+                              cashOnCashAfterTax < 0
+                                ? "text-red-700"
+                                : "text-foreground"
+                            }`}
+                          >
+                            {cashOnCashAfterTax !== null
+                              ? `${formatFeeRate(cashOnCashAfterTax)} %`
+                              : "—"}
+                          </p>
+                          <p className="mt-1 text-xs text-muted">
+                            {buysCash
+                              ? t("result.investmentCashOnCashHintCash")
+                              : t("result.investmentCashOnCashHint")}
+                          </p>
+                        </div>
+                      </div>
+
+                      <p className="mt-4 text-xs text-muted">
+                        {t("result.investmentDisclaimer")}
+                      </p>
+                    </div>
+                  );
+                })()}
             </section>
           )}
 
