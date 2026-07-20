@@ -31,6 +31,7 @@ export type ShareScenarioPayload = {
   adjustedPrice: number | null;
   workLines: WorkLine[];
   showWorksSection: boolean;
+  worksPaidInCash: boolean;
   showOwnershipSection: boolean;
   showLoanSection: boolean;
   showLivingBudgetSection: boolean;

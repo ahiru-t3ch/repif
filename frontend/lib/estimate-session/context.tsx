@@ -123,6 +123,7 @@ export type EstimateSessionSnapshot = {
   adjustedPrice: number | null;
   workLines: WorkLine[];
   showWorksSection: boolean;
+  worksPaidInCash: boolean;
   showOwnershipSection: boolean;
   showLoanSection: boolean;
   showLivingBudgetSection: boolean;
@@ -188,6 +189,8 @@ type EstimateSessionContextValue = {
   setWorkLines: Dispatch<SetStateAction<WorkLine[]>>;
   showWorksSection: boolean;
   setShowWorksSection: Dispatch<SetStateAction<boolean>>;
+  worksPaidInCash: boolean;
+  setWorksPaidInCash: Dispatch<SetStateAction<boolean>>;
   showOwnershipSection: boolean;
   setShowOwnershipSection: Dispatch<SetStateAction<boolean>>;
   showLoanSection: boolean;
@@ -276,6 +279,7 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
   const [adjustedPrice, setAdjustedPrice] = useState<number | null>(null);
   const [workLines, setWorkLines] = useState<WorkLine[]>([]);
   const [showWorksSection, setShowWorksSection] = useState(false);
+  const [worksPaidInCash, setWorksPaidInCash] = useState(false);
   const [showOwnershipSection, setShowOwnershipSection] = useState(false);
   const [showLoanSection, setShowLoanSection] = useState(false);
   const [showLivingBudgetSection, setShowLivingBudgetSection] = useState(false);
@@ -348,6 +352,7 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       adjustedPrice,
       workLines,
       showWorksSection,
+      worksPaidInCash,
       showOwnershipSection,
       showLoanSection,
       showLivingBudgetSection,
@@ -396,6 +401,7 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
     adjustedPrice,
     workLines,
     showWorksSection,
+    worksPaidInCash,
     showOwnershipSection,
     showLoanSection,
     showLivingBudgetSection,
@@ -445,6 +451,7 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
     setAdjustedPrice(snapshot.adjustedPrice);
     setWorkLines(snapshot.workLines ?? []);
     setShowWorksSection(Boolean(snapshot.showWorksSection));
+    setWorksPaidInCash(Boolean(snapshot.worksPaidInCash));
     setShowOwnershipSection(Boolean(snapshot.showOwnershipSection));
     setShowLoanSection(Boolean(snapshot.showLoanSection));
     setShowLivingBudgetSection(Boolean(snapshot.showLivingBudgetSection));
@@ -518,6 +525,8 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       setWorkLines,
       showWorksSection,
       setShowWorksSection,
+      worksPaidInCash,
+      setWorksPaidInCash,
       showOwnershipSection,
       setShowOwnershipSection,
       showLoanSection,
@@ -600,6 +609,7 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       adjustedPrice,
       workLines,
       showWorksSection,
+      worksPaidInCash,
       showOwnershipSection,
       showLoanSection,
       showLivingBudgetSection,

@@ -21,6 +21,36 @@ export function loanPrincipal(loanBase: number, downPayment: number): number {
   return Math.max(0, loanBase - Math.max(0, downPayment));
 }
 
+/**
+ * Loan base for the mortgage: purchase cost always;
+ * works included only when they are not paid in cash.
+ */
+export function loanFinancingBase(
+  purchaseCost: number,
+  worksTotal: number,
+  worksPaidInCash: boolean,
+): number {
+  return (
+    Math.max(0, purchaseCost) +
+    (worksPaidInCash ? 0 : Math.max(0, worksTotal))
+  );
+}
+
+/**
+ * Cash equity at purchase: down payment always;
+ * works added only when paid in cash (otherwise financed by the loan).
+ */
+export function cashEquityAtPurchase(
+  downPayment: number,
+  worksTotal: number,
+  worksPaidInCash: boolean,
+): number {
+  return (
+    Math.max(0, downPayment) +
+    (worksPaidInCash ? Math.max(0, worksTotal) : 0)
+  );
+}
+
 /** Default monthly rent ≈ 0.35% of the property price. */
 export function defaultMonthlyRent(propertyPrice: number): number {
   return Math.round(

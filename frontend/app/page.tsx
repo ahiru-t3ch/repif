@@ -62,10 +62,12 @@ import {
   annualMaintenanceBudget,
   annualRentalIncomeTax,
   cashOnCashReturn,
+  cashEquityAtPurchase,
   defaultMonthlyRent,
   effectiveAnnualCharges,
   effectiveMonthlyRent,
   grossRentalYield,
+  loanFinancingBase,
   loanPrincipal,
   MARGINAL_TAX_RATES,
   MAX_DEBT_RATIO_PCT,
@@ -257,6 +259,8 @@ export default function Home() {
     setWorkLines,
     showWorksSection,
     setShowWorksSection,
+    worksPaidInCash,
+    setWorksPaidInCash,
     showOwnershipSection,
     setShowOwnershipSection,
     showLoanSection,
@@ -478,6 +482,7 @@ export default function Home() {
 
   function resetWorksDefaults() {
     setWorkLines([]);
+    setWorksPaidInCash(false);
   }
 
   function resetOwnershipDefaults() {
@@ -1176,6 +1181,23 @@ export default function Home() {
               <div className="mt-5 border-t border-border pt-5">
                 <p className="text-sm text-muted">{t("result.worksHint")}</p>
 
+                <label className="mt-4 flex items-start gap-2 text-sm text-foreground">
+                  <input
+                    type="checkbox"
+                    checked={worksPaidInCash}
+                    onChange={(e) => setWorksPaidInCash(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded border-border"
+                  />
+                  <span>
+                    <span className="font-medium">{t("result.worksPaidInCash")}</span>
+                    <span className="mt-0.5 block text-xs text-muted">
+                      {worksPaidInCash
+                        ? t("result.worksPaidInCashHintYes")
+                        : t("result.worksPaidInCashHintNo")}
+                    </span>
+                  </span>
+                </label>
+
                 <ul className="mt-4 space-y-3">
                   {workLines.map((line) => (
                     <li
@@ -1464,8 +1486,12 @@ export default function Home() {
               agencyFeeFixed,
             );
             const notaryAmount = notaryFeeAmount(displayPrice, notaryFeeRate);
-            const projectBudget = priceFai + notaryAmount + worksTotal;
-            const principal = loanPrincipal(projectBudget, loanDownPayment);
+            const purchaseCost = priceFai + notaryAmount;
+            const projectBudget = purchaseCost + worksTotal;
+            const principal = loanPrincipal(
+              loanFinancingBase(purchaseCost, worksTotal, worksPaidInCash),
+              loanDownPayment,
+            );
             const monthly = monthlyTotalPayment(
               principal,
               loanInterestRate,
@@ -1624,10 +1650,6 @@ export default function Home() {
                 (showOwnershipSection || showLoanSection) &&
                 (() => {
                 const displayPrice = adjustedPrice ?? Math.round(result.price);
-                const worksTotal = workLines.reduce(
-                  (sum, line) => sum + Math.max(0, line.amount),
-                  0,
-                );
                 const priceFai = priceWithAgencyFees(
                   displayPrice,
                   agencyFeeMode,
@@ -1635,8 +1657,15 @@ export default function Home() {
                   agencyFeeFixed,
                 );
                 const notaryAmount = notaryFeeAmount(displayPrice, notaryFeeRate);
-                const projectBudget = priceFai + notaryAmount + worksTotal;
-                const principal = loanPrincipal(projectBudget, loanDownPayment);
+                const purchaseCost = priceFai + notaryAmount;
+                const worksTotal = workLines.reduce(
+                  (sum, line) => sum + Math.max(0, line.amount),
+                  0,
+                );
+                const principal = loanPrincipal(
+                  loanFinancingBase(purchaseCost, worksTotal, worksPaidInCash),
+                  loanDownPayment,
+                );
                 const loanMonthly = showLoanSection
                   ? monthlyTotalPayment(
                       principal,
@@ -1834,7 +1863,14 @@ export default function Home() {
                   const buysCash = !showLoanSection;
                   const principal = buysCash
                     ? 0
-                    : loanPrincipal(projectBudget, loanDownPayment);
+                    : loanPrincipal(
+                        loanFinancingBase(
+                          purchaseCost,
+                          worksTotal,
+                          worksPaidInCash,
+                        ),
+                        loanDownPayment,
+                      );
                   const loanMonthly = buysCash
                     ? 0
                     : monthlyTotalPayment(
@@ -1845,7 +1881,11 @@ export default function Home() {
                       );
                   const equityInvested = buysCash
                     ? projectBudget
-                    : Math.max(0, loanDownPayment);
+                    : cashEquityAtPurchase(
+                        loanDownPayment,
+                        worksTotal,
+                        worksPaidInCash,
+                      );
                   const grossYield = grossRentalYield(
                     effectiveRentMonthly,
                     projectBudget,
@@ -2149,7 +2189,9 @@ export default function Home() {
                           <p className="mt-1 text-xs text-muted">
                             {buysCash
                               ? t("result.investmentCashOnCashHintCash")
-                              : t("result.investmentCashOnCashHint")}
+                              : worksTotal > 0 && worksPaidInCash
+                                ? t("result.investmentCashOnCashHintWorks")
+                                : t("result.investmentCashOnCashHint")}
                           </p>
                         </div>
                       </div>
@@ -2189,7 +2231,10 @@ export default function Home() {
             const buysCash = !showLoanSection;
             const principal = buysCash
               ? 0
-              : loanPrincipal(projectBudget, loanDownPayment);
+              : loanPrincipal(
+                  loanFinancingBase(purchaseCost, worksTotal, worksPaidInCash),
+                  loanDownPayment,
+                );
             const loanMonthly = buysCash
               ? 0
               : Math.round(
@@ -2211,7 +2256,13 @@ export default function Home() {
               maintenanceEnabled,
               maintenancePct,
             );
-            const initialCapital = buysCash ? projectBudget : loanDownPayment;
+            const initialCapital = buysCash
+              ? projectBudget
+              : cashEquityAtPurchase(
+                  loanDownPayment,
+                  worksTotal,
+                  worksPaidInCash,
+                );
             const monthlyDeposit = Math.round(
               monthlyInvestableWhenRenting(
                 loanMonthly,
@@ -2263,7 +2314,9 @@ export default function Home() {
                           ? worksTotal > 0
                             ? t("result.savingsInitialNoteCashWorks")
                             : t("result.savingsInitialNoteCash")
-                          : t("result.savingsInitialNote")}
+                          : worksTotal > 0 && worksPaidInCash
+                            ? t("result.savingsInitialNoteWorks")
+                            : t("result.savingsInitialNote")}
                       </p>
                     </div>
                     <div>
@@ -2460,7 +2513,10 @@ export default function Home() {
             const buysCash = !showLoanSection;
             const principal = buysCash
               ? 0
-              : loanPrincipal(projectBudget, loanDownPayment);
+              : loanPrincipal(
+                  loanFinancingBase(purchaseCost, worksTotal, worksPaidInCash),
+                  loanDownPayment,
+                );
             const years = buysCash
               ? DEFAULT_CASH_SAVINGS_YEARS
               : Math.max(1, Math.round(loanDurationYears));
@@ -2485,7 +2541,13 @@ export default function Home() {
               maintenanceEnabled,
               maintenancePct,
             );
-            const initialCapital = buysCash ? projectBudget : loanDownPayment;
+            const initialCapital = buysCash
+              ? projectBudget
+              : cashEquityAtPurchase(
+                  loanDownPayment,
+                  worksTotal,
+                  worksPaidInCash,
+                );
             const monthlyDeposit = Math.round(
               monthlyInvestableWhenRenting(
                 loanMonthly,
