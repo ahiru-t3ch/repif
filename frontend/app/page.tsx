@@ -748,7 +748,11 @@ export default function Home() {
   }
 
   return (
-    <main className="px-5 py-10 sm:px-8 sm:py-12">
+    <main
+      className={`px-5 py-10 sm:px-8 sm:py-12 ${
+        result && !formExpanded ? "pb-28" : ""
+      }`}
+    >
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-8">
         <div className="space-y-2 text-center sm:text-left">
           <h1 className="sr-only">{t("meta.title")}</h1>
@@ -788,35 +792,19 @@ export default function Home() {
               ref={resultRef}
               className="scroll-mt-24 rounded-2xl border border-stone-800 bg-accent px-6 py-7 text-white sm:px-8"
             >
-              <div className="mb-5 flex flex-col gap-3 border-b border-stone-700 pb-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-stone-700 pb-4">
                 <p className="text-xs font-medium uppercase tracking-[0.15em] text-stone-400">
                   {t("share.resultLabel")}
                 </p>
-                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-                  <button
-                    type="button"
-                    onClick={handleExpandForm}
-                    className="rounded-lg border border-stone-500 bg-transparent px-3 py-2 text-sm font-medium text-white transition hover:border-stone-300 hover:bg-stone-800"
-                  >
-                    {t("form.expandForm")}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleNewSimulation}
-                    className="rounded-lg border border-stone-500 bg-transparent px-3 py-2 text-sm font-medium text-white transition hover:border-stone-300 hover:bg-stone-800"
-                  >
-                    {t("form.newSimulation")}
-                  </button>
-                  <ShareScenarioControls
-                    variant="dark"
-                    status={shareStatus}
-                    message={shareMessage}
-                    onShare={() => void handleShareScenario()}
-                    buttonLabel={t("share.button")}
-                    creatingLabel={t("share.creating")}
-                    copiedLabel={t("share.copiedShort")}
-                  />
-                </div>
+                <ShareScenarioControls
+                  variant="dark"
+                  status={shareStatus}
+                  message={shareMessage}
+                  onShare={() => void handleShareScenario()}
+                  buttonLabel={t("share.button")}
+                  creatingLabel={t("share.creating")}
+                  copiedLabel={t("share.copiedShort")}
+                />
               </div>
               <div className="grid gap-6 border-b border-stone-700 pb-5 sm:grid-cols-2">
                 <div className="min-w-0 space-y-2 text-sm leading-relaxed text-stone-300">
@@ -1194,6 +1182,310 @@ export default function Home() {
             </section>
             );
           })()}
+
+          {error && (
+            <p
+              className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+              role="alert"
+            >
+              {error}
+            </p>
+          )}
+
+          <section
+            ref={formSectionRef}
+            className="scroll-mt-24 rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8"
+          >
+            {result && !formExpanded ? (
+              <p className="text-sm text-muted">
+                {t("form.collapsedSummary", {
+                  summary: `${modelPropertyTypeLabel(
+                    modelInputSnapshot?.propertyType ?? propertyType,
+                  )} · ${result.geocoded_address}`,
+                })}
+              </p>
+            ) : (
+              <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+                {result && (
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="rounded-lg border border-border bg-stone-50 px-3 py-2 text-sm text-muted sm:flex-1">
+                      {t("form.editHint")}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleNewSimulation}
+                      className="rounded-lg border border-border bg-surface px-4 py-2.5 text-sm font-medium text-foreground transition hover:border-stone-400 hover:bg-stone-50"
+                    >
+                      {t("form.newSimulation")}
+                    </button>
+                  </div>
+                )}
+                <label className="flex flex-col gap-2">
+                  <span className={labelClassName}>{t("form.propertyType")}</span>
+                  <select
+                    value={propertyType}
+                    onChange={(e) =>
+                      handlePropertyTypeChange(e.target.value as PropertyType)
+                    }
+                    className={inputClassName}
+                  >
+                    <option value="APARTMENT">{t("form.apartment")}</option>
+                    <option value="HOUSE">{t("form.house")}</option>
+                  </select>
+                </label>
+
+                <label className="flex flex-col gap-2">
+                  <span className={labelClassName}>{t("form.address")}</span>
+                  <AddressAutocomplete
+                    value={address}
+                    onChange={setAddress}
+                    minLength={10}
+                    maxLength={255}
+                    placeholder={t("form.addressPlaceholder")}
+                    required
+                    listLabel={t("form.addressSuggestions")}
+                    loadingLabel={t("form.addressSuggestionsLoading")}
+                    className={inputClassName}
+                  />
+                </label>
+
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <label className="flex flex-col gap-2">
+                    <span className={labelClassName}>{t("form.surface")}</span>
+                    <input
+                      type="number"
+                      value={sbati}
+                      onChange={(e) => setSbati(e.target.value)}
+                      min={11}
+                      step={0.01}
+                      required
+                      className={inputClassName}
+                    />
+                  </label>
+
+                  <label className="flex flex-col gap-2">
+                    <span
+                      className={`${labelClassName} flex items-center gap-1.5 normal-case`}
+                    >
+                      {t("form.parking")}
+                      <FieldHint text={t("form.parkingHint")} />
+                    </span>
+                    <select
+                      value={nbParking}
+                      onChange={(e) => setNbParking(e.target.value)}
+                      required
+                      className={inputClassName}
+                    >
+                      <option value="" disabled>
+                        {t("form.dpeSelect")}
+                      </option>
+                      {OUTBUILDING_COUNT_OPTIONS.map((count) => (
+                        <option key={count} value={count}>
+                          {count}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <label className="flex flex-col gap-2">
+                    <span
+                      className={`${labelClassName} flex items-center gap-1.5 normal-case`}
+                    >
+                      {t("form.cave")}
+                      <FieldHint text={t("form.caveHint")} />
+                    </span>
+                    <select
+                      value={nbCave}
+                      onChange={(e) => setNbCave(e.target.value)}
+                      required
+                      className={inputClassName}
+                    >
+                      <option value="" disabled>
+                        {t("form.dpeSelect")}
+                      </option>
+                      {OUTBUILDING_COUNT_OPTIONS.map((count) => (
+                        <option key={count} value={count}>
+                          {count}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="flex flex-col gap-2">
+                    <span className={labelClassName}>{t("form.dpe")}</span>
+                    <select
+                      value={dpeMedian}
+                      onChange={(e) => setDpeMedian(e.target.value)}
+                      required
+                      className={inputClassName}
+                    >
+                      <option value="" disabled>
+                        {t("form.dpeSelect")}
+                      </option>
+                      {DPE_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <label className="flex flex-col gap-2">
+                    <span className={labelClassName}>{t("form.year")}</span>
+                    <input
+                      type="number"
+                      value={anneeConstruction}
+                      onChange={(e) => setAnneeConstruction(e.target.value)}
+                      min={1501}
+                      max={new Date().getFullYear()}
+                      required
+                      className={inputClassName}
+                    />
+                  </label>
+                </div>
+
+                <fieldset className="space-y-3">
+                  <legend className={`${labelClassName} flex items-center gap-1.5 normal-case`}>
+                    {t("form.amenities")}
+                    <FieldHint
+                      text={
+                        propertyType === "HOUSE"
+                          ? t("form.amenitiesHintHouse")
+                          : t("form.amenitiesHintApartment")
+                      }
+                    />
+                  </legend>
+                  <div
+                    className={`grid gap-3 ${
+                      isBalconyApplicable(propertyType)
+                        ? "sm:grid-cols-3"
+                        : "sm:grid-cols-2"
+                    }`}
+                  >
+                    {isBalconyApplicable(propertyType) && (
+                      <label className="flex items-center gap-2 text-sm text-foreground">
+                        <input
+                          type="checkbox"
+                          checked={hasBalcony}
+                          onChange={(e) => setHasBalcony(e.target.checked)}
+                          className="h-4 w-4 rounded border-border"
+                        />
+                        {t("form.balcony")}
+                      </label>
+                    )}
+                    <label className="flex items-center gap-2 text-sm text-foreground">
+                      <input
+                        type="checkbox"
+                        checked={hasGarden}
+                        onChange={(e) => setHasGarden(e.target.checked)}
+                        className="h-4 w-4 rounded border-border"
+                      />
+                      {t("form.garden")}
+                    </label>
+                    <label className="flex items-center gap-2 text-sm text-foreground">
+                      <input
+                        type="checkbox"
+                        checked={hasPool}
+                        onChange={(e) => setHasPool(e.target.checked)}
+                        className="h-4 w-4 rounded border-border"
+                      />
+                      {t("form.pool")}
+                    </label>
+                  </div>
+                </fieldset>
+
+                {isFloorAdjustmentApplicable(propertyType) && (
+                  <fieldset className="space-y-3">
+                    <legend
+                      className={`${labelClassName} flex items-center gap-1.5 normal-case`}
+                    >
+                      {t("form.floorElevator")}
+                      <FieldHint text={t("form.floorElevatorHint")} />
+                    </legend>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <label className="flex flex-col gap-2">
+                        <span className={labelClassName}>
+                          {t("form.buildingStoreys")}
+                        </span>
+                        <input
+                          type="number"
+                          min={1}
+                          max={100}
+                          step={1}
+                          value={buildingStoreys}
+                          onChange={(e) => setBuildingStoreys(e.target.value)}
+                          placeholder={t("form.buildingStoreysPlaceholder")}
+                          className={inputClassName}
+                        />
+                      </label>
+                      <label className="flex flex-col gap-2">
+                        <span className={labelClassName}>
+                          {t("form.apartmentFloorNumber")}
+                        </span>
+                        <input
+                          type="number"
+                          min={0}
+                          max={100}
+                          step={1}
+                          value={apartmentFloorNumber}
+                          onChange={(e) =>
+                            setApartmentFloorNumber(e.target.value)
+                          }
+                          placeholder={t("form.apartmentFloorPlaceholder")}
+                          className={inputClassName}
+                        />
+                      </label>
+                    </div>
+                    <label className="flex items-center gap-2 text-sm text-foreground">
+                      <input
+                        type="checkbox"
+                        checked={hasElevator}
+                        onChange={(e) => setHasElevator(e.target.checked)}
+                        className="h-4 w-4 rounded border-border"
+                      />
+                      {t("form.elevator")}
+                    </label>
+                    {isUnpopularTowerApplicable(propertyType) && (
+                      <label className="flex items-start gap-2 text-sm text-foreground">
+                        <input
+                          type="checkbox"
+                          checked={unpopularTower}
+                          onChange={(e) =>
+                            setUnpopularTower(e.target.checked)
+                          }
+                          className="mt-0.5 h-4 w-4 rounded border-border"
+                        />
+                        <span>
+                          <span className="font-medium">
+                            {t("form.unpopularTower")}
+                          </span>
+                          <span className="mt-0.5 block text-xs text-muted">
+                            {t("form.unpopularTowerHint")}
+                          </span>
+                        </span>
+                      </label>
+                    )}
+                    <p className="text-xs text-muted">
+                      {t("form.floorElevatorExample")}
+                    </p>
+                  </fieldset>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="mt-1 rounded-lg bg-accent px-4 py-3 text-sm font-medium text-white transition hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {loading ? t("form.submitting") : t("form.submit")}
+                </button>
+              </form>
+            )}
+          </section>
+
 
           {result && (
             <section className="rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
@@ -2752,327 +3044,6 @@ export default function Home() {
             </section>
           )}
 
-          {error && (
-            <p
-              className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
-              role="alert"
-            >
-              {error}
-            </p>
-          )}
-
-          <section
-            ref={formSectionRef}
-            className="scroll-mt-24 rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8"
-          >
-            {result && !formExpanded ? (
-              <div className="flex flex-col gap-4">
-                <p className="text-sm text-muted">
-                  {t("form.collapsedSummary", {
-                    summary: `${modelPropertyTypeLabel(
-                      modelInputSnapshot?.propertyType ?? propertyType,
-                    )} · ${result.geocoded_address}`,
-                  })}
-                </p>
-                <div className="flex flex-col gap-3 sm:flex-row">
-                  <button
-                    type="button"
-                    onClick={handleExpandForm}
-                    className="rounded-lg border border-border bg-surface px-4 py-3 text-sm font-medium text-foreground transition hover:border-stone-400 hover:bg-stone-50 sm:flex-1"
-                  >
-                    {t("form.expandForm")}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleNewSimulation}
-                    className="rounded-lg border border-border bg-surface px-4 py-3 text-sm font-medium text-foreground transition hover:border-stone-400 hover:bg-stone-50 sm:flex-1"
-                  >
-                    {t("form.newSimulation")}
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-                {result && (
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <p className="rounded-lg border border-border bg-stone-50 px-3 py-2 text-sm text-muted sm:flex-1">
-                      {t("form.editHint")}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={handleNewSimulation}
-                      className="rounded-lg border border-border bg-surface px-4 py-2.5 text-sm font-medium text-foreground transition hover:border-stone-400 hover:bg-stone-50"
-                    >
-                      {t("form.newSimulation")}
-                    </button>
-                  </div>
-                )}
-                <label className="flex flex-col gap-2">
-                  <span className={labelClassName}>{t("form.propertyType")}</span>
-                  <select
-                    value={propertyType}
-                    onChange={(e) =>
-                      handlePropertyTypeChange(e.target.value as PropertyType)
-                    }
-                    className={inputClassName}
-                  >
-                    <option value="APARTMENT">{t("form.apartment")}</option>
-                    <option value="HOUSE">{t("form.house")}</option>
-                  </select>
-                </label>
-
-                <label className="flex flex-col gap-2">
-                  <span className={labelClassName}>{t("form.address")}</span>
-                  <AddressAutocomplete
-                    value={address}
-                    onChange={setAddress}
-                    minLength={10}
-                    maxLength={255}
-                    placeholder={t("form.addressPlaceholder")}
-                    required
-                    listLabel={t("form.addressSuggestions")}
-                    loadingLabel={t("form.addressSuggestionsLoading")}
-                    className={inputClassName}
-                  />
-                </label>
-
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <label className="flex flex-col gap-2">
-                    <span className={labelClassName}>{t("form.surface")}</span>
-                    <input
-                      type="number"
-                      value={sbati}
-                      onChange={(e) => setSbati(e.target.value)}
-                      min={11}
-                      step={0.01}
-                      required
-                      className={inputClassName}
-                    />
-                  </label>
-
-                  <label className="flex flex-col gap-2">
-                    <span
-                      className={`${labelClassName} flex items-center gap-1.5 normal-case`}
-                    >
-                      {t("form.parking")}
-                      <FieldHint text={t("form.parkingHint")} />
-                    </span>
-                    <select
-                      value={nbParking}
-                      onChange={(e) => setNbParking(e.target.value)}
-                      required
-                      className={inputClassName}
-                    >
-                      <option value="" disabled>
-                        {t("form.dpeSelect")}
-                      </option>
-                      {OUTBUILDING_COUNT_OPTIONS.map((count) => (
-                        <option key={count} value={count}>
-                          {count}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
-
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <label className="flex flex-col gap-2">
-                    <span
-                      className={`${labelClassName} flex items-center gap-1.5 normal-case`}
-                    >
-                      {t("form.cave")}
-                      <FieldHint text={t("form.caveHint")} />
-                    </span>
-                    <select
-                      value={nbCave}
-                      onChange={(e) => setNbCave(e.target.value)}
-                      required
-                      className={inputClassName}
-                    >
-                      <option value="" disabled>
-                        {t("form.dpeSelect")}
-                      </option>
-                      {OUTBUILDING_COUNT_OPTIONS.map((count) => (
-                        <option key={count} value={count}>
-                          {count}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label className="flex flex-col gap-2">
-                    <span className={labelClassName}>{t("form.dpe")}</span>
-                    <select
-                      value={dpeMedian}
-                      onChange={(e) => setDpeMedian(e.target.value)}
-                      required
-                      className={inputClassName}
-                    >
-                      <option value="" disabled>
-                        {t("form.dpeSelect")}
-                      </option>
-                      {DPE_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
-
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <label className="flex flex-col gap-2">
-                    <span className={labelClassName}>{t("form.year")}</span>
-                    <input
-                      type="number"
-                      value={anneeConstruction}
-                      onChange={(e) => setAnneeConstruction(e.target.value)}
-                      min={1501}
-                      max={new Date().getFullYear()}
-                      required
-                      className={inputClassName}
-                    />
-                  </label>
-                </div>
-
-                <fieldset className="space-y-3">
-                  <legend className={`${labelClassName} flex items-center gap-1.5 normal-case`}>
-                    {t("form.amenities")}
-                    <FieldHint
-                      text={
-                        propertyType === "HOUSE"
-                          ? t("form.amenitiesHintHouse")
-                          : t("form.amenitiesHintApartment")
-                      }
-                    />
-                  </legend>
-                  <div
-                    className={`grid gap-3 ${
-                      isBalconyApplicable(propertyType)
-                        ? "sm:grid-cols-3"
-                        : "sm:grid-cols-2"
-                    }`}
-                  >
-                    {isBalconyApplicable(propertyType) && (
-                      <label className="flex items-center gap-2 text-sm text-foreground">
-                        <input
-                          type="checkbox"
-                          checked={hasBalcony}
-                          onChange={(e) => setHasBalcony(e.target.checked)}
-                          className="h-4 w-4 rounded border-border"
-                        />
-                        {t("form.balcony")}
-                      </label>
-                    )}
-                    <label className="flex items-center gap-2 text-sm text-foreground">
-                      <input
-                        type="checkbox"
-                        checked={hasGarden}
-                        onChange={(e) => setHasGarden(e.target.checked)}
-                        className="h-4 w-4 rounded border-border"
-                      />
-                      {t("form.garden")}
-                    </label>
-                    <label className="flex items-center gap-2 text-sm text-foreground">
-                      <input
-                        type="checkbox"
-                        checked={hasPool}
-                        onChange={(e) => setHasPool(e.target.checked)}
-                        className="h-4 w-4 rounded border-border"
-                      />
-                      {t("form.pool")}
-                    </label>
-                  </div>
-                </fieldset>
-
-                {isFloorAdjustmentApplicable(propertyType) && (
-                  <fieldset className="space-y-3">
-                    <legend
-                      className={`${labelClassName} flex items-center gap-1.5 normal-case`}
-                    >
-                      {t("form.floorElevator")}
-                      <FieldHint text={t("form.floorElevatorHint")} />
-                    </legend>
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <label className="flex flex-col gap-2">
-                        <span className={labelClassName}>
-                          {t("form.buildingStoreys")}
-                        </span>
-                        <input
-                          type="number"
-                          min={1}
-                          max={100}
-                          step={1}
-                          value={buildingStoreys}
-                          onChange={(e) => setBuildingStoreys(e.target.value)}
-                          placeholder={t("form.buildingStoreysPlaceholder")}
-                          className={inputClassName}
-                        />
-                      </label>
-                      <label className="flex flex-col gap-2">
-                        <span className={labelClassName}>
-                          {t("form.apartmentFloorNumber")}
-                        </span>
-                        <input
-                          type="number"
-                          min={0}
-                          max={100}
-                          step={1}
-                          value={apartmentFloorNumber}
-                          onChange={(e) =>
-                            setApartmentFloorNumber(e.target.value)
-                          }
-                          placeholder={t("form.apartmentFloorPlaceholder")}
-                          className={inputClassName}
-                        />
-                      </label>
-                    </div>
-                    <label className="flex items-center gap-2 text-sm text-foreground">
-                      <input
-                        type="checkbox"
-                        checked={hasElevator}
-                        onChange={(e) => setHasElevator(e.target.checked)}
-                        className="h-4 w-4 rounded border-border"
-                      />
-                      {t("form.elevator")}
-                    </label>
-                    {isUnpopularTowerApplicable(propertyType) && (
-                      <label className="flex items-start gap-2 text-sm text-foreground">
-                        <input
-                          type="checkbox"
-                          checked={unpopularTower}
-                          onChange={(e) =>
-                            setUnpopularTower(e.target.checked)
-                          }
-                          className="mt-0.5 h-4 w-4 rounded border-border"
-                        />
-                        <span>
-                          <span className="font-medium">
-                            {t("form.unpopularTower")}
-                          </span>
-                          <span className="mt-0.5 block text-xs text-muted">
-                            {t("form.unpopularTowerHint")}
-                          </span>
-                        </span>
-                      </label>
-                    )}
-                    <p className="text-xs text-muted">
-                      {t("form.floorElevatorExample")}
-                    </p>
-                  </fieldset>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="mt-1 rounded-lg bg-accent px-4 py-3 text-sm font-medium text-white transition hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {loading ? t("form.submitting") : t("form.submit")}
-                </button>
-              </form>
-            )}
-          </section>
-
           <footer className="text-center text-xs text-muted">
             {t("footer.copyright")} · {t("footer.prefix")}{" "}
             <a
@@ -3085,6 +3056,27 @@ export default function Home() {
             </a>
           </footer>
         </div>
+
+        {result && !formExpanded && (
+          <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-surface/80">
+            <div className="mx-auto flex w-full max-w-4xl flex-col gap-2 sm:flex-row">
+              <button
+                type="button"
+                onClick={handleExpandForm}
+                className="rounded-lg border border-border bg-surface px-4 py-3 text-sm font-medium text-foreground transition hover:border-stone-400 hover:bg-stone-50 sm:flex-1"
+              >
+                {t("form.expandForm")}
+              </button>
+              <button
+                type="button"
+                onClick={handleNewSimulation}
+                className="rounded-lg bg-accent px-4 py-3 text-sm font-medium text-white transition hover:bg-stone-800 sm:flex-1"
+              >
+                {t("form.newSimulation")}
+              </button>
+            </div>
+          </div>
+        )}
     </main>
   );
 }
