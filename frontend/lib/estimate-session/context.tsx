@@ -15,7 +15,6 @@ import {
   AGENCY_FEE_PERCENT,
   type AgencyFeeMode,
 } from "@/lib/agency-fees";
-import type { ApartmentFloor } from "@/lib/amenity-uplift";
 import {
   DEFAULT_ANNUAL_CHARGES,
   DEFAULT_EXCEPTIONAL_CHARGES_PCT,
@@ -63,7 +62,11 @@ export type ModelInputSnapshot = {
   hasGarden: boolean;
   hasPool: boolean;
   hasElevator: boolean;
-  apartmentFloor: ApartmentFloor;
+  unpopularTower: boolean;
+  /** Last floor number of the building (e.g. 30). null = not set. */
+  buildingStoreys: number | null;
+  /** Floor of the unit (0 = RDC). null = not set. */
+  apartmentFloorNumber: number | null;
 };
 
 export type WorkLine = {
@@ -118,7 +121,9 @@ export type EstimateSessionSnapshot = {
   hasGarden: boolean;
   hasPool: boolean;
   hasElevator: boolean;
-  apartmentFloor: ApartmentFloor;
+  unpopularTower: boolean;
+  buildingStoreys: string;
+  apartmentFloorNumber: string;
   result: PredictResult | null;
   adjustedPrice: number | null;
   workLines: WorkLine[];
@@ -179,8 +184,12 @@ type EstimateSessionContextValue = {
   setHasPool: Dispatch<SetStateAction<boolean>>;
   hasElevator: boolean;
   setHasElevator: Dispatch<SetStateAction<boolean>>;
-  apartmentFloor: ApartmentFloor;
-  setApartmentFloor: Dispatch<SetStateAction<ApartmentFloor>>;
+  unpopularTower: boolean;
+  setUnpopularTower: Dispatch<SetStateAction<boolean>>;
+  buildingStoreys: string;
+  setBuildingStoreys: Dispatch<SetStateAction<string>>;
+  apartmentFloorNumber: string;
+  setApartmentFloorNumber: Dispatch<SetStateAction<string>>;
   result: PredictResult | null;
   setResult: Dispatch<SetStateAction<PredictResult | null>>;
   adjustedPrice: number | null;
@@ -274,7 +283,9 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
   const [hasGarden, setHasGarden] = useState(false);
   const [hasPool, setHasPool] = useState(false);
   const [hasElevator, setHasElevator] = useState(false);
-  const [apartmentFloor, setApartmentFloor] = useState<ApartmentFloor>("");
+  const [unpopularTower, setUnpopularTower] = useState(false);
+  const [buildingStoreys, setBuildingStoreys] = useState("");
+  const [apartmentFloorNumber, setApartmentFloorNumber] = useState("");
   const [result, setResult] = useState<PredictResult | null>(null);
   const [adjustedPrice, setAdjustedPrice] = useState<number | null>(null);
   const [workLines, setWorkLines] = useState<WorkLine[]>([]);
@@ -347,7 +358,9 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       hasGarden,
       hasPool,
       hasElevator,
-      apartmentFloor,
+      unpopularTower,
+      buildingStoreys,
+      apartmentFloorNumber,
       result,
       adjustedPrice,
       workLines,
@@ -396,7 +409,9 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
     hasGarden,
     hasPool,
     hasElevator,
-    apartmentFloor,
+    unpopularTower,
+    buildingStoreys,
+    apartmentFloorNumber,
     result,
     adjustedPrice,
     workLines,
@@ -446,7 +461,18 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
     setHasGarden(Boolean(snapshot.hasGarden));
     setHasPool(Boolean(snapshot.hasPool));
     setHasElevator(Boolean(snapshot.hasElevator));
-    setApartmentFloor(snapshot.apartmentFloor ?? "");
+    setUnpopularTower(Boolean(snapshot.unpopularTower));
+    setBuildingStoreys(
+      snapshot.buildingStoreys != null && String(snapshot.buildingStoreys) !== ""
+        ? String(snapshot.buildingStoreys)
+        : "",
+    );
+    setApartmentFloorNumber(
+      snapshot.apartmentFloorNumber != null &&
+        String(snapshot.apartmentFloorNumber) !== ""
+        ? String(snapshot.apartmentFloorNumber)
+        : "",
+    );
     setResult(snapshot.result);
     setAdjustedPrice(snapshot.adjustedPrice);
     setWorkLines(snapshot.workLines ?? []);
@@ -515,8 +541,12 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       setHasPool,
       hasElevator,
       setHasElevator,
-      apartmentFloor,
-      setApartmentFloor,
+      unpopularTower,
+      setUnpopularTower,
+      buildingStoreys,
+      setBuildingStoreys,
+      apartmentFloorNumber,
+      setApartmentFloorNumber,
       result,
       setResult,
       adjustedPrice,
@@ -604,7 +634,9 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       hasGarden,
       hasPool,
       hasElevator,
-      apartmentFloor,
+      unpopularTower,
+      buildingStoreys,
+      apartmentFloorNumber,
       result,
       adjustedPrice,
       workLines,

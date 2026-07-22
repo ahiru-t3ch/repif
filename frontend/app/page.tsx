@@ -48,11 +48,10 @@ import {
   type RentalTaxRegime,
 } from "@/lib/estimate-session/context";
 import {
-  APARTMENT_FLOOR_OPTIONS,
   applyMarketAdjustments,
   isBalconyApplicable,
   isFloorAdjustmentApplicable,
-  type ApartmentFloor,
+  isUnpopularTowerApplicable,
 } from "@/lib/amenity-uplift";
 import { dpeValueToLetter } from "@/lib/dpe-rental";
 import { useI18n } from "@/lib/i18n/context";
@@ -249,8 +248,12 @@ export default function Home() {
     setHasPool,
     hasElevator,
     setHasElevator,
-    apartmentFloor,
-    setApartmentFloor,
+    unpopularTower,
+    setUnpopularTower,
+    buildingStoreys,
+    setBuildingStoreys,
+    apartmentFloorNumber,
+    setApartmentFloorNumber,
     result,
     setResult,
     adjustedPrice,
@@ -359,7 +362,9 @@ export default function Home() {
     setHasGarden(false);
     setHasPool(false);
     setHasElevator(false);
-    setApartmentFloor("");
+    setUnpopularTower(false);
+    setBuildingStoreys("");
+    setApartmentFloorNumber("");
     setPropertyType("APARTMENT");
     resetFinanceSectionToggles();
     resetAllFinanceDefaults();
@@ -612,7 +617,9 @@ export default function Home() {
     setHasGarden(false);
     setHasPool(false);
     setHasElevator(false);
-    setApartmentFloor("");
+    setUnpopularTower(false);
+    setBuildingStoreys("");
+    setApartmentFloorNumber("");
     resetFinanceSectionToggles();
     resetAllFinanceDefaults();
     setModelInputSnapshot(null);
@@ -671,6 +678,22 @@ export default function Home() {
       }
 
       const data: PredictResult = await response.json();
+      const parsedFloor =
+        apartmentFloorNumber.trim() === ""
+          ? null
+          : Math.round(Number(apartmentFloorNumber));
+      const parsedStoreys =
+        buildingStoreys.trim() === ""
+          ? null
+          : Math.round(Number(buildingStoreys));
+      const floorReady =
+        parsedFloor != null &&
+        parsedStoreys != null &&
+        Number.isFinite(parsedFloor) &&
+        Number.isFinite(parsedStoreys) &&
+        parsedStoreys >= 1 &&
+        parsedFloor >= 0 &&
+        parsedFloor <= parsedStoreys;
       const upliftedPrice = applyMarketAdjustments(
         data.price,
         data.price_low,
@@ -680,8 +703,10 @@ export default function Home() {
           balcony: hasBalcony,
           garden: hasGarden,
           pool: hasPool,
-          floor: apartmentFloor,
+          floor: floorReady ? parsedFloor : null,
+          buildingStoreys: floorReady ? parsedStoreys : null,
           hasElevator,
+          unpopularTower,
         },
       );
       const adjustedResult: PredictResult = {
@@ -707,7 +732,9 @@ export default function Home() {
         hasGarden,
         hasPool,
         hasElevator,
-        apartmentFloor,
+        unpopularTower,
+        buildingStoreys: floorReady ? parsedStoreys : null,
+        apartmentFloorNumber: floorReady ? parsedFloor : null,
       });
       setResult(adjustedResult);
       setAdjustedPrice(Math.round(upliftedPrice));
@@ -841,7 +868,8 @@ export default function Home() {
                       </div>
                       {(modelInputSnapshot.hasBalcony ||
                         modelInputSnapshot.hasGarden ||
-                        modelInputSnapshot.hasPool) && (
+                        modelInputSnapshot.hasPool ||
+                        modelInputSnapshot.unpopularTower) && (
                         <div className="flex flex-wrap gap-x-2">
                           <dt className="text-stone-400">
                             {t("form.amenities")} :
@@ -855,6 +883,9 @@ export default function Home() {
                                 ? t("form.garden")
                                 : null,
                               modelInputSnapshot.hasPool ? t("form.pool") : null,
+                              modelInputSnapshot.unpopularTower
+                                ? t("form.unpopularTower")
+                                : null,
                             ]
                               .filter(Boolean)
                               .join(" · ")}
@@ -862,15 +893,25 @@ export default function Home() {
                         </div>
                       )}
                       {modelInputSnapshot.propertyType === "APARTMENT" &&
-                        modelInputSnapshot.apartmentFloor && (
+                        modelInputSnapshot.buildingStoreys != null &&
+                        modelInputSnapshot.apartmentFloorNumber != null && (
                           <div className="flex flex-wrap gap-x-2">
                             <dt className="text-stone-400">
                               {t("form.floorElevator")} :
                             </dt>
                             <dd className="font-medium text-white">
-                              {t(
-                                `form.floorOption.${modelInputSnapshot.apartmentFloor}`,
-                              )}
+                              {modelInputSnapshot.apartmentFloorNumber === 0
+                                ? t("form.floorGround")
+                                : modelInputSnapshot.apartmentFloorNumber === 1
+                                  ? t("form.floorFirst")
+                                  : t("form.floorNumberLabel", {
+                                      floor:
+                                        modelInputSnapshot.apartmentFloorNumber,
+                                    })}
+                              {" · "}
+                              {t("form.buildingStoreysLabel", {
+                                storeys: modelInputSnapshot.buildingStoreys,
+                              })}
                               {" · "}
                               {modelInputSnapshot.hasElevator
                                 ? t("form.elevatorYes")
@@ -2938,32 +2979,70 @@ export default function Home() {
                     </legend>
                     <div className="grid gap-4 sm:grid-cols-2">
                       <label className="flex flex-col gap-2">
-                        <select
-                          value={apartmentFloor}
-                          onChange={(e) =>
-                            setApartmentFloor(e.target.value as ApartmentFloor)
-                          }
-                          className={inputClassName}
-                          aria-label={t("form.floorElevator")}
-                        >
-                          <option value="">{t("form.floorSelect")}</option>
-                          {APARTMENT_FLOOR_OPTIONS.map((floor) => (
-                            <option key={floor} value={floor}>
-                              {t(`form.floorOption.${floor}`)}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label className="flex items-center gap-2 self-center text-sm text-foreground">
+                        <span className={labelClassName}>
+                          {t("form.buildingStoreys")}
+                        </span>
                         <input
-                          type="checkbox"
-                          checked={hasElevator}
-                          onChange={(e) => setHasElevator(e.target.checked)}
-                          className="h-4 w-4 rounded border-border"
+                          type="number"
+                          min={1}
+                          max={100}
+                          step={1}
+                          value={buildingStoreys}
+                          onChange={(e) => setBuildingStoreys(e.target.value)}
+                          placeholder={t("form.buildingStoreysPlaceholder")}
+                          className={inputClassName}
                         />
-                        {t("form.elevator")}
+                      </label>
+                      <label className="flex flex-col gap-2">
+                        <span className={labelClassName}>
+                          {t("form.apartmentFloorNumber")}
+                        </span>
+                        <input
+                          type="number"
+                          min={0}
+                          max={100}
+                          step={1}
+                          value={apartmentFloorNumber}
+                          onChange={(e) =>
+                            setApartmentFloorNumber(e.target.value)
+                          }
+                          placeholder={t("form.apartmentFloorPlaceholder")}
+                          className={inputClassName}
+                        />
                       </label>
                     </div>
+                    <label className="flex items-center gap-2 text-sm text-foreground">
+                      <input
+                        type="checkbox"
+                        checked={hasElevator}
+                        onChange={(e) => setHasElevator(e.target.checked)}
+                        className="h-4 w-4 rounded border-border"
+                      />
+                      {t("form.elevator")}
+                    </label>
+                    {isUnpopularTowerApplicable(propertyType) && (
+                      <label className="flex items-start gap-2 text-sm text-foreground">
+                        <input
+                          type="checkbox"
+                          checked={unpopularTower}
+                          onChange={(e) =>
+                            setUnpopularTower(e.target.checked)
+                          }
+                          className="mt-0.5 h-4 w-4 rounded border-border"
+                        />
+                        <span>
+                          <span className="font-medium">
+                            {t("form.unpopularTower")}
+                          </span>
+                          <span className="mt-0.5 block text-xs text-muted">
+                            {t("form.unpopularTowerHint")}
+                          </span>
+                        </span>
+                      </label>
+                    )}
+                    <p className="text-xs text-muted">
+                      {t("form.floorElevatorExample")}
+                    </p>
                   </fieldset>
                 )}
 

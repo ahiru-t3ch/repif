@@ -1,5 +1,4 @@
 import type { AgencyFeeMode } from "@/lib/agency-fees";
-import type { ApartmentFloor } from "@/lib/amenity-uplift";
 import type {
   MarginalTaxRate,
   ModelInputSnapshot,
@@ -26,7 +25,9 @@ export type ShareScenarioPayload = {
   hasGarden: boolean;
   hasPool: boolean;
   hasElevator: boolean;
-  apartmentFloor: ApartmentFloor;
+  unpopularTower: boolean;
+  buildingStoreys: string;
+  apartmentFloorNumber: string;
   result: PredictResult;
   adjustedPrice: number | null;
   workLines: WorkLine[];

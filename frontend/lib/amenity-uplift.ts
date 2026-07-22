@@ -18,35 +18,41 @@ const AMENITY_UPLIFT: Record<
   },
 };
 
-/** Floor band for apartments (empty = not specified → 0%). */
-export type ApartmentFloor =
-  | ""
+/**
+ * Mid-range discount for large towers / low-demand residences
+ * (liquidity, image, high charges → softer negotiation).
+ * Apartment only.
+ */
+export const UNPOPULAR_TOWER_DISCOUNT = 0.1;
+
+export function isUnpopularTowerApplicable(
+  propertyType: PropertyType,
+): boolean {
+  return propertyType === "APARTMENT";
+}
+
+/**
+ * Relative floor band derived from (floor, building storeys).
+ * Floor 0 = RDC; buildingStoreys = numéro du dernier étage (ex. 30).
+ */
+export type RelativeFloorBand =
   | "GROUND"
   | "FLOOR_1"
-  | "FLOOR_2_3"
-  | "FLOOR_4"
-  | "FLOOR_5_6"
+  | "LOW_MID"
+  | "MID_HIGH"
+  | "HIGH"
   | "TOP";
 
-export const APARTMENT_FLOOR_OPTIONS: Exclude<ApartmentFloor, "">[] = [
-  "GROUND",
-  "FLOOR_1",
-  "FLOOR_2_3",
-  "FLOOR_4",
-  "FLOOR_5_6",
-  "TOP",
-];
-
-/** Mid-range floor adjustments: [withElevator, withoutElevator]. */
+/** Mid-range floor adjustments: with / without elevator. */
 const FLOOR_ADJUSTMENT: Record<
-  Exclude<ApartmentFloor, "">,
+  RelativeFloorBand,
   { withElevator: number; withoutElevator: number }
 > = {
   GROUND: { withElevator: -0.175, withoutElevator: -0.175 },
   FLOOR_1: { withElevator: -0.075, withoutElevator: 0.075 },
-  FLOOR_2_3: { withElevator: 0, withoutElevator: 0 },
-  FLOOR_4: { withElevator: 0.075, withoutElevator: -0.075 },
-  FLOOR_5_6: { withElevator: 0.15, withoutElevator: -0.225 },
+  LOW_MID: { withElevator: 0, withoutElevator: 0 },
+  MID_HIGH: { withElevator: 0.075, withoutElevator: -0.075 },
+  HIGH: { withElevator: 0.15, withoutElevator: -0.225 },
   TOP: { withElevator: 0.225, withoutElevator: -0.275 },
 };
 
@@ -58,6 +64,58 @@ export function isFloorAdjustmentApplicable(
   propertyType: PropertyType,
 ): boolean {
   return propertyType === "APARTMENT";
+}
+
+/**
+ * Map absolute floor + building height to a market band.
+ * @param floor 0 = RDC, 1 = 1er, … up to buildingStoreys (dernier)
+ * @param buildingStoreys numéro du dernier étage (ex. 30 pour une tour de 30)
+ */
+export function resolveFloorBand(
+  floor: number,
+  buildingStoreys: number,
+): RelativeFloorBand | null {
+  if (!Number.isFinite(floor) || !Number.isFinite(buildingStoreys)) {
+    return null;
+  }
+  const f = Math.round(floor);
+  const max = Math.round(buildingStoreys);
+  if (max < 1 || f < 0 || f > max) {
+    return null;
+  }
+  if (f === 0) {
+    return "GROUND";
+  }
+  if (f === max) {
+    return "TOP";
+  }
+
+  // Small buildings: keep absolute intuition (RDC → 6e).
+  if (max <= 6) {
+    if (f === 1) {
+      return "FLOOR_1";
+    }
+    if (f <= 3) {
+      return "LOW_MID";
+    }
+    if (f === 4) {
+      return "MID_HIGH";
+    }
+    return "HIGH";
+  }
+
+  // Tall buildings: relative height (ex. 9/30 ≈ milieu → LOW_MID = 0%).
+  if (f === 1) {
+    return "FLOOR_1";
+  }
+  const relative = f / max;
+  if (relative < 0.35) {
+    return "LOW_MID";
+  }
+  if (relative < 0.55) {
+    return "MID_HIGH";
+  }
+  return "HIGH";
 }
 
 function amenityAdjustmentPct(
@@ -80,18 +138,37 @@ function amenityAdjustmentPct(
 
 function floorAdjustmentPct(
   propertyType: PropertyType,
-  floor: ApartmentFloor,
+  floor: number | null | undefined,
+  buildingStoreys: number | null | undefined,
   hasElevator: boolean,
 ): number {
-  if (!isFloorAdjustmentApplicable(propertyType) || !floor) {
+  if (
+    !isFloorAdjustmentApplicable(propertyType) ||
+    floor == null ||
+    buildingStoreys == null
+  ) {
     return 0;
   }
-  const band = FLOOR_ADJUSTMENT[floor];
-  return hasElevator ? band.withElevator : band.withoutElevator;
+  const band = resolveFloorBand(floor, buildingStoreys);
+  if (!band) {
+    return 0;
+  }
+  const rates = FLOOR_ADJUSTMENT[band];
+  return hasElevator ? rates.withElevator : rates.withoutElevator;
+}
+
+function towerAdjustmentPct(
+  propertyType: PropertyType,
+  unpopularTower: boolean,
+): number {
+  if (!unpopularTower || !isUnpopularTowerApplicable(propertyType)) {
+    return 0;
+  }
+  return -UNPOPULAR_TOWER_DISCOUNT;
 }
 
 /**
- * Apply amenity + floor market adjustments on the model price,
+ * Apply amenity + floor + tower market adjustments on the model price,
  * then clamp inside the MAPE band [priceLow, priceHigh].
  */
 export function applyMarketAdjustments(
@@ -103,17 +180,21 @@ export function applyMarketAdjustments(
     balcony: boolean;
     garden: boolean;
     pool: boolean;
-    floor?: ApartmentFloor;
+    floor?: number | null;
+    buildingStoreys?: number | null;
     hasElevator?: boolean;
+    unpopularTower?: boolean;
   },
 ): number {
   const totalPct =
     amenityAdjustmentPct(propertyType, options) +
     floorAdjustmentPct(
       propertyType,
-      options.floor ?? "",
+      options.floor,
+      options.buildingStoreys,
       Boolean(options.hasElevator),
-    );
+    ) +
+    towerAdjustmentPct(propertyType, Boolean(options.unpopularTower));
 
   if (totalPct === 0) {
     return price;
