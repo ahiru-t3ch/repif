@@ -53,6 +53,15 @@ import {
   isFloorAdjustmentApplicable,
   isUnpopularTowerApplicable,
 } from "@/lib/amenity-uplift";
+import {
+  CONDITION_POSTS,
+  CONDITION_RATING_OPTIONS,
+  computeOverallConditionScore,
+  conditionScoreToAdjustmentPct,
+  createEmptyConditionRatings,
+  hasAnyConditionRating,
+  parseConditionRating,
+} from "@/lib/property-condition";
 import { dpeValueToLetter } from "@/lib/dpe-rental";
 import { useI18n } from "@/lib/i18n/context";
 import {
@@ -250,6 +259,8 @@ export default function Home() {
     setHasElevator,
     unpopularTower,
     setUnpopularTower,
+    conditionRatings,
+    setConditionRatings,
     buildingStoreys,
     setBuildingStoreys,
     apartmentFloorNumber,
@@ -363,6 +374,7 @@ export default function Home() {
     setHasPool(false);
     setHasElevator(false);
     setUnpopularTower(false);
+    setConditionRatings(createEmptyConditionRatings());
     setBuildingStoreys("");
     setApartmentFloorNumber("");
     setPropertyType("APARTMENT");
@@ -618,6 +630,7 @@ export default function Home() {
     setHasPool(false);
     setHasElevator(false);
     setUnpopularTower(false);
+    setConditionRatings(createEmptyConditionRatings());
     setBuildingStoreys("");
     setApartmentFloorNumber("");
     resetFinanceSectionToggles();
@@ -707,6 +720,7 @@ export default function Home() {
           buildingStoreys: floorReady ? parsedStoreys : null,
           hasElevator,
           unpopularTower,
+          conditionRatings,
         },
       );
       const adjustedResult: PredictResult = {
@@ -733,6 +747,7 @@ export default function Home() {
         hasPool,
         hasElevator,
         unpopularTower,
+        conditionRatings,
         buildingStoreys: floorReady ? parsedStoreys : null,
         apartmentFloorNumber: floorReady ? parsedFloor : null,
       });
@@ -893,6 +908,36 @@ export default function Home() {
                             ]
                               .filter(Boolean)
                               .join(" · ")}
+                          </dd>
+                        </div>
+                      )}
+                      {modelInputSnapshot.conditionRatings &&
+                        hasAnyConditionRating(
+                          modelInputSnapshot.conditionRatings,
+                        ) && (
+                        <div className="flex flex-wrap gap-x-2">
+                          <dt className="text-stone-400">
+                            {t("form.condition")} :
+                          </dt>
+                          <dd className="font-medium text-white">
+                            {(() => {
+                              const score = computeOverallConditionScore(
+                                modelInputSnapshot.conditionRatings,
+                              );
+                              if (score == null) {
+                                return null;
+                              }
+                              const pct = conditionScoreToAdjustmentPct(score);
+                              const pctLabel = new Intl.NumberFormat(intlLocale, {
+                                style: "percent",
+                                maximumFractionDigits: 1,
+                                signDisplay: "exceptZero",
+                              }).format(pct);
+                              return t("form.conditionSummary", {
+                                score: score.toFixed(1),
+                                adjustment: pctLabel,
+                              });
+                            })()}
                           </dd>
                         </div>
                       )}
@@ -1396,6 +1441,69 @@ export default function Home() {
                       {t("form.pool")}
                     </label>
                   </div>
+                </fieldset>
+
+                <fieldset className="space-y-3">
+                  <legend
+                    className={`${labelClassName} flex items-center gap-1.5 normal-case`}
+                  >
+                    {t("form.condition")}
+                    <FieldHint text={t("form.conditionHint")} />
+                  </legend>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {CONDITION_POSTS.map((post) => (
+                      <label key={post} className="flex flex-col gap-1.5">
+                        <span className="text-sm text-foreground">
+                          {t(`form.conditionPosts.${post}`)}
+                        </span>
+                        <select
+                          value={
+                            conditionRatings[post] == null
+                              ? ""
+                              : String(conditionRatings[post])
+                          }
+                          onChange={(e) => {
+                            const next = parseConditionRating(e.target.value);
+                            setConditionRatings((prev) => ({
+                              ...prev,
+                              [post]: next,
+                            }));
+                          }}
+                          className={inputClassName}
+                        >
+                          <option value="">
+                            {t("form.conditionNotRated")}
+                          </option>
+                          {CONDITION_RATING_OPTIONS.map((rating) => (
+                            <option key={rating} value={rating}>
+                              {rating} — {t(`form.conditionLevels.${rating}`)}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    ))}
+                  </div>
+                  {hasAnyConditionRating(conditionRatings) && (
+                    <p className="text-xs text-muted">
+                      {(() => {
+                        const score =
+                          computeOverallConditionScore(conditionRatings);
+                        if (score == null) {
+                          return null;
+                        }
+                        const pct = conditionScoreToAdjustmentPct(score);
+                        const pctLabel = new Intl.NumberFormat(undefined, {
+                          style: "percent",
+                          maximumFractionDigits: 1,
+                          signDisplay: "exceptZero",
+                        }).format(pct);
+                        return t("form.conditionLiveSummary", {
+                          score: score.toFixed(1),
+                          adjustment: pctLabel,
+                        });
+                      })()}
+                    </p>
+                  )}
                 </fieldset>
 
                 {isFloorAdjustmentApplicable(propertyType) && (

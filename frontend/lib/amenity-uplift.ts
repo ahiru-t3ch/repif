@@ -1,4 +1,8 @@
 import type { PropertyType } from "@/lib/estimate-session/context";
+import {
+  conditionAdjustmentPct,
+  type ConditionRatings,
+} from "@/lib/property-condition";
 
 /** Mid-range market premiums (fraction of price) by property type. */
 const AMENITY_UPLIFT: Record<
@@ -168,7 +172,7 @@ function towerAdjustmentPct(
 }
 
 /**
- * Apply amenity + floor + tower market adjustments on the model price,
+ * Apply amenity + floor + tower + condition market adjustments on the model price,
  * then clamp inside the MAPE band [priceLow, priceHigh].
  */
 export function applyMarketAdjustments(
@@ -184,6 +188,7 @@ export function applyMarketAdjustments(
     buildingStoreys?: number | null;
     hasElevator?: boolean;
     unpopularTower?: boolean;
+    conditionRatings?: ConditionRatings | null;
   },
 ): number {
   const totalPct =
@@ -194,7 +199,8 @@ export function applyMarketAdjustments(
       options.buildingStoreys,
       Boolean(options.hasElevator),
     ) +
-    towerAdjustmentPct(propertyType, Boolean(options.unpopularTower));
+    towerAdjustmentPct(propertyType, Boolean(options.unpopularTower)) +
+    conditionAdjustmentPct(options.conditionRatings);
 
   if (totalPct === 0) {
     return price;

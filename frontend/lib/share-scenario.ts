@@ -9,6 +9,7 @@ import type {
   WorkLine,
 } from "@/lib/estimate-session/context";
 import type { NotaryPropertyAge } from "@/lib/notary-fees";
+import type { ConditionRatings } from "@/lib/property-condition";
 
 export const SHARE_PAYLOAD_VERSION = 1 as const;
 
@@ -26,6 +27,7 @@ export type ShareScenarioPayload = {
   hasPool: boolean;
   hasElevator: boolean;
   unpopularTower: boolean;
+  conditionRatings: ConditionRatings;
   buildingStoreys: string;
   apartmentFloorNumber: string;
   result: PredictResult;

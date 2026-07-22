@@ -38,6 +38,11 @@ import {
   DEFAULT_SAVINGS_RATE,
 } from "@/lib/compound-savings";
 import { NOTARY_OLD, type NotaryPropertyAge } from "@/lib/notary-fees";
+import {
+  createEmptyConditionRatings,
+  normalizeConditionRatings,
+  type ConditionRatings,
+} from "@/lib/property-condition";
 
 export type PropertyType = "APARTMENT" | "HOUSE";
 
@@ -63,6 +68,7 @@ export type ModelInputSnapshot = {
   hasPool: boolean;
   hasElevator: boolean;
   unpopularTower: boolean;
+  conditionRatings: ConditionRatings;
   /** Last floor number of the building (e.g. 30). null = not set. */
   buildingStoreys: number | null;
   /** Floor of the unit (0 = RDC). null = not set. */
@@ -122,6 +128,7 @@ export type EstimateSessionSnapshot = {
   hasPool: boolean;
   hasElevator: boolean;
   unpopularTower: boolean;
+  conditionRatings: ConditionRatings;
   buildingStoreys: string;
   apartmentFloorNumber: string;
   result: PredictResult | null;
@@ -186,6 +193,8 @@ type EstimateSessionContextValue = {
   setHasElevator: Dispatch<SetStateAction<boolean>>;
   unpopularTower: boolean;
   setUnpopularTower: Dispatch<SetStateAction<boolean>>;
+  conditionRatings: ConditionRatings;
+  setConditionRatings: Dispatch<SetStateAction<ConditionRatings>>;
   buildingStoreys: string;
   setBuildingStoreys: Dispatch<SetStateAction<string>>;
   apartmentFloorNumber: string;
@@ -284,6 +293,9 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
   const [hasPool, setHasPool] = useState(false);
   const [hasElevator, setHasElevator] = useState(false);
   const [unpopularTower, setUnpopularTower] = useState(false);
+  const [conditionRatings, setConditionRatings] = useState<ConditionRatings>(
+    createEmptyConditionRatings,
+  );
   const [buildingStoreys, setBuildingStoreys] = useState("");
   const [apartmentFloorNumber, setApartmentFloorNumber] = useState("");
   const [result, setResult] = useState<PredictResult | null>(null);
@@ -359,6 +371,7 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       hasPool,
       hasElevator,
       unpopularTower,
+      conditionRatings,
       buildingStoreys,
       apartmentFloorNumber,
       result,
@@ -410,6 +423,7 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
     hasPool,
     hasElevator,
     unpopularTower,
+    conditionRatings,
     buildingStoreys,
     apartmentFloorNumber,
     result,
@@ -462,6 +476,7 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
     setHasPool(Boolean(snapshot.hasPool));
     setHasElevator(Boolean(snapshot.hasElevator));
     setUnpopularTower(Boolean(snapshot.unpopularTower));
+    setConditionRatings(normalizeConditionRatings(snapshot.conditionRatings));
     setBuildingStoreys(
       snapshot.buildingStoreys != null && String(snapshot.buildingStoreys) !== ""
         ? String(snapshot.buildingStoreys)
@@ -508,7 +523,16 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
     setSavingsRate(snapshot.savingsRate);
     setSavingsInflation(snapshot.savingsInflation);
     setPropertyAppreciation(snapshot.propertyAppreciation);
-    setModelInputSnapshot(snapshot.modelInputSnapshot);
+    setModelInputSnapshot(
+      snapshot.modelInputSnapshot
+        ? {
+            ...snapshot.modelInputSnapshot,
+            conditionRatings: normalizeConditionRatings(
+              snapshot.modelInputSnapshot.conditionRatings,
+            ),
+          }
+        : null,
+    );
     setAgencyFeeMode(snapshot.agencyFeeMode);
     setAgencyFeeRate(snapshot.agencyFeeRate);
     setAgencyFeeFixed(snapshot.agencyFeeFixed);
@@ -543,6 +567,8 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       setHasElevator,
       unpopularTower,
       setUnpopularTower,
+      conditionRatings,
+      setConditionRatings,
       buildingStoreys,
       setBuildingStoreys,
       apartmentFloorNumber,
@@ -635,6 +661,7 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       hasPool,
       hasElevator,
       unpopularTower,
+      conditionRatings,
       buildingStoreys,
       apartmentFloorNumber,
       result,
@@ -692,3 +719,10 @@ export function useEstimateSession(): EstimateSessionContextValue {
   }
   return context;
 }
+
+export type {
+  ConditionPost,
+  ConditionRating,
+  ConditionRatings,
+} from "@/lib/property-condition";
+

@@ -110,6 +110,9 @@ export default function AboutPage() {
             <p className="text-sm leading-relaxed text-muted">
               {t("about.amenitiesFloor")}
             </p>
+            <p className="text-sm leading-relaxed text-muted">
+              {t("about.amenitiesCondition")}
+            </p>
           </section>
 
           <section className="space-y-3">
