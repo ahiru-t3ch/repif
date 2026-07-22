@@ -788,19 +788,35 @@ export default function Home() {
               ref={resultRef}
               className="scroll-mt-24 rounded-2xl border border-stone-800 bg-accent px-6 py-7 text-white sm:px-8"
             >
-              <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-stone-700 pb-4">
+              <div className="mb-5 flex flex-col gap-3 border-b border-stone-700 pb-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                 <p className="text-xs font-medium uppercase tracking-[0.15em] text-stone-400">
                   {t("share.resultLabel")}
                 </p>
-                <ShareScenarioControls
-                  variant="dark"
-                  status={shareStatus}
-                  message={shareMessage}
-                  onShare={() => void handleShareScenario()}
-                  buttonLabel={t("share.button")}
-                  creatingLabel={t("share.creating")}
-                  copiedLabel={t("share.copiedShort")}
-                />
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+                  <button
+                    type="button"
+                    onClick={handleExpandForm}
+                    className="rounded-lg border border-stone-500 bg-transparent px-3 py-2 text-sm font-medium text-white transition hover:border-stone-300 hover:bg-stone-800"
+                  >
+                    {t("form.expandForm")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleNewSimulation}
+                    className="rounded-lg border border-stone-500 bg-transparent px-3 py-2 text-sm font-medium text-white transition hover:border-stone-300 hover:bg-stone-800"
+                  >
+                    {t("form.newSimulation")}
+                  </button>
+                  <ShareScenarioControls
+                    variant="dark"
+                    status={shareStatus}
+                    message={shareMessage}
+                    onShare={() => void handleShareScenario()}
+                    buttonLabel={t("share.button")}
+                    creatingLabel={t("share.creating")}
+                    copiedLabel={t("share.copiedShort")}
+                  />
+                </div>
               </div>
               <div className="grid gap-6 border-b border-stone-700 pb-5 sm:grid-cols-2">
                 <div className="min-w-0 space-y-2 text-sm leading-relaxed text-stone-300">
