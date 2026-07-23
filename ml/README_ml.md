@@ -1,5 +1,8 @@
 # ML — REPIF model
 
+> **Obsolete — use [`ml_v2/`](../ml_v2/README.md) instead.**  
+> This folder keeps the legacy `repif_ml` package, shared CSV data (`csv_data/`), and the Python venv used by `ml_v2` training scripts. Do not extend training here; run `ml_v2/apartments/train_*.py` and `ml_v2/homes/train_*.py` from the repo root.
+
 **REPIF** (Real Estate Prices In France) — machine learning pipeline for apartment and house price estimation.
 
 Trained on **DVF+** (Cerema) and **DPE** (ADEME) open data. Training runs locally for now; production retraining is planned on GCE.
