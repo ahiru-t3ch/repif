@@ -27,9 +27,12 @@ ml/models/*.log
 ml/models/*.json
 !ml/models/.gitkeep
 
-ml_v2/models/*.log
-ml_v2/models/*.json
-!ml_v2/models/.gitkeep
+ml_v2/models/apartment/*.log
+ml_v2/models/apartment/*.json
+!ml_v2/models/apartment/.gitkeep
+ml_v2/models/house/*.log
+ml_v2/models/house/*.json
+!ml_v2/models/house/.gitkeep
 
 backend/models_back/*.json
 !backend/models_back/.gitkeep
