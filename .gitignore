@@ -27,6 +27,10 @@ ml/models/*.log
 ml/models/*.json
 !ml/models/.gitkeep
 
+ml_v2/models/*.log
+ml_v2/models/*.json
+!ml_v2/models/.gitkeep
+
 backend/models_back/*.json
 !backend/models_back/.gitkeep
 
