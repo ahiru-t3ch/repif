@@ -91,6 +91,18 @@ Each run writes to `ml_v2/models/{apartment|house}/`:
 |---|---|
 | `{name}_{dev\|prod}_{timestamp}.joblib` | XGBoost model |
 | `metrics_{dev\|prod}_{timestamp}.json` | R², MAE, MAPE, `best_params`, DPE match rate, etc. |
+| `commune_price_m2_lookup.json` | INSEE code → €/m² median (inference lookup, one per property type) |
+
+## Commune market feature (`commune_price_m2_median`)
+
+Leakage-safe expanding median of `valeurfonc / sbati` per commune, using only **past** sales (`min_prior=5`). Computed separately for apartments and houses. Saved automatically on each `train_dev` / `train_final` run.
+
+Build lookup only (no training):
+
+```bash
+python ml_v2/build_commune_lookup.py --property both
+python ml_v2/build_commune_lookup.py --property apartment
+```
 
 ## Investigation baselines (no commune €/m² median)
 
@@ -107,6 +119,7 @@ Each run writes to `ml_v2/models/{apartment|house}/`:
 | MAX_DIST_M | 30 | 75 |
 | Land | `sterr` (0–5,000 m²) | `log_sterr` (> 0, ≤ 50,000 m²) |
 | DPE monotone | `-1` (A=1 … G=7) | same |
+| Market | `commune_price_m2_median` (+1 monotone) | same |
 
 ## GCP (quick reference)
 

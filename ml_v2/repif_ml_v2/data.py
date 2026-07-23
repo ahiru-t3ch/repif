@@ -6,6 +6,7 @@ from pyproj import Transformer
 from sklearn.neighbors import BallTree
 
 from repif_ml_v2.config import DVF_BASE_COLS, PropertyConfig
+from repif_ml_v2.market import add_commune_price_m2_median
 from repif_ml_v2.paths import DEFAULT_DPE_CSV, DEFAULT_DVF_DIR
 
 EARTH_RADIUS_M = 6_371_000
@@ -196,11 +197,13 @@ def prepare_training_frame(
 
     dpe_bat = load_dpe_buildings(dpe_csv, building_types=config.dpe_building_types)
     df, match_rate = merge_dpe_on_dvf(df, dpe_bat, config.max_dist_m)
+    df = add_commune_price_m2_median(df)
 
     keep_cols = ["datemut", *config.features, "valeurfonc"]
     out = df[keep_cols].copy()
 
-    required = [c for c in out.columns if c not in ("dpe_median", "annee_construction")]
+    optional_null = ("dpe_median", "annee_construction", "commune_price_m2_median")
+    required = [c for c in out.columns if c not in optional_null]
     out = out.dropna(subset=required)
     out = out.drop_duplicates()
     return out, match_rate

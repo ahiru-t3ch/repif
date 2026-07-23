@@ -15,7 +15,17 @@ from xgboost import XGBRegressor
 
 from repif_ml_v2.config import PropertyConfig
 from repif_ml_v2.data import prepare_training_frame
-from repif_ml_v2.paths import DEFAULT_DPE_CSV, DEFAULT_DVF_DIR, DEFAULT_MODELS_DIR
+from repif_ml_v2.market import (
+    COMMUNE_MARKET_MIN_PRIOR,
+    build_commune_market_lookup,
+    save_commune_market_lookup,
+)
+from repif_ml_v2.paths import (
+    DEFAULT_DPE_CSV,
+    DEFAULT_DVF_DIR,
+    DEFAULT_MODELS_DIR,
+    commune_lookup_path,
+)
 
 PARAM_DIST = {
     "n_estimators": randint(200, 1200),
@@ -74,6 +84,23 @@ def _save_artifacts(
     return model_path, metrics_path
 
 
+def _save_commune_lookup(
+    df: pd.DataFrame,
+    config: PropertyConfig,
+    models_dir: Path,
+) -> Path:
+    lookup = build_commune_market_lookup(df)
+    path = commune_lookup_path(config.name, models_dir)
+    save_commune_market_lookup(
+        lookup,
+        path,
+        property_type=config.name,
+        min_prior=COMMUNE_MARKET_MIN_PRIOR,
+    )
+    print(f"Saved commune lookup: {path} ({len(lookup)} communes)")
+    return path
+
+
 def train_dev(
     config: PropertyConfig,
     *,
@@ -93,7 +120,11 @@ def train_dev(
     df, dpe_match_rate = prepare_training_frame(
         config, dvf_dir=dvf_dir, dpe_csv=dpe_csv
     )
-    print(f"Prepared rows: {len(df)} | DPE match at load: {dpe_match_rate:.1%}")
+    commune_match_rate = float(df["commune_price_m2_median"].notna().mean())
+    print(
+        f"Prepared rows: {len(df)} | DPE match: {dpe_match_rate:.1%} "
+        f"| Commune market: {commune_match_rate:.1%}"
+    )
 
     x, y = _prepare_xy(df, config)
     cutoff = int(len(x) * train_ratio)
@@ -144,11 +175,15 @@ def train_dev(
         "best_cv_score_neg_mae_log": float(search.best_score_),
         "holdout": holdout,
         "dpe_match_rate": dpe_match_rate,
+        "commune_market_match_rate": commune_match_rate,
         "n_rows": len(df),
         "n_train": len(x_train),
         "n_test": len(x_test),
         "max_dist_m": config.max_dist_m,
     }
+
+    lookup_path = _save_commune_lookup(df, config, Path(models_dir))
+    payload["commune_lookup_path"] = str(lookup_path)
 
     model_path, metrics_path = _save_artifacts(
         model=model,
@@ -180,7 +215,11 @@ def train_final(
     df, dpe_match_rate = prepare_training_frame(
         config, dvf_dir=dvf_dir, dpe_csv=dpe_csv
     )
-    print(f"Prepared rows: {len(df)} | DPE match at load: {dpe_match_rate:.1%}")
+    commune_match_rate = float(df["commune_price_m2_median"].notna().mean())
+    print(
+        f"Prepared rows: {len(df)} | DPE match: {dpe_match_rate:.1%} "
+        f"| Commune market: {commune_match_rate:.1%}"
+    )
 
     x, y = _prepare_xy(df, config)
     print(f"Refitting on all {len(x)} rows")
@@ -200,9 +239,13 @@ def train_final(
         },
         "dev_model_path": str(dev_model_path.resolve()),
         "dpe_match_rate": dpe_match_rate,
+        "commune_market_match_rate": commune_match_rate,
         "n_rows": len(df),
         "max_dist_m": config.max_dist_m,
     }
+
+    lookup_path = _save_commune_lookup(df, config, Path(models_dir))
+    payload["commune_lookup_path"] = str(lookup_path)
 
     model_path, metrics_path = _save_artifacts(
         model=model_final,
