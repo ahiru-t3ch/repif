@@ -1,0 +1,38 @@
+{
+  "model": "apartment",
+  "stage": "dev",
+  "timestamp": "2026-07-23T08:22:42",
+  "features": [
+    "lon",
+    "lat",
+    "sbati",
+    "l_codinsee",
+    "apartement_rooms",
+    "nblocdep",
+    "sterr",
+    "dpe_median",
+    "annee_construction"
+  ],
+  "best_params": {
+    "colsample_bytree": 0.6888431241882921,
+    "gamma": 0.599326836668414,
+    "learning_rate": 0.07752303428072559,
+    "max_depth": 9,
+    "min_child_weight": 6,
+    "n_estimators": 871,
+    "reg_lambda": 2.5939531087168306,
+    "subsample": 0.881207583558071
+  },
+  "best_cv_score_neg_mae_log": -0.21084745109658987,
+  "holdout": {
+    "r2": 0.852730971741846,
+    "mae_eur": 42193.08749652983,
+    "mape_pct": 21.841083382264888
+  },
+  "dpe_match_rate": 0.6038179768804506,
+  "n_rows": 974994,
+  "n_train": 779995,
+  "n_test": 194999,
+  "max_dist_m": 30,
+  "model_path": "/home/ahiru_t3ch/repif/ml_v2/models/apartment/apartment_dev_20260723_082242.joblib"
+}

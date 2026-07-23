@@ -16,7 +16,12 @@ from repif_ml_v2.market import (
     build_commune_market_lookup,
     save_commune_market_lookup,
 )
-from repif_ml_v2.paths import DEFAULT_DPE_CSV, DEFAULT_DVF_DIR, DEFAULT_MODELS_DIR
+from repif_ml_v2.paths import (
+    DEFAULT_DPE_CSV,
+    DEFAULT_DVF_DIR,
+    DEFAULT_MODELS_DIR,
+    commune_lookup_path,
+)
 
 
 def build_lookup_for_config(
@@ -31,7 +36,7 @@ def build_lookup_for_config(
     )
     commune_match_rate = float(df["commune_price_m2_median"].notna().mean())
     lookup = build_commune_market_lookup(df)
-    out_path = models_dir / config.name / "commune_price_m2_lookup.json"
+    out_path = commune_lookup_path(config.name, models_dir)
     save_commune_market_lookup(
         lookup,
         out_path,

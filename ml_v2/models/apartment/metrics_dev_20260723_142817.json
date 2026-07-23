@@ -1,0 +1,41 @@
+{
+  "model": "apartment",
+  "stage": "dev",
+  "timestamp": "2026-07-23T14:28:17",
+  "features": [
+    "lon",
+    "lat",
+    "sbati",
+    "l_codinsee",
+    "apartement_rooms",
+    "nblocdep",
+    "sterr",
+    "dpe_median",
+    "annee_construction",
+    "commune_price_m2_median"
+  ],
+  "best_params": {
+    "colsample_bytree": 0.6888431241882921,
+    "gamma": 0.599326836668414,
+    "learning_rate": 0.07752303428072559,
+    "max_depth": 9,
+    "min_child_weight": 6,
+    "n_estimators": 871,
+    "reg_lambda": 2.5939531087168306,
+    "subsample": 0.881207583558071
+  },
+  "best_cv_score_neg_mae_log": -0.2108237934528159,
+  "holdout": {
+    "r2": 0.8493347638459374,
+    "mae_eur": 42467.962198490415,
+    "mape_pct": 21.849213004730988
+  },
+  "dpe_match_rate": 0.6038179768804506,
+  "commune_market_match_rate": 0.9661040764542869,
+  "n_rows": 975014,
+  "n_train": 780011,
+  "n_test": 195003,
+  "max_dist_m": 30,
+  "commune_lookup_path": "/home/ahiru_t3ch/repif/ml_v2/models/apartment/commune_price_m2_lookup.json",
+  "model_path": "/home/ahiru_t3ch/repif/ml_v2/models/apartment/apartment_dev_20260723_142817.joblib"
+}

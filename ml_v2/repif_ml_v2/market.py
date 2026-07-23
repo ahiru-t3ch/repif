@@ -9,7 +9,6 @@ import numpy as np
 import pandas as pd
 
 COMMUNE_MARKET_MIN_PRIOR = 5
-COMMUNE_LOOKUP_FILENAME = "commune_price_m2_lookup.json"
 
 
 def add_commune_price_m2_median(

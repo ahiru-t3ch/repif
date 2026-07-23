@@ -25,6 +25,7 @@ from repif_ml_v2.paths import (
     DEFAULT_DVF_DIR,
     DEFAULT_MODELS_DIR,
     commune_lookup_path,
+    metrics_filename,
 )
 
 PARAM_DIST = {
@@ -75,7 +76,7 @@ def _save_artifacts(
     model_dir.mkdir(parents=True, exist_ok=True)
 
     model_path = model_dir / f"{config.name}_{stage}_{timestamp}.joblib"
-    metrics_path = model_dir / f"metrics_{stage}_{timestamp}.json"
+    metrics_path = model_dir / metrics_filename(stage, timestamp, config.name)
 
     joblib.dump(model, model_path)
     metrics_payload["model_path"] = str(model_path.resolve())
@@ -99,6 +100,34 @@ def _save_commune_lookup(
     )
     print(f"Saved commune lookup: {path} ({len(lookup)} communes)")
     return path
+
+
+def _dev_metrics_path(dev_model_path: Path, config: PropertyConfig) -> Path | None:
+    prefix = f"{config.name}_dev_"
+    stem = dev_model_path.stem
+    if not stem.startswith(prefix):
+        return None
+    timestamp = stem[len(prefix) :]
+    model_dir = dev_model_path.parent
+    candidates = (
+        model_dir / metrics_filename("dev", timestamp, config.name),
+        model_dir / f"metrics_dev_{timestamp}.json",
+    )
+    for path in candidates:
+        if path.is_file():
+            return path
+    return None
+
+
+def _holdout_from_dev_metrics(dev_model_path: Path, config: PropertyConfig) -> dict | None:
+    metrics_path = _dev_metrics_path(dev_model_path, config)
+    if metrics_path is None:
+        return None
+    payload = json.loads(metrics_path.read_text(encoding="utf-8"))
+    holdout = payload.get("holdout")
+    if isinstance(holdout, dict):
+        return holdout
+    return None
 
 
 def train_dev(
@@ -243,6 +272,12 @@ def train_final(
         "n_rows": len(df),
         "max_dist_m": config.max_dist_m,
     }
+    holdout = _holdout_from_dev_metrics(dev_model_path, config)
+    if holdout is not None:
+        payload["holdout"] = holdout
+        dev_metrics_path = _dev_metrics_path(dev_model_path, config)
+        if dev_metrics_path is not None:
+            payload["dev_metrics_path"] = str(dev_metrics_path.resolve())
 
     lookup_path = _save_commune_lookup(df, config, Path(models_dir))
     payload["commune_lookup_path"] = str(lookup_path)

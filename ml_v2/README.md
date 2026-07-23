@@ -90,8 +90,8 @@ Each run writes to `ml_v2/models/{apartment|house}/`:
 | File | Content |
 |---|---|
 | `{name}_{dev\|prod}_{timestamp}.joblib` | XGBoost model |
-| `metrics_{dev\|prod}_{timestamp}.json` | R², MAE, MAPE, `best_params`, DPE match rate, etc. |
-| `commune_price_m2_lookup.json` | INSEE code → €/m² median (inference lookup, one per property type) |
+| `metrics_{dev\|prod}_{timestamp}_{apartment\|house}.json` | R², MAE, MAPE, `best_params`, etc. |
+| `commune_price_m2_lookup_{apartment\|house}.json` | INSEE code → €/m² median (inference lookup) |
 
 ## Commune market feature (`commune_price_m2_median`)
 
