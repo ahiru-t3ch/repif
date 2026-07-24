@@ -15,6 +15,7 @@ import {
   AGENCY_FEE_PERCENT,
   type AgencyFeeMode,
 } from "@/lib/agency-fees";
+import { apartmentHasGardenFromLandArea } from "@/lib/amenity-uplift";
 import {
   DEFAULT_ANNUAL_CHARGES,
   DEFAULT_EXCEPTIONAL_CHARGES_PCT,
@@ -66,7 +67,6 @@ export type ModelInputSnapshot = {
   dpeMedian: number;
   anneeConstruction: number;
   hasBalcony: boolean;
-  hasGarden: boolean;
   hasPool: boolean;
   hasElevator: boolean;
   unpopularTower: boolean;
@@ -128,6 +128,7 @@ export type EstimateSessionSnapshot = {
   dpeMedian: string;
   anneeConstruction: string;
   hasBalcony: boolean;
+  /** Derived from land area (apartment: sterr > 0). */
   hasGarden: boolean;
   hasPool: boolean;
   hasElevator: boolean;
@@ -193,8 +194,6 @@ type EstimateSessionContextValue = {
   setAnneeConstruction: Dispatch<SetStateAction<string>>;
   hasBalcony: boolean;
   setHasBalcony: Dispatch<SetStateAction<boolean>>;
-  hasGarden: boolean;
-  setHasGarden: Dispatch<SetStateAction<boolean>>;
   hasPool: boolean;
   setHasPool: Dispatch<SetStateAction<boolean>>;
   hasElevator: boolean;
@@ -299,7 +298,6 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
   const [dpeMedian, setDpeMedian] = useState("");
   const [anneeConstruction, setAnneeConstruction] = useState("");
   const [hasBalcony, setHasBalcony] = useState(false);
-  const [hasGarden, setHasGarden] = useState(false);
   const [hasPool, setHasPool] = useState(false);
   const [hasElevator, setHasElevator] = useState(false);
   const [unpopularTower, setUnpopularTower] = useState(false);
@@ -368,6 +366,8 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
     if (!result) {
       return null;
     }
+    const parsedSterr =
+      sterr.trim() === "" ? null : Number(sterr);
     return {
       propertyType,
       address,
@@ -379,7 +379,7 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       dpeMedian,
       anneeConstruction,
       hasBalcony,
-      hasGarden,
+      hasGarden: apartmentHasGardenFromLandArea(propertyType, parsedSterr),
       hasPool,
       hasElevator,
       unpopularTower,
@@ -431,7 +431,6 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
     dpeMedian,
     anneeConstruction,
     hasBalcony,
-    hasGarden,
     hasPool,
     hasElevator,
     unpopularTower,
@@ -486,7 +485,6 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
     setDpeMedian(snapshot.dpeMedian);
     setAnneeConstruction(snapshot.anneeConstruction);
     setHasBalcony(Boolean(snapshot.hasBalcony));
-    setHasGarden(Boolean(snapshot.hasGarden));
     setHasPool(Boolean(snapshot.hasPool));
     setHasElevator(Boolean(snapshot.hasElevator));
     setUnpopularTower(Boolean(snapshot.unpopularTower));
@@ -577,8 +575,6 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       setAnneeConstruction,
       hasBalcony,
       setHasBalcony,
-      hasGarden,
-      setHasGarden,
       hasPool,
       setHasPool,
       hasElevator,
@@ -677,7 +673,6 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       dpeMedian,
       anneeConstruction,
       hasBalcony,
-      hasGarden,
       hasPool,
       hasElevator,
       unpopularTower,

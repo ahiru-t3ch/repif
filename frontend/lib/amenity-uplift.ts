@@ -64,6 +64,17 @@ export function isBalconyApplicable(propertyType: PropertyType): boolean {
   return propertyType === "APARTMENT";
 }
 
+/** Apartment garden uplift applies when land / garden area (m²) is greater than zero. */
+export function apartmentHasGardenFromLandArea(
+  propertyType: PropertyType,
+  sterr: number | null | undefined,
+): boolean {
+  if (propertyType !== "APARTMENT") {
+    return false;
+  }
+  return sterr != null && Number.isFinite(sterr) && sterr > 0;
+}
+
 export function isFloorAdjustmentApplicable(
   propertyType: PropertyType,
 ): boolean {

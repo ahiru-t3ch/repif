@@ -49,6 +49,7 @@ import {
 } from "@/lib/estimate-session/context";
 import {
   applyMarketAdjustments,
+  apartmentHasGardenFromLandArea,
   isBalconyApplicable,
   isFloorAdjustmentApplicable,
   isUnpopularTowerApplicable,
@@ -256,8 +257,6 @@ export default function Home() {
     setAnneeConstruction,
     hasBalcony,
     setHasBalcony,
-    hasGarden,
-    setHasGarden,
     hasPool,
     setHasPool,
     hasElevator,
@@ -377,7 +376,6 @@ export default function Home() {
     setDpeMedian("");
     setAnneeConstruction("");
     setHasBalcony(false);
-    setHasGarden(false);
     setHasPool(false);
     setHasElevator(false);
     setUnpopularTower(false);
@@ -633,7 +631,6 @@ export default function Home() {
     setResult(null);
     setAdjustedPrice(null);
     setHasBalcony(false);
-    setHasGarden(false);
     setHasPool(false);
     setHasElevator(false);
     setUnpopularTower(false);
@@ -705,6 +702,10 @@ export default function Home() {
       }
 
       const data: PredictResult = await response.json();
+      const parsedSterr =
+        propertyType === "HOUSE" || sterr.trim() !== ""
+          ? Number(sterr)
+          : null;
       const parsedFloor =
         apartmentFloorNumber.trim() === ""
           ? null
@@ -728,7 +729,7 @@ export default function Home() {
         propertyType,
         {
           balcony: hasBalcony,
-          garden: hasGarden,
+          garden: apartmentHasGardenFromLandArea(propertyType, parsedSterr),
           pool: hasPool,
           floor: floorReady ? parsedFloor : null,
           buildingStoreys: floorReady ? parsedStoreys : null,
@@ -753,16 +754,12 @@ export default function Home() {
         address: address.trim(),
         sbati: Number(sbati),
         propertyRooms: Number(propertyRooms),
-        sterr:
-          propertyType === "HOUSE" || sterr.trim() !== ""
-            ? Number(sterr)
-            : null,
+        sterr: parsedSterr,
         nbParking: Number(nbParking),
         nbCave: Number(nbCave),
         dpeMedian: Number(dpeMedian),
         anneeConstruction: Number(anneeConstruction),
         hasBalcony,
-        hasGarden,
         hasPool,
         hasElevator,
         unpopularTower,
@@ -929,7 +926,6 @@ export default function Home() {
                         </dd>
                       </div>
                       {(modelInputSnapshot.hasBalcony ||
-                        modelInputSnapshot.hasGarden ||
                         modelInputSnapshot.hasPool ||
                         modelInputSnapshot.unpopularTower) && (
                         <div className="flex flex-wrap gap-x-2">
@@ -940,9 +936,6 @@ export default function Home() {
                             {[
                               modelInputSnapshot.hasBalcony
                                 ? t("form.balcony")
-                                : null,
-                              modelInputSnapshot.hasGarden
-                                ? t("form.garden")
                                 : null,
                               modelInputSnapshot.hasPool ? t("form.pool") : null,
                               modelInputSnapshot.unpopularTower
@@ -1508,8 +1501,8 @@ export default function Home() {
                   <div
                     className={`grid gap-3 ${
                       isBalconyApplicable(propertyType)
-                        ? "sm:grid-cols-3"
-                        : "sm:grid-cols-2"
+                        ? "sm:grid-cols-2"
+                        : "sm:grid-cols-1"
                     }`}
                   >
                     {isBalconyApplicable(propertyType) && (
@@ -1523,15 +1516,6 @@ export default function Home() {
                         {t("form.balcony")}
                       </label>
                     )}
-                    <label className="flex items-center gap-2 text-sm text-foreground">
-                      <input
-                        type="checkbox"
-                        checked={hasGarden}
-                        onChange={(e) => setHasGarden(e.target.checked)}
-                        className="h-4 w-4 rounded border-border"
-                      />
-                      {t("form.garden")}
-                    </label>
                     <label className="flex items-center gap-2 text-sm text-foreground">
                       <input
                         type="checkbox"
