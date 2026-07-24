@@ -67,6 +67,7 @@ export type ShareScenarioPayload = {
   agencyFeeFixed: number;
   notaryFeeRate: number;
   notaryPropertyAge: NotaryPropertyAge;
+  financeAnalysisComplete: boolean;
 };
 
 export type ShareCreateResponse = {
@@ -130,4 +131,21 @@ export async function fetchShareScenario(
     throw new Error("Invalid shared scenario payload.");
   }
   return data as ShareGetResponse;
+}
+
+export function sharedScenarioIncludesAnalysis(
+  payload: ShareScenarioPayload,
+): boolean {
+  if (payload.financeAnalysisComplete) {
+    return true;
+  }
+  return (
+    payload.showWorksSection ||
+    payload.showOwnershipSection ||
+    payload.showLoanSection ||
+    payload.showLivingBudgetSection ||
+    payload.showInvestmentSection ||
+    payload.showSavingsSection ||
+    payload.showVerdictSection
+  );
 }

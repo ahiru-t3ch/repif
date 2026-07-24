@@ -171,6 +171,7 @@ export type EstimateSessionSnapshot = {
   agencyFeeFixed: number;
   notaryFeeRate: number;
   notaryPropertyAge: NotaryPropertyAge;
+  financeAnalysisComplete: boolean;
 };
 
 type EstimateSessionContextValue = {
@@ -277,6 +278,8 @@ type EstimateSessionContextValue = {
   setNotaryFeeRate: Dispatch<SetStateAction<number>>;
   notaryPropertyAge: NotaryPropertyAge;
   setNotaryPropertyAge: Dispatch<SetStateAction<NotaryPropertyAge>>;
+  financeAnalysisComplete: boolean;
+  setFinanceAnalysisComplete: Dispatch<SetStateAction<boolean>>;
   error: string | null;
   setError: Dispatch<SetStateAction<string | null>>;
   getShareSnapshot: () => EstimateSessionSnapshot | null;
@@ -360,6 +363,7 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
   const [notaryFeeRate, setNotaryFeeRate] = useState<number>(DEFAULT_NOTARY_FEE_RATE);
   const [notaryPropertyAge, setNotaryPropertyAge] =
     useState<NotaryPropertyAge>("OLD");
+  const [financeAnalysisComplete, setFinanceAnalysisComplete] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const getShareSnapshot = useCallback((): EstimateSessionSnapshot | null => {
@@ -421,6 +425,7 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       agencyFeeFixed,
       notaryFeeRate,
       notaryPropertyAge,
+      financeAnalysisComplete,
     };
   }, [
     propertyType,
@@ -472,6 +477,7 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
     agencyFeeFixed,
     notaryFeeRate,
     notaryPropertyAge,
+    financeAnalysisComplete,
   ]);
 
   const hydrateFromShare = useCallback((snapshot: EstimateSessionSnapshot) => {
@@ -550,6 +556,7 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
     setAgencyFeeFixed(snapshot.agencyFeeFixed);
     setNotaryFeeRate(snapshot.notaryFeeRate);
     setNotaryPropertyAge(snapshot.notaryPropertyAge);
+    setFinanceAnalysisComplete(Boolean(snapshot.financeAnalysisComplete));
     setError(null);
   }, []);
 
@@ -657,6 +664,8 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       setNotaryFeeRate,
       notaryPropertyAge,
       setNotaryPropertyAge,
+      financeAnalysisComplete,
+      setFinanceAnalysisComplete,
       error,
       setError,
       getShareSnapshot,
@@ -714,6 +723,7 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       agencyFeeFixed,
       notaryFeeRate,
       notaryPropertyAge,
+      financeAnalysisComplete,
       error,
       getShareSnapshot,
       hydrateFromShare,

@@ -18,6 +18,7 @@ type EstimateWizardProps = {
   submitLabel: string;
   submittingLabel: string;
   submitting: boolean;
+  onSubmitClick?: () => void;
 };
 
 export function EstimateWizard({
@@ -36,6 +37,7 @@ export function EstimateWizard({
   submitLabel,
   submittingLabel,
   submitting,
+  onSubmitClick,
 }: EstimateWizardProps) {
   return (
     <div className="flex flex-col gap-6">
@@ -45,11 +47,13 @@ export function EstimateWizard({
         </p>
         <ol
           className={`grid gap-2 sm:gap-3 ${
-            stepLabels.length >= 5
-              ? "grid-cols-2 sm:grid-cols-5"
-              : stepLabels.length >= 4
-                ? "grid-cols-2 sm:grid-cols-4"
-                : "grid-cols-3"
+            stepLabels.length >= 7
+              ? "grid-cols-2 sm:grid-cols-4 lg:grid-cols-7"
+              : stepLabels.length >= 5
+                ? "grid-cols-2 sm:grid-cols-5"
+                : stepLabels.length >= 4
+                  ? "grid-cols-2 sm:grid-cols-4"
+                  : "grid-cols-3"
           }`}
         >
           {stepLabels.map((label, index) => {
@@ -104,8 +108,9 @@ export function EstimateWizard({
         )}
         {showSubmit && (
           <button
-            type="submit"
+            type={onSubmitClick ? "button" : "submit"}
             disabled={submitting}
+            onClick={onSubmitClick}
             className="rounded-lg bg-accent px-4 py-3 text-sm font-medium text-white transition hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-50 sm:ml-auto"
           >
             {submitting ? submittingLabel : submitLabel}

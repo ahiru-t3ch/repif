@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 
 import { useEstimateSession } from "@/lib/estimate-session/context";
 import { useI18n } from "@/lib/i18n/context";
-import { fetchShareScenario } from "@/lib/share-scenario";
+import { fetchShareScenario, sharedScenarioIncludesAnalysis } from "@/lib/share-scenario";
 
 export default function SharedScenarioPage() {
   const { t } = useI18n();
@@ -30,7 +30,9 @@ export default function SharedScenarioPage() {
           return;
         }
         hydrateFromShare(shared.payload);
-        router.replace("/");
+        router.replace(
+          sharedScenarioIncludesAnalysis(shared.payload) ? "/analysis" : "/",
+        );
       } catch (err) {
         if (cancelled) {
           return;
