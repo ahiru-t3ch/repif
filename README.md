@@ -146,10 +146,11 @@ Three Coolify resources in the same **project** and **production** environment:
 Checklist:
 
 1. **Postgres** — note credentials; set backend `DATABASE_URL` with scheme **`postgresql://`** (not `postgres://`).
-2. **Backend** — persistent volume on `/backend/models_back`; deliver `.joblib` via SSH — [models_back/README.md](backend/models_back/README.md).
-3. **Backend** — `ENABLE_DOCS=false`, JWT **public** key, model env vars.
-4. **Frontend** — JWT **private** key; `BACKEND_URL` = backend **HTTPS** URL (see frontend README — internal Docker hostname often fails with two Dockerfile apps).
-5. **DNS** (e.g. Infomaniak) — A records for frontend and API subdomains → VPS IP; enable **Force HTTPS** in Coolify; redeploy after domain changes.
+2. **Backend** — persistent volume on `/backend/models_back`; deliver **six ml_v2 artifacts** (2× `.joblib`, 2× metrics JSON, 2× commune lookup JSON) via SSH — [models_back/README.md](backend/models_back/README.md#coolify--deliver-ml_v2-artifacts-to-persistent-storage).
+3. **Backend** — `ENABLE_DOCS=false`, JWT **public** key, all `MODEL_*` env vars (see [backend README](backend/README_backend.md#coolify-production)).
+4. **Frontend** — JWT **private** key (required for all API proxy calls, including `/api/metrics` on About); `BACKEND_URL` = backend **HTTPS** URL.
+5. **Redeploy** backend and frontend after env or model changes.
+6. **DNS** (e.g. Infomaniak) — A records for frontend and API subdomains → VPS IP; enable **Force HTTPS** in Coolify; redeploy after domain changes.
 
 Env vars go in **Production Environment Variables**, not Preview.
 
@@ -166,14 +167,14 @@ You can also run each service on the host — see sub-project READMEs.
 
 1. Copy `backend/.env.sample` → `backend/.env` (use `@localhost` in `DATABASE_URL`)
 2. Copy `frontend/.env.example` → `frontend/.env.local` (`BACKEND_URL=http://localhost:8000`)
-3. Copy `.joblib` files to `backend/models_back/` and set `MODEL_APARTMENT` / `MODEL_HOUSE` in `.env`
+3. Copy the six ml_v2 prod files to `backend/models_back/` and set `MODEL_*` in `.env` (see [models_back/README.md](backend/models_back/README.md))
 4. Start Postgres, backend, then frontend
 
 ## Beta scope
 
 | Area | Choice |
 |---|---|
-| ML models | XGBoost dev models (~100k recent sales, hyperparameter search) |
+| ML models | XGBoost prod models (`ml_v2`, ~100k recent sales, DPE + commune €/m²) |
 | Inference | Separate apartment / house models |
 | API | `POST /predict/apartment`, `POST /predict/house` (input: `address`, not lat/lon) |
 | Geocoding | Géoplateforme BAN in the backend (`geocoding.py`) |

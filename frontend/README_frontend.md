@@ -41,7 +41,7 @@ The browser calls **Next.js route handlers** (same origin). They proxy to FastAP
 
 Implementation: `app/api/**/route.ts` and `lib/backend.ts`.
 
-Request body: `property_type`, `address`, `sbati`, `nblocdep`, `dpe_median`, `annee_construction`. The backend geocodes the address via Géoplateforme before running the model.
+Request body: `property_type`, `address`, `sbati`, `property_rooms`, `sterr` (houses), `nblocdep`, `dpe_median`, `annee_construction`. The backend geocodes the address via Géoplateforme before running the model.
 
 ## Configuration
 
@@ -145,6 +145,8 @@ NEXT_PUBLIC_UMAMI_WEBSITE_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 ```
 
 Generate the key pair from the repo root: `bash generate-jwt-keys.sh`. Set the **public** key on the backend (`BACKEND_JWT_PUBLIC_KEY`).
+
+**JWT is mandatory in production:** the backend secures every route except `GET /` (health). The frontend signs a short-lived token for **all** BFF calls (`/api/predict/*`, `/api/geocode/suggest`, `/api/metrics`, etc.). If `BACKEND_JWT_PRIVATE_KEY` is missing or mismatched, estimates and About-page metrics will fail with 401/500.
 
 **Umami:** copy the script URL and website ID from your Umami instance (**Settings → Websites → hawk-prix-immo**). In Coolify, enable **Available at Buildtime** for both `NEXT_PUBLIC_UMAMI_*` vars, then **Redeploy** (rebuild required — runtime-only env is not enough). Verify in the browser: Network tab → `script.js` + `send`/`collect` → 200; Umami **Realtime** should show your visit.
 

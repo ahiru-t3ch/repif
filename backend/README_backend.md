@@ -2,7 +2,7 @@
 
 **REPIF** (Real Estate Prices In France) — REST API for apartment and house price estimates.
 
-Beta POC: XGBoost models trained locally in `ml/`, copied into this service for inference.
+Beta POC: XGBoost models trained in `ml_v2/`, copied into this service for inference.
 
 ## Role in the product
 
@@ -46,21 +46,25 @@ backend/
 
 ## Models
 
-Inference uses two files in `models_back/`. Filenames are set via env (`MODEL_APARTMENT`, `MODEL_HOUSE`):
+Inference uses **six files** in `models_back/` (not in Git). Filenames are set via env:
 
-```
-models_back/apartment_dev_YYYYMMDD_HHMMSS.joblib
-models_back/house_dev_YYYYMMDD_HHMMSS.joblib
-```
+| File | Env var | Example (prod ml_v2) |
+|---|---|---|
+| Apartment model | `MODEL_APARTMENT` | `apartment_prod_20260723_144015.joblib` |
+| House model | `MODEL_HOUSE` | `house_prod_20260723_162418.joblib` |
+| Apartment metrics | `MODEL_METRICS_APARTMENT` | `metrics_prod_20260723_144015_apartment.json` |
+| House metrics | `MODEL_METRICS_HOUSE` | `metrics_prod_20260723_162418_house.json` |
+| Apartment commune lookup | `MODEL_COMMUNE_LOOKUP_APARTMENT` | `commune_price_m2_lookup_apartment.json` |
+| House commune lookup | `MODEL_COMMUNE_LOOKUP_HOUSE` | `commune_price_m2_lookup_house.json` |
 
 **Deploy a new model version**
 
-1. Train and save in `ml/` → `ml/models/`
-2. Copy the `.joblib` files into `backend/models_back/`
-3. Update `MODEL_APARTMENT` / `MODEL_HOUSE` in `.env` (local) or Coolify **Production** env
+1. Train in `ml_v2/` (`train_final.py` for prod) — outputs under `ml_v2/models/{apartment|house}/`
+2. Copy **all six files** from the same training run into `backend/models_back/`
+3. Update `MODEL_*` env vars in `.env` (local) or Coolify **Production** if filenames change
 4. Deliver files to the running environment and restart the API:
    - **Local / Compose:** files in `backend/models_back/` on the host (bind mount) — restart the backend service
-   - **Coolify:** SCP to the VPS, copy into the persistent volume, redeploy — full procedure in [`models_back/README.md`](models_back/README.md#coolify--deliver-joblib-to-persistent-storage)
+   - **Coolify:** SCP to the VPS, copy into the persistent volume, redeploy — full procedure in [`models_back/README.md`](models_back/README.md#coolify--deliver-ml_v2-artifacts-to-persistent-storage)
 
 Predictions are in **log-price** inside the model; `predictor.py` applies `exp()` before returning euros.
 
@@ -85,6 +89,8 @@ Same schema for both routes. `property_type` must match the endpoint (`APARTMENT
   "property_type": "APARTMENT",
   "address": "10 rue de la Pomme 31000 Toulouse",
   "sbati": 102.55,
+  "property_rooms": 3,
+  "sterr": 0,
   "nblocdep": 0,
   "dpe_median": 4,
   "annee_construction": 1980
@@ -95,9 +101,17 @@ Same schema for both routes. `property_type` must match the endpoint (`APARTMENT
 |---|---|
 | `address` | Postal address — geocoded server-side to `lat`, `lon`, `l_codinsee` |
 | `sbati` | Built area (m²) — DVF+ field name |
+| `property_rooms` | Room count (T1=1, T2=2, …) → `apartement_rooms` / `home_rooms` |
+| `sterr` | Land area (m²). **Required** for houses (`> 0`). Optional for apartments (0 if unknown, max 5 000) |
 | `nblocdep` | Number of outbuildings / dependencies (not room count) |
 | `dpe_median` | Energy class as integer 1–7 (A=1 … G=7) |
 | `annee_construction` | Construction year |
+
+Also configure per property type in env:
+
+- `MODEL_APARTMENT` / `MODEL_HOUSE`
+- `MODEL_METRICS_APARTMENT` / `MODEL_METRICS_HOUSE`
+- `MODEL_COMMUNE_LOOKUP_APARTMENT` / `MODEL_COMMUNE_LOOKUP_HOUSE`
 
 Stored in the database after geocoding: **`address`** = BAN normalized label (best match), plus `lat`, `lon`, `l_codinsee`, input fields and `predicted_price`.
 
@@ -126,9 +140,13 @@ Copy `.env.sample` to `.env`. **Never commit `.env`.**
 | `BACKEND_JWT_ISSUER` | Expected JWT `iss` (default `repif-frontend`) |
 | `BACKEND_JWT_AUDIENCE` | Expected JWT `aud` (default `repif-backend`) |
 | `ENABLE_DOCS` | `true` → `/docs` enabled; `false` → disabled. Default if unset: **`false`**. Compose sets `true` for local dev; use `false` on Coolify prod. |
-| `MODEL_APARTMENT` | Filename in `models_back/` (default `apartment_dev_20260621_220900.joblib`) |
-| `MODEL_HOUSE` | Filename in `models_back/` (default `house_dev_20260621_220900.joblib`) |
-| `MODEL_METRICS` | Metrics JSON in `models_back/` (default `metrics_dev.json`) — supplies `mape_pct` for indicative price ranges |
+| `MODEL_APARTMENT` | Apartment `.joblib` in `models_back/` |
+| `MODEL_HOUSE` | House `.joblib` in `models_back/` |
+| `MODEL_METRICS_APARTMENT` | Apartment hold-out metrics JSON (`holdout.mape_pct` for price ranges + About page) |
+| `MODEL_METRICS_HOUSE` | House hold-out metrics JSON |
+| `MODEL_COMMUNE_LOOKUP_APARTMENT` | INSEE → €/m² median lookup (apartments) |
+| `MODEL_COMMUNE_LOOKUP_HOUSE` | INSEE → €/m² median lookup (houses) |
+| `MODEL_METRICS` | Legacy combined metrics file (fallback if per-model files are missing) |
 | `RATE_LIMIT_PREDICT` | Max prediction requests per IP (default `10/minute`) — slowapi format |
 | `RATE_LIMIT_PREDICTIONS` | Max history list requests per IP (default `60/minute`) |
 
@@ -146,15 +164,18 @@ DATABASE_URL=postgresql://user:password@localhost:5432/dbname
 DATABASE_URL=postgresql://user:password@db:5432/dbname
 ```
 
-Place model files in `backend/models_back/` on the host (Compose bind-mounts that folder into the container). Copy from training output if needed:
+Place model files in `backend/models_back/` on the host (Compose bind-mounts that folder into the container). Copy from `ml_v2` training output:
 
 ```bash
-cp ml/models/apartment_dev_*.joblib backend/models_back/
-cp ml/models/house_dev_*.joblib backend/models_back/
-cp ml/models/metrics_dev_*.json backend/models_back/
+cp ml_v2/models/apartment/apartment_prod_*.joblib backend/models_back/
+cp ml_v2/models/house/house_prod_*.joblib backend/models_back/
+cp ml_v2/models/apartment/metrics_prod_*_apartment.json backend/models_back/
+cp ml_v2/models/house/metrics_prod_*_house.json backend/models_back/
+cp ml_v2/models/apartment/commune_price_m2_lookup_apartment.json backend/models_back/
+cp ml_v2/models/house/commune_price_m2_lookup_house.json backend/models_back/
 ```
 
-Optional in root `.env`: `MODEL_APARTMENT` / `MODEL_HOUSE` to pick another filename without rebuilding.
+Set matching `MODEL_*` env vars in root `.env` or Coolify if filenames differ from defaults.
 
 **Backend alone in Docker** (Postgres on host):
 
@@ -256,10 +277,17 @@ BACKEND_JWT_PUBLIC_KEY=<PEM public key>
 BACKEND_JWT_ISSUER=repif-frontend
 BACKEND_JWT_AUDIENCE=repif-backend
 ENABLE_DOCS=false
-MODEL_APARTMENT=apartment_dev_20260621_220900.joblib
-MODEL_HOUSE=house_dev_20260621_220900.joblib
-MODEL_METRICS=metrics_dev_20260716_120000.json
+MODEL_APARTMENT=apartment_prod_20260723_144015.joblib
+MODEL_HOUSE=house_prod_20260723_162418.joblib
+MODEL_METRICS_APARTMENT=metrics_prod_20260723_144015_apartment.json
+MODEL_METRICS_HOUSE=metrics_prod_20260723_162418_house.json
+MODEL_COMMUNE_LOOKUP_APARTMENT=commune_price_m2_lookup_apartment.json
+MODEL_COMMUNE_LOOKUP_HOUSE=commune_price_m2_lookup_house.json
+RATE_LIMIT_PREDICT=10/minute
+RATE_LIMIT_PREDICTIONS=60/minute
 ```
+
+**Auth:** when `BACKEND_JWT_PUBLIC_KEY` is set, every route except `GET /` (health) requires a valid JWT signed by the frontend. `/metrics` is **not** public — the About page loads it via the Next.js BFF (`/api/metrics`).
 
 **`DATABASE_URL`:** Coolify often generates `postgres://…`. SQLAlchemy requires **`postgresql://`** (replace the scheme only; keep user, password, host, port, db).
 
@@ -267,7 +295,7 @@ Link the Postgres resource to the backend or paste the **internal** hostname Coo
 
 **JWT public key:** multiline PEM or single line with `\n` — same pair as `BACKEND_JWT_PRIVATE_KEY` on the frontend.
 
-**Models:** not in Git. Upload `.joblib` files to the persistent volume before the first successful start — see [`models_back/README.md`](models_back/README.md#coolify--deliver-joblib-to-persistent-storage).
+**Models:** not in Git. Upload **six files** (2× `.joblib`, 2× metrics JSON, 2× commune lookup JSON) to the persistent volume before the first successful start — see [`models_back/README.md`](models_back/README.md#coolify--deliver-ml_v2-artifacts-to-persistent-storage).
 
 ### Custom domain and HTTPS
 
@@ -289,9 +317,10 @@ Set the frontend’s `BACKEND_URL` to this HTTPS URL (see [frontend/README_front
 | Symptom | Fix |
 |---|---|
 | `NoSuchModuleError: sqlalchemy.dialects:postgres` | Change `postgres://` → `postgresql://` in `DATABASE_URL` |
-| `FileNotFoundError` for `.joblib` | Copy models into the volume, then redeploy |
+| `FileNotFoundError` for `.joblib` or metrics JSON | Copy all six ml_v2 artifacts into the volume, then redeploy |
 | Container Exited before upload | Use SSH/SCP — Coolify terminal unavailable while down |
 | `401` from frontend | Check JWT public/private pair and issuer/audience |
+| About page: no metrics | Frontend must have `BACKEND_JWT_PRIVATE_KEY` (proxies `/api/metrics` with JWT) |
 
 ## CORS
 
@@ -300,7 +329,7 @@ The frontend origin `http://localhost:3000` is allowed in development. Update `a
 ## Beta limitations
 
 - No Alembic migrations — schema changes require manual table drop
-- Model files copied by hand from `ml/models/`
+- Model files copied by hand from `ml_v2/models/` — see [models_back/README.md](models_back/README.md)
 - Separate apartment / house models — same inputs can yield very different prices (different markets)
 - Geocoding requires internet access to `data.geopf.fr` (50 req/s/IP)
-- Predictions are indicative, not certified appraisals — see [ml/README_ml.md](../ml/README_ml.md)
+- Predictions are indicative, not certified appraisals — see [ml_v2/README.md](../ml_v2/README.md)

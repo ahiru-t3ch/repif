@@ -18,6 +18,8 @@ export type ShareScenarioPayload = {
   propertyType: PropertyType;
   address: string;
   sbati: string;
+  propertyRooms?: string;
+  sterr?: string;
   nbParking: string;
   nbCave: string;
   dpeMedian: string;

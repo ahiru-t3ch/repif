@@ -25,9 +25,12 @@ services:
       BACKEND_JWT_ISSUER: ${BACKEND_JWT_ISSUER:-repif-frontend}
       BACKEND_JWT_AUDIENCE: ${BACKEND_JWT_AUDIENCE:-repif-backend}
       ENABLE_DOCS: ${ENABLE_DOCS:-true}
-      MODEL_APARTMENT: ${MODEL_APARTMENT:-apartment_dev_20260621_220900.joblib}
-      MODEL_HOUSE: ${MODEL_HOUSE:-house_dev_20260621_220900.joblib}
-      MODEL_METRICS: ${MODEL_METRICS:-metrics_dev.json}
+      MODEL_APARTMENT: ${MODEL_APARTMENT:-apartment_prod_20260723_144015.joblib}
+      MODEL_HOUSE: ${MODEL_HOUSE:-house_prod_20260723_162418.joblib}
+      MODEL_METRICS_APARTMENT: ${MODEL_METRICS_APARTMENT:-metrics_prod_20260723_144015_apartment.json}
+      MODEL_METRICS_HOUSE: ${MODEL_METRICS_HOUSE:-metrics_prod_20260723_162418_house.json}
+      MODEL_COMMUNE_LOOKUP_APARTMENT: ${MODEL_COMMUNE_LOOKUP_APARTMENT:-commune_price_m2_lookup_apartment.json}
+      MODEL_COMMUNE_LOOKUP_HOUSE: ${MODEL_COMMUNE_LOOKUP_HOUSE:-commune_price_m2_lookup_house.json}
       RATE_LIMIT_PREDICT: ${RATE_LIMIT_PREDICT:-10/minute}
       RATE_LIMIT_PREDICTIONS: ${RATE_LIMIT_PREDICTIONS:-60/minute}
     ports:

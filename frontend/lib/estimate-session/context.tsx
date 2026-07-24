@@ -59,6 +59,8 @@ export type ModelInputSnapshot = {
   propertyType: PropertyType;
   address: string;
   sbati: number;
+  propertyRooms: number;
+  sterr: number | null;
   nbParking: number;
   nbCave: number;
   dpeMedian: number;
@@ -119,6 +121,8 @@ export type EstimateSessionSnapshot = {
   propertyType: PropertyType;
   address: string;
   sbati: string;
+  propertyRooms?: string;
+  sterr?: string;
   nbParking: string;
   nbCave: string;
   dpeMedian: string;
@@ -175,6 +179,10 @@ type EstimateSessionContextValue = {
   setAddress: Dispatch<SetStateAction<string>>;
   sbati: string;
   setSbati: Dispatch<SetStateAction<string>>;
+  propertyRooms: string;
+  setPropertyRooms: Dispatch<SetStateAction<string>>;
+  sterr: string;
+  setSterr: Dispatch<SetStateAction<string>>;
   nbParking: string;
   setNbParking: Dispatch<SetStateAction<string>>;
   nbCave: string;
@@ -284,6 +292,8 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
   const [propertyType, setPropertyType] = useState<PropertyType>("APARTMENT");
   const [address, setAddress] = useState("");
   const [sbati, setSbati] = useState("");
+  const [propertyRooms, setPropertyRooms] = useState("");
+  const [sterr, setSterr] = useState("");
   const [nbParking, setNbParking] = useState("");
   const [nbCave, setNbCave] = useState("");
   const [dpeMedian, setDpeMedian] = useState("");
@@ -362,6 +372,8 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       propertyType,
       address,
       sbati,
+      propertyRooms,
+      sterr,
       nbParking,
       nbCave,
       dpeMedian,
@@ -467,6 +479,8 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
     setPropertyType(snapshot.propertyType);
     setAddress(snapshot.address);
     setSbati(snapshot.sbati);
+    setPropertyRooms(snapshot.propertyRooms ?? "");
+    setSterr(snapshot.sterr ?? "");
     setNbParking(snapshot.nbParking);
     setNbCave(snapshot.nbCave);
     setDpeMedian(snapshot.dpeMedian);
@@ -549,6 +563,10 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       setAddress,
       sbati,
       setSbati,
+      propertyRooms,
+      setPropertyRooms,
+      sterr,
+      setSterr,
       nbParking,
       setNbParking,
       nbCave,
@@ -652,6 +670,8 @@ export function EstimateSessionProvider({ children }: { children: ReactNode }) {
       propertyType,
       address,
       sbati,
+      propertyRooms,
+      sterr,
       nbParking,
       nbCave,
       dpeMedian,

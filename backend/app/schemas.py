@@ -1,6 +1,8 @@
-from pydantic import BaseModel, Field
 from datetime import datetime
 from typing import Literal
+
+from pydantic import BaseModel, Field, model_validator
+
 
 class PredictionRecord(BaseModel):
     id: int
@@ -18,16 +20,42 @@ class PredictionRecord(BaseModel):
 
     model_config = {"from_attributes": True}
 
+
 class PredictInput(BaseModel):
     property_type: Literal["APARTMENT", "HOUSE"]
     sbati: float = Field(..., gt=10)
     nblocdep: int = Field(..., ge=0)
-    #lat: float = Field(..., ge=-90, le=90)
-    #lon: float = Field(..., ge=-180, le=180)
-    #l_codinsee: str = Field(..., min_length=5, max_length=5)
     address: str = Field(..., min_length=10, max_length=255)
     dpe_median: int = Field(..., gt=0, lt=8)
     annee_construction: int = Field(..., gt=1500, le=datetime.now().year)
+    property_rooms: int = Field(
+        ...,
+        ge=1,
+        le=10,
+        description="Room count (T1=1, T2=2, …) — maps to apartement_rooms / home_rooms",
+    )
+    sterr: float | None = Field(
+        None,
+        ge=0,
+        le=50_000,
+        description="Land area m² (required for houses, optional for apartments)",
+    )
+
+    @model_validator(mode="after")
+    def validate_land_area(self) -> "PredictInput":
+        if self.property_type == "HOUSE":
+            if self.sterr is None or self.sterr <= 0:
+                raise ValueError("sterr is required and must be > 0 for houses")
+        if self.property_type == "APARTMENT" and self.sterr is not None:
+            if self.sterr > 5_000:
+                raise ValueError("sterr must be <= 5000 m² for apartments")
+        return self
+
+    def land_area_m2(self) -> float:
+        if self.sterr is None:
+            return 0.0
+        return float(self.sterr)
+
 
 class PredictOutput(BaseModel):
     price: float

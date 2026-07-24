@@ -181,6 +181,8 @@ def _predict_and_save(
                 geocoded.l_codinsee,
                 input.dpe_median,
                 input.annee_construction,
+                property_rooms=input.property_rooms,
+                sterr=input.land_area_m2(),
             )
         )
     except UnsupportedLocationError as exc:

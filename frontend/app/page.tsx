@@ -113,6 +113,7 @@ const DPE_OPTIONS = [
 ] as const;
 
 const OUTBUILDING_COUNT_OPTIONS = [0, 1, 2, 3, 4, 5] as const;
+const ROOM_COUNT_OPTIONS = [1, 2, 3, 4, 5, 6] as const;
 
 const COMPANY_URL = "https://www.ahiru-t3ch.com/";
 
@@ -241,6 +242,10 @@ export default function Home() {
     setAddress,
     sbati,
     setSbati,
+    propertyRooms,
+    setPropertyRooms,
+    sterr,
+    setSterr,
     nbParking,
     setNbParking,
     nbCave,
@@ -365,6 +370,8 @@ export default function Home() {
     setShareMessage(null);
     setAddress("");
     setSbati("");
+    setPropertyRooms("");
+    setSterr("");
     setNbParking("");
     setNbCave("");
     setDpeMedian("");
@@ -633,6 +640,8 @@ export default function Home() {
     setConditionRatings(createEmptyConditionRatings());
     setBuildingStoreys("");
     setApartmentFloorNumber("");
+    setPropertyRooms("");
+    setSterr("");
     resetFinanceSectionToggles();
     resetAllFinanceDefaults();
     setModelInputSnapshot(null);
@@ -658,6 +667,11 @@ export default function Home() {
       property_type: propertyType,
       address: address.trim(),
       sbati: Number(sbati),
+      property_rooms: Number(propertyRooms),
+      sterr:
+        propertyType === "HOUSE" || sterr.trim() !== ""
+          ? Number(sterr)
+          : null,
       nblocdep: Number(nbParking) + Number(nbCave),
       dpe_median: Number(dpeMedian),
       annee_construction: Number(anneeConstruction),
@@ -738,6 +752,11 @@ export default function Home() {
         propertyType,
         address: address.trim(),
         sbati: Number(sbati),
+        propertyRooms: Number(propertyRooms),
+        sterr:
+          propertyType === "HOUSE" || sterr.trim() !== ""
+            ? Number(sterr)
+            : null,
         nbParking: Number(nbParking),
         nbCave: Number(nbCave),
         dpeMedian: Number(dpeMedian),
@@ -873,6 +892,30 @@ export default function Home() {
                           m²
                         </dd>
                       </div>
+                      <div className="flex flex-wrap gap-x-2">
+                        <dt className="text-stone-400">{t("form.rooms")} :</dt>
+                        <dd className="font-medium text-white">
+                          {modelInputSnapshot.propertyRooms >= 6
+                            ? t("form.roomsSixPlus")
+                            : t("form.roomsCount", {
+                                count: modelInputSnapshot.propertyRooms,
+                              })}
+                        </dd>
+                      </div>
+                      {modelInputSnapshot.sterr != null &&
+                        modelInputSnapshot.sterr > 0 && (
+                          <div className="flex flex-wrap gap-x-2">
+                            <dt className="text-stone-400">
+                              {t("form.landArea")} :
+                            </dt>
+                            <dd className="font-medium text-white">
+                              {new Intl.NumberFormat(intlLocale, {
+                                maximumFractionDigits: 0,
+                              }).format(modelInputSnapshot.sterr)}{" "}
+                              m²
+                            </dd>
+                          </div>
+                        )}
                       <div className="flex flex-wrap gap-x-2">
                         <dt className="text-stone-400">{t("form.parking")} :</dt>
                         <dd className="font-medium text-white">
@@ -1304,6 +1347,64 @@ export default function Home() {
                       min={11}
                       step={0.01}
                       required
+                      className={inputClassName}
+                    />
+                  </label>
+
+                  <label className="flex flex-col gap-2">
+                    <span
+                      className={`${labelClassName} flex items-center gap-1.5 normal-case`}
+                    >
+                      {t("form.rooms")}
+                      <FieldHint text={t("form.roomsHint")} />
+                    </span>
+                    <select
+                      value={propertyRooms}
+                      onChange={(e) => setPropertyRooms(e.target.value)}
+                      required
+                      className={inputClassName}
+                    >
+                      <option value="" disabled>
+                        {t("form.dpeSelect")}
+                      </option>
+                      {ROOM_COUNT_OPTIONS.map((count) => (
+                        <option key={count} value={count}>
+                          {count >= 6
+                            ? t("form.roomsSixPlus")
+                            : t("form.roomsCount", { count })}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <label className="flex flex-col gap-2">
+                    <span
+                      className={`${labelClassName} flex items-center gap-1.5 normal-case`}
+                    >
+                      {t("form.landArea")}
+                      <FieldHint
+                        text={
+                          propertyType === "HOUSE"
+                            ? t("form.landAreaHintHouse")
+                            : t("form.landAreaHintApartment")
+                        }
+                      />
+                    </span>
+                    <input
+                      type="number"
+                      value={sterr}
+                      onChange={(e) => setSterr(e.target.value)}
+                      min={propertyType === "HOUSE" ? 1 : 0}
+                      max={propertyType === "HOUSE" ? 50000 : 5000}
+                      step={1}
+                      required={propertyType === "HOUSE"}
+                      placeholder={
+                        propertyType === "APARTMENT"
+                          ? t("form.landAreaPlaceholderApartment")
+                          : undefined
+                      }
                       className={inputClassName}
                     />
                   </label>
