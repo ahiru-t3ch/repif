@@ -30,6 +30,21 @@
     "propertyType": "Property type",
     "apartment": "Apartment",
     "house": "House",
+    "wizardStep1Title": "The property",
+    "wizardStep1Hint": "Choose the property type and location.",
+    "wizardStep2Title": "Characteristics",
+    "wizardStep2Hint": "Areas, outbuildings, energy class and year built.",
+    "wizardStep3Title": "Amenities",
+    "wizardStep3Hint": "Balcony, terrace or pool — indicative uplifts by property type.",
+    "wizardStep4Title": "Condition",
+    "wizardStep4Hint": "Rate the overall condition room by room.",
+    "wizardStep5Title": "Access",
+    "wizardStep5Hint": "Floor, elevator and building type. Then estimate.",
+    "wizardStepIndicator": "Step {current} of {total}",
+    "wizardNext": "Continue",
+    "wizardBack": "Back",
+    "wizardErrorAddress": "Enter a full address (at least 10 characters).",
+    "wizardErrorCharacteristics": "Complete all required fields in this step.",
     "address": "Address",
     "addressPlaceholder": "e.g. 10 rue de la Pomme 31000 Toulouse",
     "addressSuggestions": "Address suggestions",
@@ -97,8 +112,7 @@
     "expandForm": "Edit criteria",
     "newSimulation": "New simulation",
     "editHint": "Update the property details below, then click “Estimate price”.",
-    "submitting": "Calculating…",
-    "collapsedSummary": "Estimate shown for: {summary}"
+    "submitting": "Calculating…"
   },
   "dpeAlert": {
     "title": "DPE alert — rental use",
@@ -290,7 +304,9 @@
     "matchScore": "Address match score:",
     "inputAddress": "Address entered:",
     "geocodedAddress": "Estimate based on:",
-    "modelInputTitle": "Inputs sent to the Machine Learning model"
+    "modelInputTitle": "Inputs sent to the Machine Learning model",
+    "showModelInputs": "Show model inputs",
+    "hideModelInputs": "Hide model inputs"
   },
   "errors": {
     "api": "API error ({status})",

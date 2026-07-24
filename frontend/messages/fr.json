@@ -30,6 +30,21 @@
     "propertyType": "Type de bien",
     "apartment": "Appartement",
     "house": "Maison",
+    "wizardStep1Title": "Le bien",
+    "wizardStep1Hint": "Choisissez le type de bien et sa localisation.",
+    "wizardStep2Title": "Caractéristiques",
+    "wizardStep2Hint": "Surfaces, dépendances, DPE et année de construction.",
+    "wizardStep3Title": "Équipements",
+    "wizardStep3Hint": "Balcon, terrasse ou piscine — majorations indicatives selon le type de bien.",
+    "wizardStep4Title": "État",
+    "wizardStep4Hint": "Évaluez l'état général du bien pièce par pièce.",
+    "wizardStep5Title": "Accès",
+    "wizardStep5Hint": "Étage, ascenseur et type d'immeuble. Puis estimez.",
+    "wizardStepIndicator": "Étape {current} sur {total}",
+    "wizardNext": "Continuer",
+    "wizardBack": "Précédent",
+    "wizardErrorAddress": "Saisissez une adresse complète (au moins 10 caractères).",
+    "wizardErrorCharacteristics": "Complétez tous les champs obligatoires de cette étape.",
     "address": "Adresse",
     "addressPlaceholder": "ex. 10 rue de la Pomme 31000 Toulouse",
     "addressSuggestions": "Suggestions d'adresse",
@@ -97,8 +112,7 @@
     "expandForm": "Modifier les critères",
     "newSimulation": "Nouvelle simulation",
     "editHint": "Modifiez les informations du bien ci-dessous, puis cliquez sur « Estimer le prix ».",
-    "submitting": "Calcul en cours…",
-    "collapsedSummary": "Estimation affichée pour : {summary}"
+    "submitting": "Calcul en cours…"
   },
   "dpeAlert": {
     "title": "Alerte DPE — location",
@@ -290,7 +304,9 @@
     "matchScore": "Correspondance de l'adresse saisie :",
     "inputAddress": "Adresse saisie :",
     "geocodedAddress": "Prix estimé pour :",
-    "modelInputTitle": "Paramètres envoyés au modèle de Machine Learning"
+    "modelInputTitle": "Paramètres envoyés au modèle de Machine Learning",
+    "showModelInputs": "Voir les paramètres du modèle",
+    "hideModelInputs": "Masquer les paramètres"
   },
   "errors": {
     "api": "Erreur API ({status})",

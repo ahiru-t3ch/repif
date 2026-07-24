@@ -4,6 +4,10 @@ import { useEffect, useRef, useState } from "react";
 
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 import { DpeRentalAlert } from "@/components/DpeRentalAlert";
+import {
+  EstimateWizard,
+  PropertyTypeChoice,
+} from "@/components/EstimateWizard";
 import { FieldHint } from "@/components/FieldHint";
 import { OptionalNumberInput } from "@/components/OptionalNumberInput";
 import { SavingsChart } from "@/components/SavingsChart";
@@ -42,11 +46,17 @@ import {
   createEmptyWorkLine,
   useEstimateSession,
   type MarginalTaxRate,
+  type ModelInputSnapshot,
   type OccupancyRate,
   type PredictResult,
   type PropertyType,
   type RentalTaxRegime,
 } from "@/lib/estimate-session/context";
+import {
+  getEstimateWizardStepCount,
+  validateEstimateWizardStep,
+  type EstimateWizardErrorKey,
+} from "@/lib/estimate-wizard-validation";
 import {
   applyMarketAdjustments,
   apartmentHasGardenFromLandArea,
@@ -125,6 +135,159 @@ const inputClassName =
   "w-full rounded-lg border border-border bg-surface px-3.5 py-2.5 text-sm text-foreground shadow-sm transition focus:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-200";
 
 const labelClassName = "text-xs font-medium uppercase tracking-wide text-muted";
+
+type ModelInputSummaryEntry = {
+  key: string;
+  label: string;
+  value: string;
+};
+
+function buildModelInputSummaryEntries(
+  snapshot: ModelInputSnapshot,
+  t: (key: string, values?: Record<string, string | number>) => string,
+  intlLocale: string,
+  propertyTypeLabel: string,
+): ModelInputSummaryEntry[] {
+  const entries: ModelInputSummaryEntry[] = [
+    {
+      key: "propertyType",
+      label: t("form.propertyType"),
+      value: propertyTypeLabel,
+    },
+    {
+      key: "surface",
+      label: t("form.surface"),
+      value: `${new Intl.NumberFormat(intlLocale, {
+        maximumFractionDigits: 2,
+      }).format(snapshot.sbati)} m²`,
+    },
+    {
+      key: "rooms",
+      label: t("form.rooms"),
+      value:
+        snapshot.propertyRooms >= 6
+          ? t("form.roomsSixPlus")
+          : t("form.roomsCount", { count: snapshot.propertyRooms }),
+    },
+  ];
+
+  if (snapshot.sterr != null && snapshot.sterr > 0) {
+    entries.push({
+      key: "land",
+      label: t("form.landArea"),
+      value: `${new Intl.NumberFormat(intlLocale, {
+        maximumFractionDigits: 0,
+      }).format(snapshot.sterr)} m²`,
+    });
+  }
+
+  entries.push(
+    {
+      key: "parking",
+      label: t("form.parking"),
+      value: String(snapshot.nbParking),
+    },
+    {
+      key: "cave",
+      label: t("form.cave"),
+      value: String(snapshot.nbCave),
+    },
+  );
+
+  if (snapshot.hasBalcony || snapshot.hasPool || snapshot.unpopularTower) {
+    entries.push({
+      key: "amenities",
+      label: t("form.amenities"),
+      value: [
+        snapshot.hasBalcony ? t("form.balcony") : null,
+        snapshot.hasPool ? t("form.pool") : null,
+        snapshot.unpopularTower ? t("form.unpopularTower") : null,
+      ]
+        .filter(Boolean)
+        .join(" · "),
+    });
+  }
+
+  if (
+    snapshot.conditionRatings &&
+    hasAnyConditionRating(snapshot.conditionRatings)
+  ) {
+    const score = computeOverallConditionScore(snapshot.conditionRatings);
+    if (score != null) {
+      const pct = conditionScoreToAdjustmentPct(score);
+      const pctLabel = new Intl.NumberFormat(intlLocale, {
+        style: "percent",
+        maximumFractionDigits: 1,
+        signDisplay: "exceptZero",
+      }).format(pct);
+      entries.push({
+        key: "condition",
+        label: t("form.condition"),
+        value: t("form.conditionSummary", {
+          score: score.toFixed(1),
+          adjustment: pctLabel,
+        }),
+      });
+    }
+  }
+
+  if (
+    snapshot.propertyType === "APARTMENT" &&
+    snapshot.buildingStoreys != null &&
+    snapshot.apartmentFloorNumber != null
+  ) {
+    const floorLabel =
+      snapshot.apartmentFloorNumber === 0
+        ? t("form.floorGround")
+        : snapshot.apartmentFloorNumber === 1
+          ? t("form.floorFirst")
+          : t("form.floorNumberLabel", {
+              floor: snapshot.apartmentFloorNumber,
+            });
+    entries.push({
+      key: "floor",
+      label: t("form.floorElevator"),
+      value: `${floorLabel} · ${t("form.buildingStoreysLabel", {
+        storeys: snapshot.buildingStoreys,
+      })} · ${
+        snapshot.hasElevator ? t("form.elevatorYes") : t("form.elevatorNo")
+      }`,
+    });
+  }
+
+  entries.push(
+    {
+      key: "dpe",
+      label: t("form.dpe"),
+      value:
+        dpeValueToLetter(snapshot.dpeMedian) ?? String(snapshot.dpeMedian),
+    },
+    {
+      key: "year",
+      label: t("form.year"),
+      value: String(snapshot.anneeConstruction),
+    },
+  );
+
+  return entries;
+}
+
+function ModelInputSummaryList({
+  entries,
+}: {
+  entries: ModelInputSummaryEntry[];
+}) {
+  return (
+    <dl className="grid gap-1.5 text-sm leading-relaxed">
+      {entries.map(({ key, label, value }) => (
+        <div key={key} className="flex flex-wrap gap-x-2">
+          <dt className="text-stone-400">{label} :</dt>
+          <dd className="font-medium text-white">{value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
 
 function FinanceSectionToggle({
   title,
@@ -349,11 +512,82 @@ export default function Home() {
   >("idle");
   const [shareMessage, setShareMessage] = useState<string | null>(null);
   const [formExpanded, setFormExpanded] = useState(() => !result);
+  const [wizardStep, setWizardStep] = useState(0);
+  const [showModelInputs, setShowModelInputs] = useState(false);
+  const [wizardErrorKey, setWizardErrorKey] =
+    useState<EstimateWizardErrorKey | null>(null);
   const resultRef = useRef<HTMLElement>(null);
   const formSectionRef = useRef<HTMLElement>(null);
 
+  const wizardStepLabels =
+    propertyType === "APARTMENT"
+      ? [
+          t("form.wizardStep1Title"),
+          t("form.wizardStep2Title"),
+          t("form.wizardStep3Title"),
+          t("form.wizardStep4Title"),
+          t("form.wizardStep5Title"),
+        ]
+      : [
+          t("form.wizardStep1Title"),
+          t("form.wizardStep2Title"),
+          t("form.wizardStep3Title"),
+          t("form.wizardStep4Title"),
+        ];
+  const wizardStepHints = [
+    t("form.wizardStep1Hint"),
+    t("form.wizardStep2Hint"),
+    t("form.wizardStep3Hint"),
+    t("form.wizardStep4Hint"),
+    t("form.wizardStep5Hint"),
+  ];
+  const wizardStepCount = getEstimateWizardStepCount(propertyType);
+
+  useEffect(() => {
+    if (wizardStep >= wizardStepCount) {
+      setWizardStep(wizardStepCount - 1);
+    }
+  }, [wizardStep, wizardStepCount]);
+
+  function getWizardFields() {
+    return {
+      propertyType,
+      address,
+      sbati,
+      propertyRooms,
+      sterr,
+      nbParking,
+      nbCave,
+      dpeMedian,
+      anneeConstruction,
+    };
+  }
+
+  function goWizardNext() {
+    const errorKey = validateEstimateWizardStep(wizardStep, getWizardFields());
+    if (errorKey) {
+      setWizardErrorKey(errorKey);
+      formSectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+      return;
+    }
+    setWizardErrorKey(null);
+    setWizardStep((current) =>
+      Math.min(current + 1, wizardStepCount - 1),
+    );
+  }
+
+  function goWizardBack() {
+    setWizardErrorKey(null);
+    setWizardStep((current) => Math.max(current - 1, 0));
+  }
+
   function handleExpandForm() {
     setFormExpanded(true);
+    setWizardStep(0);
+    setWizardErrorKey(null);
     requestAnimationFrame(() => {
       formSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
@@ -363,6 +597,7 @@ export default function Home() {
   function handleNewSimulation() {
     setResult(null);
     setAdjustedPrice(null);
+    setShowModelInputs(false);
     setModelInputSnapshot(null);
     setError(null);
     setShareStatus("idle");
@@ -383,6 +618,8 @@ export default function Home() {
     setBuildingStoreys("");
     setApartmentFloorNumber("");
     setPropertyType("APARTMENT");
+    setWizardStep(0);
+    setWizardErrorKey(null);
     resetFinanceSectionToggles();
     resetAllFinanceDefaults();
     setAgencyFeeMode("percent");
@@ -647,10 +884,31 @@ export default function Home() {
 
   async function handleSubmit(e: React.SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
+
+    if (wizardStep < wizardStepCount - 1) {
+      goWizardNext();
+      return;
+    }
+
+    for (let step = 0; step < wizardStepCount - 1; step += 1) {
+      const errorKey = validateEstimateWizardStep(step, getWizardFields());
+      if (errorKey) {
+        setWizardStep(step);
+        setWizardErrorKey(errorKey);
+        formSectionRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+        return;
+      }
+    }
+
+    setWizardErrorKey(null);
     setLoading(true);
     setError(null);
     setResult(null);
     setAdjustedPrice(null);
+    setShowModelInputs(false);
     resetFinanceSectionToggles();
     resetAllFinanceDefaults();
     setModelInputSnapshot(null);
@@ -817,6 +1075,22 @@ export default function Home() {
             const totalBudget = priceFai + notaryAmount;
             const surfaceUsed = modelInputSnapshot?.sbati ?? 0;
             const pricePerSqm = formatPricePerSqm(displayPrice, surfaceUsed);
+            const modelInputEntries = modelInputSnapshot
+              ? buildModelInputSummaryEntries(
+                  modelInputSnapshot,
+                  t,
+                  intlLocale,
+                  modelPropertyTypeLabel(modelInputSnapshot.propertyType),
+                )
+              : [];
+            const modelInputSplitAt = Math.ceil(modelInputEntries.length / 2);
+            const modelInputLeftEntries = modelInputEntries.slice(
+              0,
+              modelInputSplitAt,
+            );
+            const modelInputRightEntries = modelInputEntries.slice(
+              modelInputSplitAt,
+            );
 
             return (
             <section
@@ -866,158 +1140,33 @@ export default function Home() {
                       {formatScore(result.geocode_score)}
                     </span>
                   </p>
+                  {showModelInputs && modelInputLeftEntries.length > 0 && (
+                    <div className="mt-5 space-y-2 border-t border-stone-700 pt-5">
+                      <p className="text-xs font-medium uppercase tracking-wide text-stone-400">
+                        {t("result.modelInputTitle")}
+                      </p>
+                      <ModelInputSummaryList entries={modelInputLeftEntries} />
+                    </div>
+                  )}
                 </div>
 
                 {modelInputSnapshot && (
                   <div className="min-w-0 border-t border-stone-700 pt-5 sm:border-t-0 sm:border-l sm:pt-0 sm:pl-6">
-                    <p className="text-xs font-medium uppercase tracking-wide text-stone-400">
-                      {t("result.modelInputTitle")}
-                    </p>
-                    <dl className="mt-2 grid gap-1.5 text-sm leading-relaxed">
-                      <div className="flex flex-wrap gap-x-2">
-                        <dt className="text-stone-400">{t("form.propertyType")} :</dt>
-                        <dd className="font-medium text-white">
-                          {modelPropertyTypeLabel(modelInputSnapshot.propertyType)}
-                        </dd>
+                    <button
+                      type="button"
+                      onClick={() => setShowModelInputs((visible) => !visible)}
+                      className="rounded-lg border border-stone-600 px-3 py-2 text-sm font-medium text-stone-200 transition hover:border-stone-400 hover:bg-stone-800"
+                      aria-expanded={showModelInputs}
+                    >
+                      {showModelInputs
+                        ? t("result.hideModelInputs")
+                        : t("result.showModelInputs")}
+                    </button>
+                    {showModelInputs && modelInputRightEntries.length > 0 && (
+                      <div className="mt-4">
+                        <ModelInputSummaryList entries={modelInputRightEntries} />
                       </div>
-                      <div className="flex flex-wrap gap-x-2">
-                        <dt className="text-stone-400">{t("form.surface")} :</dt>
-                        <dd className="font-medium text-white">
-                          {new Intl.NumberFormat(intlLocale, {
-                            maximumFractionDigits: 2,
-                          }).format(modelInputSnapshot.sbati)}{" "}
-                          m²
-                        </dd>
-                      </div>
-                      <div className="flex flex-wrap gap-x-2">
-                        <dt className="text-stone-400">{t("form.rooms")} :</dt>
-                        <dd className="font-medium text-white">
-                          {modelInputSnapshot.propertyRooms >= 6
-                            ? t("form.roomsSixPlus")
-                            : t("form.roomsCount", {
-                                count: modelInputSnapshot.propertyRooms,
-                              })}
-                        </dd>
-                      </div>
-                      {modelInputSnapshot.sterr != null &&
-                        modelInputSnapshot.sterr > 0 && (
-                          <div className="flex flex-wrap gap-x-2">
-                            <dt className="text-stone-400">
-                              {t("form.landArea")} :
-                            </dt>
-                            <dd className="font-medium text-white">
-                              {new Intl.NumberFormat(intlLocale, {
-                                maximumFractionDigits: 0,
-                              }).format(modelInputSnapshot.sterr)}{" "}
-                              m²
-                            </dd>
-                          </div>
-                        )}
-                      <div className="flex flex-wrap gap-x-2">
-                        <dt className="text-stone-400">{t("form.parking")} :</dt>
-                        <dd className="font-medium text-white">
-                          {modelInputSnapshot.nbParking}
-                        </dd>
-                      </div>
-                      <div className="flex flex-wrap gap-x-2">
-                        <dt className="text-stone-400">{t("form.cave")} :</dt>
-                        <dd className="font-medium text-white">
-                          {modelInputSnapshot.nbCave}
-                        </dd>
-                      </div>
-                      {(modelInputSnapshot.hasBalcony ||
-                        modelInputSnapshot.hasPool ||
-                        modelInputSnapshot.unpopularTower) && (
-                        <div className="flex flex-wrap gap-x-2">
-                          <dt className="text-stone-400">
-                            {t("form.amenities")} :
-                          </dt>
-                          <dd className="font-medium text-white">
-                            {[
-                              modelInputSnapshot.hasBalcony
-                                ? t("form.balcony")
-                                : null,
-                              modelInputSnapshot.hasPool ? t("form.pool") : null,
-                              modelInputSnapshot.unpopularTower
-                                ? t("form.unpopularTower")
-                                : null,
-                            ]
-                              .filter(Boolean)
-                              .join(" · ")}
-                          </dd>
-                        </div>
-                      )}
-                      {modelInputSnapshot.conditionRatings &&
-                        hasAnyConditionRating(
-                          modelInputSnapshot.conditionRatings,
-                        ) && (
-                        <div className="flex flex-wrap gap-x-2">
-                          <dt className="text-stone-400">
-                            {t("form.condition")} :
-                          </dt>
-                          <dd className="font-medium text-white">
-                            {(() => {
-                              const score = computeOverallConditionScore(
-                                modelInputSnapshot.conditionRatings,
-                              );
-                              if (score == null) {
-                                return null;
-                              }
-                              const pct = conditionScoreToAdjustmentPct(score);
-                              const pctLabel = new Intl.NumberFormat(intlLocale, {
-                                style: "percent",
-                                maximumFractionDigits: 1,
-                                signDisplay: "exceptZero",
-                              }).format(pct);
-                              return t("form.conditionSummary", {
-                                score: score.toFixed(1),
-                                adjustment: pctLabel,
-                              });
-                            })()}
-                          </dd>
-                        </div>
-                      )}
-                      {modelInputSnapshot.propertyType === "APARTMENT" &&
-                        modelInputSnapshot.buildingStoreys != null &&
-                        modelInputSnapshot.apartmentFloorNumber != null && (
-                          <div className="flex flex-wrap gap-x-2">
-                            <dt className="text-stone-400">
-                              {t("form.floorElevator")} :
-                            </dt>
-                            <dd className="font-medium text-white">
-                              {modelInputSnapshot.apartmentFloorNumber === 0
-                                ? t("form.floorGround")
-                                : modelInputSnapshot.apartmentFloorNumber === 1
-                                  ? t("form.floorFirst")
-                                  : t("form.floorNumberLabel", {
-                                      floor:
-                                        modelInputSnapshot.apartmentFloorNumber,
-                                    })}
-                              {" · "}
-                              {t("form.buildingStoreysLabel", {
-                                storeys: modelInputSnapshot.buildingStoreys,
-                              })}
-                              {" · "}
-                              {modelInputSnapshot.hasElevator
-                                ? t("form.elevatorYes")
-                                : t("form.elevatorNo")}
-                            </dd>
-                          </div>
-                        )}
-                      <div className="flex flex-wrap gap-x-2">
-                        <dt className="text-stone-400">{t("form.dpe")} :</dt>
-                        <dd className="font-medium text-white">
-                          {dpeValueToLetter(modelInputSnapshot.dpeMedian) ??
-                            modelInputSnapshot.dpeMedian}
-                        </dd>
-                      </div>
-                      <div className="flex flex-wrap gap-x-2">
-                        <dt className="text-stone-400">{t("form.year")} :</dt>
-                        <dd className="font-medium text-white">
-                          {modelInputSnapshot.anneeConstruction}
-                        </dd>
-                      </div>
-                    </dl>
+                    )}
                   </div>
                 )}
               </div>
@@ -1273,19 +1422,11 @@ export default function Home() {
             </p>
           )}
 
+          {(!result || formExpanded) && (
           <section
             ref={formSectionRef}
             className="scroll-mt-24 rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8"
           >
-            {result && !formExpanded ? (
-              <p className="text-sm text-muted">
-                {t("form.collapsedSummary", {
-                  summary: `${modelPropertyTypeLabel(
-                    modelInputSnapshot?.propertyType ?? propertyType,
-                  )} · ${result.geocoded_address}`,
-                })}
-              </p>
-            ) : (
               <form onSubmit={handleSubmit} className="flex flex-col gap-5">
                 {result && (
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -1301,383 +1442,404 @@ export default function Home() {
                     </button>
                   </div>
                 )}
-                <label className="flex flex-col gap-2">
-                  <span className={labelClassName}>{t("form.propertyType")}</span>
-                  <select
-                    value={propertyType}
-                    onChange={(e) =>
-                      handlePropertyTypeChange(e.target.value as PropertyType)
-                    }
-                    className={inputClassName}
+                {wizardErrorKey && (
+                  <p
+                    className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+                    role="alert"
                   >
-                    <option value="APARTMENT">{t("form.apartment")}</option>
-                    <option value="HOUSE">{t("form.house")}</option>
-                  </select>
-                </label>
+                    {t(`form.${wizardErrorKey}`)}
+                  </p>
+                )}
 
-                <label className="flex flex-col gap-2">
-                  <span className={labelClassName}>{t("form.address")}</span>
-                  <AddressAutocomplete
-                    value={address}
-                    onChange={setAddress}
-                    minLength={10}
-                    maxLength={255}
-                    placeholder={t("form.addressPlaceholder")}
-                    required
-                    listLabel={t("form.addressSuggestions")}
-                    loadingLabel={t("form.addressSuggestionsLoading")}
-                    className={inputClassName}
-                  />
-                </label>
+                <EstimateWizard
+                  step={wizardStep}
+                  stepLabels={wizardStepLabels}
+                  stepHint={wizardStepHints[wizardStep]}
+                  stepIndicator={t("form.wizardStepIndicator", {
+                    current: wizardStep + 1,
+                    total: wizardStepCount,
+                  })}
+                  showBack={wizardStep > 0}
+                  backLabel={t("form.wizardBack")}
+                  onBack={goWizardBack}
+                  showNext={wizardStep < wizardStepCount - 1}
+                  nextLabel={t("form.wizardNext")}
+                  onNext={goWizardNext}
+                  showSubmit={wizardStep === wizardStepCount - 1}
+                  submitLabel={t("form.submit")}
+                  submittingLabel={t("form.submitting")}
+                  submitting={loading}
+                >
+                  {wizardStep === 0 && (
+                    <>
+                      <div className="flex flex-col gap-2">
+                        <span className={labelClassName}>
+                          {t("form.propertyType")}
+                        </span>
+                        <PropertyTypeChoice
+                          value={propertyType}
+                          apartmentLabel={t("form.apartment")}
+                          houseLabel={t("form.house")}
+                          onChange={handlePropertyTypeChange}
+                        />
+                      </div>
 
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <label className="flex flex-col gap-2">
-                    <span className={labelClassName}>{t("form.surface")}</span>
-                    <input
-                      type="number"
-                      value={sbati}
-                      onChange={(e) => setSbati(e.target.value)}
-                      min={11}
-                      step={0.01}
-                      required
-                      className={inputClassName}
-                    />
-                  </label>
+                      <label className="flex flex-col gap-2">
+                        <span className={labelClassName}>{t("form.address")}</span>
+                        <AddressAutocomplete
+                          value={address}
+                          onChange={setAddress}
+                          minLength={10}
+                          maxLength={255}
+                          placeholder={t("form.addressPlaceholder")}
+                          listLabel={t("form.addressSuggestions")}
+                          loadingLabel={t("form.addressSuggestionsLoading")}
+                          className={inputClassName}
+                        />
+                      </label>
+                    </>
+                  )}
 
-                  <label className="flex flex-col gap-2">
-                    <span
-                      className={`${labelClassName} flex items-center gap-1.5 normal-case`}
-                    >
-                      {t("form.rooms")}
-                      <FieldHint text={t("form.roomsHint")} />
-                    </span>
-                    <select
-                      value={propertyRooms}
-                      onChange={(e) => setPropertyRooms(e.target.value)}
-                      required
-                      className={inputClassName}
-                    >
-                      <option value="" disabled>
-                        {t("form.dpeSelect")}
-                      </option>
-                      {ROOM_COUNT_OPTIONS.map((count) => (
-                        <option key={count} value={count}>
-                          {count >= 6
-                            ? t("form.roomsSixPlus")
-                            : t("form.roomsCount", { count })}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
+                  {wizardStep === 1 && (
+                    <>
+                      <div className="grid gap-5 sm:grid-cols-2">
+                        <label className="flex flex-col gap-2">
+                          <span className={labelClassName}>{t("form.surface")}</span>
+                          <input
+                            type="number"
+                            value={sbati}
+                            onChange={(e) => setSbati(e.target.value)}
+                            min={11}
+                            step={0.01}
+                            className={inputClassName}
+                          />
+                        </label>
 
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <label className="flex flex-col gap-2">
-                    <span
-                      className={`${labelClassName} flex items-center gap-1.5 normal-case`}
-                    >
-                      {t("form.landArea")}
-                      <FieldHint
-                        text={
-                          propertyType === "HOUSE"
-                            ? t("form.landAreaHintHouse")
-                            : t("form.landAreaHintApartment")
-                        }
-                      />
-                    </span>
-                    <input
-                      type="number"
-                      value={sterr}
-                      onChange={(e) => setSterr(e.target.value)}
-                      min={propertyType === "HOUSE" ? 1 : 0}
-                      max={propertyType === "HOUSE" ? 50000 : 5000}
-                      step={1}
-                      required={propertyType === "HOUSE"}
-                      placeholder={
-                        propertyType === "APARTMENT"
-                          ? t("form.landAreaPlaceholderApartment")
-                          : undefined
-                      }
-                      className={inputClassName}
-                    />
-                  </label>
+                        <label className="flex flex-col gap-2">
+                          <span
+                            className={`${labelClassName} flex items-center gap-1.5 normal-case`}
+                          >
+                            {t("form.rooms")}
+                            <FieldHint text={t("form.roomsHint")} />
+                          </span>
+                          <select
+                            value={propertyRooms}
+                            onChange={(e) => setPropertyRooms(e.target.value)}
+                            className={inputClassName}
+                          >
+                            <option value="" disabled>
+                              {t("form.dpeSelect")}
+                            </option>
+                            {ROOM_COUNT_OPTIONS.map((count) => (
+                              <option key={count} value={count}>
+                                {count >= 6
+                                  ? t("form.roomsSixPlus")
+                                  : t("form.roomsCount", { count })}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      </div>
 
-                  <label className="flex flex-col gap-2">
-                    <span
-                      className={`${labelClassName} flex items-center gap-1.5 normal-case`}
-                    >
-                      {t("form.parking")}
-                      <FieldHint text={t("form.parkingHint")} />
-                    </span>
-                    <select
-                      value={nbParking}
-                      onChange={(e) => setNbParking(e.target.value)}
-                      required
-                      className={inputClassName}
-                    >
-                      <option value="" disabled>
-                        {t("form.dpeSelect")}
-                      </option>
-                      {OUTBUILDING_COUNT_OPTIONS.map((count) => (
-                        <option key={count} value={count}>
-                          {count}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
+                      <div className="grid gap-5 sm:grid-cols-2">
+                        <label className="flex flex-col gap-2">
+                          <span
+                            className={`${labelClassName} flex items-center gap-1.5 normal-case`}
+                          >
+                            {t("form.landArea")}
+                            <FieldHint
+                              text={
+                                propertyType === "HOUSE"
+                                  ? t("form.landAreaHintHouse")
+                                  : t("form.landAreaHintApartment")
+                              }
+                            />
+                          </span>
+                          <input
+                            type="number"
+                            value={sterr}
+                            onChange={(e) => setSterr(e.target.value)}
+                            min={propertyType === "HOUSE" ? 1 : 0}
+                            max={propertyType === "HOUSE" ? 50000 : 5000}
+                            step={1}
+                            placeholder={
+                              propertyType === "APARTMENT"
+                                ? t("form.landAreaPlaceholderApartment")
+                                : undefined
+                            }
+                            className={inputClassName}
+                          />
+                        </label>
 
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <label className="flex flex-col gap-2">
-                    <span
-                      className={`${labelClassName} flex items-center gap-1.5 normal-case`}
-                    >
-                      {t("form.cave")}
-                      <FieldHint text={t("form.caveHint")} />
-                    </span>
-                    <select
-                      value={nbCave}
-                      onChange={(e) => setNbCave(e.target.value)}
-                      required
-                      className={inputClassName}
-                    >
-                      <option value="" disabled>
-                        {t("form.dpeSelect")}
-                      </option>
-                      {OUTBUILDING_COUNT_OPTIONS.map((count) => (
-                        <option key={count} value={count}>
-                          {count}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                        <label className="flex flex-col gap-2">
+                          <span
+                            className={`${labelClassName} flex items-center gap-1.5 normal-case`}
+                          >
+                            {t("form.parking")}
+                            <FieldHint text={t("form.parkingHint")} />
+                          </span>
+                          <select
+                            value={nbParking}
+                            onChange={(e) => setNbParking(e.target.value)}
+                            className={inputClassName}
+                          >
+                            <option value="" disabled>
+                              {t("form.dpeSelect")}
+                            </option>
+                            {OUTBUILDING_COUNT_OPTIONS.map((count) => (
+                              <option key={count} value={count}>
+                                {count}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      </div>
 
-                  <label className="flex flex-col gap-2">
-                    <span className={labelClassName}>{t("form.dpe")}</span>
-                    <select
-                      value={dpeMedian}
-                      onChange={(e) => setDpeMedian(e.target.value)}
-                      required
-                      className={inputClassName}
-                    >
-                      <option value="" disabled>
-                        {t("form.dpeSelect")}
-                      </option>
-                      {DPE_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
+                      <div className="grid gap-5 sm:grid-cols-2">
+                        <label className="flex flex-col gap-2">
+                          <span
+                            className={`${labelClassName} flex items-center gap-1.5 normal-case`}
+                          >
+                            {t("form.cave")}
+                            <FieldHint text={t("form.caveHint")} />
+                          </span>
+                          <select
+                            value={nbCave}
+                            onChange={(e) => setNbCave(e.target.value)}
+                            className={inputClassName}
+                          >
+                            <option value="" disabled>
+                              {t("form.dpeSelect")}
+                            </option>
+                            {OUTBUILDING_COUNT_OPTIONS.map((count) => (
+                              <option key={count} value={count}>
+                                {count}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
 
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <label className="flex flex-col gap-2">
-                    <span className={labelClassName}>{t("form.year")}</span>
-                    <input
-                      type="number"
-                      value={anneeConstruction}
-                      onChange={(e) => setAnneeConstruction(e.target.value)}
-                      min={1501}
-                      max={new Date().getFullYear()}
-                      required
-                      className={inputClassName}
-                    />
-                  </label>
-                </div>
+                        <label className="flex flex-col gap-2">
+                          <span className={labelClassName}>{t("form.dpe")}</span>
+                          <select
+                            value={dpeMedian}
+                            onChange={(e) => setDpeMedian(e.target.value)}
+                            className={inputClassName}
+                          >
+                            <option value="" disabled>
+                              {t("form.dpeSelect")}
+                            </option>
+                            {DPE_OPTIONS.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      </div>
 
-                <fieldset className="space-y-3">
-                  <legend className={`${labelClassName} flex items-center gap-1.5 normal-case`}>
-                    {t("form.amenities")}
-                    <FieldHint
-                      text={
-                        propertyType === "HOUSE"
-                          ? t("form.amenitiesHintHouse")
-                          : t("form.amenitiesHintApartment")
-                      }
-                    />
-                  </legend>
-                  <div
-                    className={`grid gap-3 ${
-                      isBalconyApplicable(propertyType)
-                        ? "sm:grid-cols-2"
-                        : "sm:grid-cols-1"
-                    }`}
-                  >
-                    {isBalconyApplicable(propertyType) && (
+                      <label className="flex flex-col gap-2 sm:max-w-[50%]">
+                        <span className={labelClassName}>{t("form.year")}</span>
+                        <input
+                          type="number"
+                          value={anneeConstruction}
+                          onChange={(e) => setAnneeConstruction(e.target.value)}
+                          min={1501}
+                          max={new Date().getFullYear()}
+                          className={inputClassName}
+                        />
+                      </label>
+                    </>
+                  )}
+
+                  {wizardStep === 2 && (
+                    <fieldset className="space-y-3">
+                      <legend className={`${labelClassName} flex items-center gap-1.5 normal-case`}>
+                        {t("form.amenities")}
+                        <FieldHint
+                          text={
+                            propertyType === "HOUSE"
+                              ? t("form.amenitiesHintHouse")
+                              : t("form.amenitiesHintApartment")
+                          }
+                        />
+                      </legend>
+                      <div
+                        className={`grid gap-3 ${
+                          isBalconyApplicable(propertyType)
+                            ? "sm:grid-cols-2"
+                            : "sm:grid-cols-1"
+                        }`}
+                      >
+                        {isBalconyApplicable(propertyType) && (
+                          <label className="flex items-center gap-2 text-sm text-foreground">
+                            <input
+                              type="checkbox"
+                              checked={hasBalcony}
+                              onChange={(e) => setHasBalcony(e.target.checked)}
+                              className="h-4 w-4 rounded border-border"
+                            />
+                            {t("form.balcony")}
+                          </label>
+                        )}
+                        <label className="flex items-center gap-2 text-sm text-foreground">
+                          <input
+                            type="checkbox"
+                            checked={hasPool}
+                            onChange={(e) => setHasPool(e.target.checked)}
+                            className="h-4 w-4 rounded border-border"
+                          />
+                          {t("form.pool")}
+                        </label>
+                      </div>
+                    </fieldset>
+                  )}
+
+                  {wizardStep === 3 && (
+                    <fieldset className="space-y-3">
+                      <legend
+                        className={`${labelClassName} flex items-center gap-1.5 normal-case`}
+                      >
+                        {t("form.condition")}
+                        <FieldHint text={t("form.conditionHint")} />
+                      </legend>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {CONDITION_POSTS.map((post) => (
+                          <label key={post} className="flex flex-col gap-1.5">
+                            <span className="text-sm text-foreground">
+                              {t(`form.conditionPosts.${post}`)}
+                            </span>
+                            <select
+                              value={
+                                conditionRatings[post] == null
+                                  ? ""
+                                  : String(conditionRatings[post])
+                              }
+                              onChange={(e) => {
+                                const next = parseConditionRating(e.target.value);
+                                setConditionRatings((prev) => ({
+                                  ...prev,
+                                  [post]: next,
+                                }));
+                              }}
+                              className={inputClassName}
+                            >
+                              <option value="">
+                                {t("form.conditionNotRated")}
+                              </option>
+                              {CONDITION_RATING_OPTIONS.map((rating) => (
+                                <option key={rating} value={rating}>
+                                  {rating} — {t(`form.conditionLevels.${rating}`)}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        ))}
+                      </div>
+                      {hasAnyConditionRating(conditionRatings) && (
+                        <p className="text-xs text-muted">
+                          {(() => {
+                            const score =
+                              computeOverallConditionScore(conditionRatings);
+                            if (score == null) {
+                              return null;
+                            }
+                            const pct = conditionScoreToAdjustmentPct(score);
+                            const pctLabel = new Intl.NumberFormat(undefined, {
+                              style: "percent",
+                              maximumFractionDigits: 1,
+                              signDisplay: "exceptZero",
+                            }).format(pct);
+                            return t("form.conditionLiveSummary", {
+                              score: score.toFixed(1),
+                              adjustment: pctLabel,
+                            });
+                          })()}
+                        </p>
+                      )}
+                    </fieldset>
+                  )}
+
+                  {wizardStep === 4 && isFloorAdjustmentApplicable(propertyType) && (
+                    <fieldset className="space-y-3">
+                      <legend
+                        className={`${labelClassName} flex items-center gap-1.5 normal-case`}
+                      >
+                        {t("form.floorElevator")}
+                        <FieldHint text={t("form.floorElevatorHint")} />
+                      </legend>
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <label className="flex flex-col gap-2">
+                          <span className="text-sm text-foreground">
+                            {t("form.buildingStoreys")}
+                          </span>
+                          <input
+                            type="number"
+                            min={1}
+                            max={100}
+                            step={1}
+                            value={buildingStoreys}
+                            onChange={(e) => setBuildingStoreys(e.target.value)}
+                            placeholder={t("form.buildingStoreysPlaceholder")}
+                            className={inputClassName}
+                          />
+                        </label>
+                        <label className="flex flex-col gap-2">
+                          <span className="text-sm text-foreground">
+                            {t("form.apartmentFloorNumber")}
+                          </span>
+                          <input
+                            type="number"
+                            min={0}
+                            max={100}
+                            step={1}
+                            value={apartmentFloorNumber}
+                            onChange={(e) =>
+                              setApartmentFloorNumber(e.target.value)
+                            }
+                            placeholder={t("form.apartmentFloorPlaceholder")}
+                            className={inputClassName}
+                          />
+                        </label>
+                      </div>
                       <label className="flex items-center gap-2 text-sm text-foreground">
                         <input
                           type="checkbox"
-                          checked={hasBalcony}
-                          onChange={(e) => setHasBalcony(e.target.checked)}
+                          checked={hasElevator}
+                          onChange={(e) => setHasElevator(e.target.checked)}
                           className="h-4 w-4 rounded border-border"
                         />
-                        {t("form.balcony")}
+                        {t("form.elevator")}
                       </label>
-                    )}
-                    <label className="flex items-center gap-2 text-sm text-foreground">
-                      <input
-                        type="checkbox"
-                        checked={hasPool}
-                        onChange={(e) => setHasPool(e.target.checked)}
-                        className="h-4 w-4 rounded border-border"
-                      />
-                      {t("form.pool")}
-                    </label>
-                  </div>
-                </fieldset>
-
-                <fieldset className="space-y-3">
-                  <legend
-                    className={`${labelClassName} flex items-center gap-1.5 normal-case`}
-                  >
-                    {t("form.condition")}
-                    <FieldHint text={t("form.conditionHint")} />
-                  </legend>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {CONDITION_POSTS.map((post) => (
-                      <label key={post} className="flex flex-col gap-1.5">
-                        <span className="text-sm text-foreground">
-                          {t(`form.conditionPosts.${post}`)}
-                        </span>
-                        <select
-                          value={
-                            conditionRatings[post] == null
-                              ? ""
-                              : String(conditionRatings[post])
-                          }
-                          onChange={(e) => {
-                            const next = parseConditionRating(e.target.value);
-                            setConditionRatings((prev) => ({
-                              ...prev,
-                              [post]: next,
-                            }));
-                          }}
-                          className={inputClassName}
-                        >
-                          <option value="">
-                            {t("form.conditionNotRated")}
-                          </option>
-                          {CONDITION_RATING_OPTIONS.map((rating) => (
-                            <option key={rating} value={rating}>
-                              {rating} — {t(`form.conditionLevels.${rating}`)}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    ))}
-                  </div>
-                  {hasAnyConditionRating(conditionRatings) && (
-                    <p className="text-xs text-muted">
-                      {(() => {
-                        const score =
-                          computeOverallConditionScore(conditionRatings);
-                        if (score == null) {
-                          return null;
-                        }
-                        const pct = conditionScoreToAdjustmentPct(score);
-                        const pctLabel = new Intl.NumberFormat(undefined, {
-                          style: "percent",
-                          maximumFractionDigits: 1,
-                          signDisplay: "exceptZero",
-                        }).format(pct);
-                        return t("form.conditionLiveSummary", {
-                          score: score.toFixed(1),
-                          adjustment: pctLabel,
-                        });
-                      })()}
-                    </p>
+                      {isUnpopularTowerApplicable(propertyType) && (
+                        <label className="flex items-start gap-2 text-sm text-foreground">
+                          <input
+                            type="checkbox"
+                            checked={unpopularTower}
+                            onChange={(e) =>
+                              setUnpopularTower(e.target.checked)
+                            }
+                            className="mt-0.5 h-4 w-4 rounded border-border"
+                          />
+                          <span>
+                            <span className="font-medium">
+                              {t("form.unpopularTower")}
+                            </span>
+                            <span className="mt-0.5 block text-xs text-muted">
+                              {t("form.unpopularTowerHint")}
+                            </span>
+                          </span>
+                        </label>
+                      )}
+                      <p className="text-xs text-muted">
+                        {t("form.floorElevatorExample")}
+                      </p>
+                    </fieldset>
                   )}
-                </fieldset>
-
-                {isFloorAdjustmentApplicable(propertyType) && (
-                  <fieldset className="space-y-3">
-                    <legend
-                      className={`${labelClassName} flex items-center gap-1.5 normal-case`}
-                    >
-                      {t("form.floorElevator")}
-                      <FieldHint text={t("form.floorElevatorHint")} />
-                    </legend>
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <label className="flex flex-col gap-2">
-                        <span className="text-sm text-foreground">
-                          {t("form.buildingStoreys")}
-                        </span>
-                        <input
-                          type="number"
-                          min={1}
-                          max={100}
-                          step={1}
-                          value={buildingStoreys}
-                          onChange={(e) => setBuildingStoreys(e.target.value)}
-                          placeholder={t("form.buildingStoreysPlaceholder")}
-                          className={inputClassName}
-                        />
-                      </label>
-                      <label className="flex flex-col gap-2">
-                        <span className="text-sm text-foreground">
-                          {t("form.apartmentFloorNumber")}
-                        </span>
-                        <input
-                          type="number"
-                          min={0}
-                          max={100}
-                          step={1}
-                          value={apartmentFloorNumber}
-                          onChange={(e) =>
-                            setApartmentFloorNumber(e.target.value)
-                          }
-                          placeholder={t("form.apartmentFloorPlaceholder")}
-                          className={inputClassName}
-                        />
-                      </label>
-                    </div>
-                    <label className="flex items-center gap-2 text-sm text-foreground">
-                      <input
-                        type="checkbox"
-                        checked={hasElevator}
-                        onChange={(e) => setHasElevator(e.target.checked)}
-                        className="h-4 w-4 rounded border-border"
-                      />
-                      {t("form.elevator")}
-                    </label>
-                    {isUnpopularTowerApplicable(propertyType) && (
-                      <label className="flex items-start gap-2 text-sm text-foreground">
-                        <input
-                          type="checkbox"
-                          checked={unpopularTower}
-                          onChange={(e) =>
-                            setUnpopularTower(e.target.checked)
-                          }
-                          className="mt-0.5 h-4 w-4 rounded border-border"
-                        />
-                        <span>
-                          <span className="font-medium">
-                            {t("form.unpopularTower")}
-                          </span>
-                          <span className="mt-0.5 block text-xs text-muted">
-                            {t("form.unpopularTowerHint")}
-                          </span>
-                        </span>
-                      </label>
-                    )}
-                    <p className="text-xs text-muted">
-                      {t("form.floorElevatorExample")}
-                    </p>
-                  </fieldset>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="mt-1 rounded-lg bg-accent px-4 py-3 text-sm font-medium text-white transition hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {loading ? t("form.submitting") : t("form.submit")}
-                </button>
+                </EstimateWizard>
               </form>
-            )}
           </section>
+          )}
 
 
           {result && (
