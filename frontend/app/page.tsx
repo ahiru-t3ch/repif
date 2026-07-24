@@ -1617,7 +1617,7 @@ export default function Home() {
                     </legend>
                     <div className="grid gap-4 sm:grid-cols-2">
                       <label className="flex flex-col gap-2">
-                        <span className={labelClassName}>
+                        <span className="text-sm text-foreground">
                           {t("form.buildingStoreys")}
                         </span>
                         <input
@@ -1632,7 +1632,7 @@ export default function Home() {
                         />
                       </label>
                       <label className="flex flex-col gap-2">
-                        <span className={labelClassName}>
+                        <span className="text-sm text-foreground">
                           {t("form.apartmentFloorNumber")}
                         </span>
                         <input
