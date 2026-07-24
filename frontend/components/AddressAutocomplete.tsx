@@ -215,8 +215,8 @@ export function AddressAutocomplete({
                   onClick={() => selectSuggestion(suggestion)}
                   className={`flex w-full flex-col px-3.5 py-2 text-left text-sm transition ${
                     active
-                      ? "bg-stone-100 text-foreground"
-                      : "text-foreground hover:bg-stone-50"
+                      ? "bg-surface-muted text-foreground"
+                      : "text-foreground hover:bg-surface-muted"
                   }`}
                 >
                   <span>{suggestion.label}</span>

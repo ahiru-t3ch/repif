@@ -30,8 +30,8 @@ export function ShareScenarioControls({
         disabled={status === "loading"}
         className={
           isDark
-            ? "rounded-md border border-stone-500 px-3 py-1.5 text-sm font-medium text-white transition hover:border-stone-300 hover:bg-stone-800 disabled:cursor-wait disabled:opacity-60"
-            : "rounded-md bg-stone-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-stone-800 disabled:cursor-wait disabled:opacity-60"
+            ? "rounded-md border border-primary/40 bg-surface/80 px-3 py-1.5 text-sm font-medium text-primary transition hover:border-primary hover:bg-primary hover:text-primary-foreground disabled:cursor-wait disabled:opacity-60"
+            : "rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-sm shadow-primary/20 transition hover:bg-primary-hover disabled:cursor-wait disabled:opacity-60"
         }
       >
         {status === "loading"
@@ -44,11 +44,9 @@ export function ShareScenarioControls({
         <p
           className={`text-xs ${
             status === "error"
-              ? isDark
-                ? "text-amber-300"
-                : "text-red-700"
+              ? "text-danger"
               : isDark
-                ? "text-stone-400"
+                ? "text-card-subtle"
                 : "text-muted"
           } ${isDark ? "" : "break-all"}`}
         >

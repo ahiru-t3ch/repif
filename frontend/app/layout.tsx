@@ -35,7 +35,7 @@ export default function RootLayout({
       lang="fr"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-background text-foreground">
+      <body className="min-h-full text-foreground">
         <UmamiAnalytics />
         <Providers>{children}</Providers>
       </body>

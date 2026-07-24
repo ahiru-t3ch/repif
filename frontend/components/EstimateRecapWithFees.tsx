@@ -25,12 +25,23 @@ import {
   notaryFeeAmount,
   type NotaryPropertyAge,
 } from "@/lib/notary-fees";
-
-const darkInputClassName =
-  "mt-2 w-full rounded-lg border border-stone-600 bg-stone-800 px-3 py-2 text-sm text-white shadow-sm transition focus:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-500";
-
-const lightInputClassName =
-  "w-full rounded-lg border border-border bg-surface px-3.5 py-2.5 text-sm text-foreground shadow-sm transition focus:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-200";
+import {
+  cardDarkSectionClassName,
+  cardBorderClassName,
+  cardEmphasisClassName,
+  cardFaintTextClassName,
+  cardLabelClassName,
+  cardMutedTextClassName,
+  cardSubtleTextClassName,
+  darkInputClassName,
+  inputClassName,
+  modeButtonActiveClassName,
+  modeButtonInactiveClassName,
+  rangeDarkClassName,
+  rangeLightClassName,
+  sectionCardClassName,
+  warningTextClassName,
+} from "@/lib/ui-classes";
 
 type EstimateRecapWithFeesProps = {
   variant?: "dark" | "light";
@@ -124,27 +135,17 @@ export function EstimateRecapWithFees({
   }
 
   const isDark = variant === "dark";
-  const sectionClassName = isDark
-    ? "rounded-2xl border border-stone-800 bg-accent px-6 py-7 text-white sm:px-8"
-    : "rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8";
-  const borderClassName = isDark ? "border-stone-700" : "border-border";
-  const mutedTextClassName = isDark ? "text-stone-300" : "text-muted";
-  const labelClassName = isDark
-    ? "text-xs font-medium uppercase tracking-[0.15em] text-stone-400"
-    : "text-xs font-medium uppercase tracking-[0.15em] text-muted";
-  const subtleClassName = isDark ? "text-stone-400" : "text-muted";
-  const faintClassName = isDark ? "text-stone-500" : "text-muted";
-  const emphasisClassName = isDark ? "text-white" : "text-foreground";
-  const inputClassName = isDark ? darkInputClassName : lightInputClassName;
-  const rangeClassName = isDark
-    ? "mt-2 h-1.5 w-full cursor-pointer appearance-none rounded-full bg-stone-600 accent-white"
-    : "mt-2 h-1.5 w-full cursor-pointer appearance-none rounded-full bg-stone-200 accent-stone-800";
-  const modeButtonActive = isDark
-    ? "bg-white text-stone-900"
-    : "border-accent bg-stone-900 text-white";
-  const modeButtonInactive = isDark
-    ? "bg-stone-700 text-stone-300 hover:bg-stone-600 hover:text-white"
-    : "border-border bg-surface text-foreground hover:border-stone-400 hover:bg-stone-50";
+  const sectionClassName = isDark ? cardDarkSectionClassName : sectionCardClassName;
+  const borderClassName = cardBorderClassName(variant);
+  const mutedTextClassName = cardMutedTextClassName(variant);
+  const labelClassName = cardLabelClassName(variant);
+  const subtleClassName = cardSubtleTextClassName(variant);
+  const faintClassName = cardFaintTextClassName(variant);
+  const emphasisClassName = cardEmphasisClassName(variant);
+  const recapInputClassName = isDark ? darkInputClassName : inputClassName;
+  const rangeClassName = isDark ? rangeDarkClassName : rangeLightClassName;
+  const modeButtonActive = modeButtonActiveClassName(variant);
+  const modeButtonInactive = modeButtonInactiveClassName(variant);
 
   return (
     <section className={sectionClassName}>
@@ -175,9 +176,7 @@ export function EstimateRecapWithFees({
             <span
               className={`font-medium ${
                 result.geocode_score < 0.7
-                  ? isDark
-                    ? "text-amber-300"
-                    : "text-amber-700"
+                  ? warningTextClassName(variant)
                   : emphasisClassName
               }`}
             >
@@ -231,9 +230,9 @@ export function EstimateRecapWithFees({
                     <button
                       type="button"
                       onClick={() => setAdjustedPrice(modelPrice)}
-                      className={`mt-2 text-xs underline decoration-stone-500 underline-offset-2 transition ${
+                      className={`mt-2 text-xs underline decoration-card-faint underline-offset-2 transition ${
                         isDark
-                          ? "text-stone-300 hover:text-white"
+                          ? "text-card-muted hover:text-primary"
                           : "text-muted hover:text-foreground"
                       }`}
                     >
@@ -337,7 +336,7 @@ export function EstimateRecapWithFees({
                 onValueChange={setAgencyFeeFixed}
                 emptyValue={0}
                 blankWhenEmptyValue
-                className={inputClassName}
+                className={recapInputClassName}
               />
               {result.price > 0 && feeAmount > 0 && (
                 <p className={`mt-2 text-xs ${subtleClassName}`}>

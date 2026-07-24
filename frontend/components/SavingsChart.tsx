@@ -109,7 +109,7 @@ export function SavingsChart({
               x={PAD.left - 8}
               y={tick.y + 3}
               textAnchor="end"
-              className="fill-stone-400"
+              className="fill-card-subtle"
               fontSize={10}
             >
               {formatAxisValue(tick.value)}
@@ -122,14 +122,14 @@ export function SavingsChart({
             () => yAt(0),
             (p) => yAt(p.contributions),
           )}
-          className="fill-stone-300"
+          className="fill-border-strong"
         />
         <path
           d={bandPath(
             (p) => yAt(p.contributions),
             (p) => yAt(p.total),
           )}
-          className="fill-stone-700"
+          className="fill-primary"
           opacity={0.65}
         />
 
@@ -139,7 +139,7 @@ export function SavingsChart({
             x={xAt(tick.idx)}
             y={HEIGHT - 10}
             textAnchor="middle"
-            className="fill-stone-400"
+            className="fill-card-subtle"
             fontSize={10}
           >
             {tick.year}
@@ -149,11 +149,11 @@ export function SavingsChart({
 
       <div className="mt-2 flex flex-wrap gap-4 text-xs text-muted">
         <span className="inline-flex items-center gap-2">
-          <span className="inline-block h-2.5 w-2.5 rounded-sm bg-stone-300" />
+          <span className="inline-block h-2.5 w-2.5 rounded-sm bg-border-strong" />
           {contributionsLabel}
         </span>
         <span className="inline-flex items-center gap-2">
-          <span className="inline-block h-2.5 w-2.5 rounded-sm bg-stone-700/65" />
+          <span className="inline-block h-2.5 w-2.5 rounded-sm bg-primary/65" />
           {interestLabel}
         </span>
       </div>

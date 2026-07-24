@@ -83,8 +83,16 @@ Orchestrates **PostgreSQL**, the **API**, and the **frontend** from the repo roo
 
 ### Start the stack
 
+Full stack (UI built for production inside Docker):
+
 ```bash
 docker compose up --build
+```
+
+**Frontend dev on the host** (hot reload, less Docker RAM): API + DB only, then `npm run dev` in `frontend/` — see [frontend/README_frontend.md](frontend/README_frontend.md#run-locally).
+
+```bash
+docker compose up db backend
 ```
 
 | Service | URL |

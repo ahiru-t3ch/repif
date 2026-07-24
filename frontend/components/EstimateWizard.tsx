@@ -2,6 +2,13 @@
 
 import type { ReactNode } from "react";
 
+import {
+  btnPrimaryClassName,
+  btnSecondaryClassName,
+  choiceSelectedClassName,
+  choiceUnselectedClassName,
+} from "@/lib/ui-classes";
+
 type EstimateWizardProps = {
   step: number;
   stepLabels: string[];
@@ -63,7 +70,7 @@ export function EstimateWizard({
               <li key={label} className="min-w-0">
                 <div
                   className={`mb-2 h-1 rounded-full transition ${
-                    isComplete || isActive ? "bg-accent" : "bg-border"
+                    isComplete || isActive ? "bg-primary" : "bg-border"
                   }`}
                   aria-hidden
                 />
@@ -90,7 +97,7 @@ export function EstimateWizard({
           <button
             type="button"
             onClick={onBack}
-            className="rounded-lg border border-border bg-surface px-4 py-3 text-sm font-medium text-foreground transition hover:border-stone-400 hover:bg-stone-50"
+            className={btnSecondaryClassName}
           >
             {backLabel}
           </button>
@@ -101,7 +108,7 @@ export function EstimateWizard({
           <button
             type="button"
             onClick={onNext}
-            className="rounded-lg bg-accent px-4 py-3 text-sm font-medium text-white transition hover:bg-stone-800 sm:ml-auto"
+            className={`${btnPrimaryClassName} sm:ml-auto`}
           >
             {nextLabel}
           </button>
@@ -111,7 +118,7 @@ export function EstimateWizard({
             type={onSubmitClick ? "button" : "submit"}
             disabled={submitting}
             onClick={onSubmitClick}
-            className="rounded-lg bg-accent px-4 py-3 text-sm font-medium text-white transition hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-50 sm:ml-auto"
+            className={`${btnPrimaryClassName} sm:ml-auto`}
           >
             {submitting ? submittingLabel : submitLabel}
           </button>
@@ -150,9 +157,7 @@ export function PropertyTypeChoice({
             aria-pressed={selected}
             onClick={() => onChange(option.id)}
             className={`rounded-xl border px-4 py-4 text-sm font-medium transition ${
-              selected
-                ? "border-accent bg-stone-900 text-white shadow-sm"
-                : "border-border bg-surface text-foreground hover:border-stone-400 hover:bg-stone-50"
+              selected ? choiceSelectedClassName : choiceUnselectedClassName
             }`}
           >
             {option.label}

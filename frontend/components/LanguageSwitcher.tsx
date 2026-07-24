@@ -17,8 +17,8 @@ export function LanguageSwitcher() {
           aria-pressed={locale === code}
           className={`rounded-md px-2.5 py-1 text-xs font-medium uppercase tracking-wide transition ${
             locale === code
-              ? "bg-accent text-white"
-              : "text-muted hover:bg-stone-200/80 hover:text-foreground"
+              ? "bg-primary text-primary-foreground"
+              : "text-muted hover:bg-surface-muted hover:text-foreground"
           }`}
         >
           {code}

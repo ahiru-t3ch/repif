@@ -210,7 +210,7 @@ export default function AboutPage() {
                 href={AGENCY_FEES_SOURCE_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-medium text-foreground underline decoration-stone-400 underline-offset-2 hover:decoration-foreground"
+                className="font-medium text-foreground underline decoration-border-strong underline-offset-2 hover:decoration-foreground"
               >
                 {t("about.agencyFeesSource")}
               </a>

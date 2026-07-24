@@ -87,13 +87,32 @@ docker run -d --name repif-web -p 3000:3000 \
 
 ## Run locally
 
+**With Docker backend (recommended for day-to-day UI work):** start only API + DB, not the frontend container (avoids port 3000 conflict and a second Next.js process):
+
 ```bash
+# repo root — terminal 1
+docker compose up db backend
+```
+
+```bash
+# frontend/ — terminal 2
 cd frontend
 npm install
 npm run dev
 ```
 
-App: http://localhost:3000
+App: http://localhost:3000 — ensure `BACKEND_URL=http://localhost:8000` in `.env.local`.
+
+**Full stack in Docker** (production-like frontend): `docker compose up --build` from the repo root.
+
+### Dev server uses a lot of RAM?
+
+Next.js 16 dev defaults to **Turbopack**. On this project (large pages + `.next` cache) it can use **1 GB+**. If the machine slows down:
+
+1. Stop duplicate servers — only one of Docker `frontend` **or** `npm run dev`, not both.
+2. Clear the dev cache: delete `frontend/.next`, then restart dev.
+3. Use webpack instead (often lighter, a bit slower): `npm run dev:webpack`
+4. On Windows, fully stop the old terminal (Ctrl+C) before restarting — orphan `node.exe` processes keep RAM.
 
 ## Build for production
 

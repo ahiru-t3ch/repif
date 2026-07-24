@@ -79,6 +79,21 @@ import {
   type NotaryPropertyAge,
 } from "@/lib/notary-fees";
 import { useShareScenario } from "@/lib/use-share-scenario";
+import {
+  alertErrorClassName,
+  btnPrimaryClassName,
+  btnSecondaryClassName,
+  btnSecondarySmClassName,
+  cardDarkSectionClassName,
+  darkInputClassName,
+  inputClassName,
+  labelClassName,
+  linkUnderlineClassName,
+  modeButtonActiveClassName,
+  modeButtonInactiveClassName,
+  rangeDarkClassName,
+  sectionCardClassName,
+} from "@/lib/ui-classes";
 
 const DPE_OPTIONS = [
   { value: 1, label: "A" },
@@ -94,14 +109,6 @@ const OUTBUILDING_COUNT_OPTIONS = [0, 1, 2, 3, 4, 5] as const;
 const ROOM_COUNT_OPTIONS = [1, 2, 3, 4, 5, 6] as const;
 
 const COMPANY_URL = "https://www.ahiru-t3ch.com/";
-
-const darkInputClassName =
-  "mt-2 w-full rounded-lg border border-stone-600 bg-stone-800 px-3 py-2 text-sm text-white shadow-sm transition focus:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-500";
-
-const inputClassName =
-  "w-full rounded-lg border border-border bg-surface px-3.5 py-2.5 text-sm text-foreground shadow-sm transition focus:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-200";
-
-const labelClassName = "text-xs font-medium uppercase tracking-wide text-muted";
 
 type ModelInputSummaryEntry = {
   key: string;
@@ -248,8 +255,8 @@ function ModelInputSummaryList({
     <dl className="grid gap-1.5 text-sm leading-relaxed">
       {entries.map(({ key, label, value }) => (
         <div key={key} className="flex flex-wrap gap-x-2">
-          <dt className="text-stone-400">{label} :</dt>
-          <dd className="font-medium text-white">{value}</dd>
+          <dt className="text-card-subtle">{label} :</dt>
+          <dd className="font-medium text-foreground">{value}</dd>
         </div>
       ))}
     </dl>
@@ -807,10 +814,10 @@ export default function Home() {
             return (
             <section
               ref={resultRef}
-              className="scroll-mt-24 rounded-2xl border border-stone-800 bg-accent px-6 py-7 text-white sm:px-8"
+              className={`scroll-mt-24 ${cardDarkSectionClassName}`}
             >
-              <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-stone-700 pb-4">
-                <p className="text-xs font-medium uppercase tracking-[0.15em] text-stone-400">
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-card-border pb-4">
+                <p className="text-xs font-medium uppercase tracking-[0.15em] text-card-subtle">
                   {t("share.resultLabel")}
                 </p>
                 <ShareScenarioControls
@@ -823,11 +830,11 @@ export default function Home() {
                   copiedLabel={t("share.copiedShort")}
                 />
               </div>
-              <div className="grid gap-6 border-b border-stone-700 pb-5 sm:grid-cols-2">
-                <div className="min-w-0 space-y-2 text-sm leading-relaxed text-stone-300">
+              <div className="grid gap-6 border-b border-card-border pb-5 sm:grid-cols-2">
+                <div className="min-w-0 space-y-2 text-sm leading-relaxed text-card-muted">
                   <p>
                     {t("result.geocodedAddress")}{" "}
-                    <span className="font-medium text-white">
+                    <span className="font-medium text-primary">
                       {result.geocoded_address}
                     </span>
                   </p>
@@ -835,7 +842,7 @@ export default function Home() {
                     result.geocoded_address.trim().toLowerCase() && (
                     <p>
                       {t("result.inputAddress")}{" "}
-                      <span className="font-medium text-white">
+                      <span className="font-medium text-primary">
                         {result.input_address}
                       </span>
                     </p>
@@ -845,16 +852,16 @@ export default function Home() {
                     <span
                       className={`font-medium ${
                         result.geocode_score < 0.7
-                          ? "text-amber-300"
-                          : "text-white"
+                          ? "text-warning"
+                          : "text-primary"
                       }`}
                     >
                       {formatScore(result.geocode_score)}
                     </span>
                   </p>
                   {showModelInputs && modelInputLeftEntries.length > 0 && (
-                    <div className="mt-5 space-y-2 border-t border-stone-700 pt-5">
-                      <p className="text-xs font-medium uppercase tracking-wide text-stone-400">
+                    <div className="mt-5 space-y-2 border-t border-card-border pt-5">
+                      <p className="text-xs font-medium uppercase tracking-wide text-card-subtle">
                         {t("result.modelInputTitle")}
                       </p>
                       <ModelInputSummaryList entries={modelInputLeftEntries} />
@@ -863,11 +870,11 @@ export default function Home() {
                 </div>
 
                 {modelInputSnapshot && (
-                  <div className="min-w-0 border-t border-stone-700 pt-5 sm:border-t-0 sm:border-l sm:pt-0 sm:pl-6">
+                  <div className="min-w-0 border-t border-card-border pt-5 sm:border-t-0 sm:border-l sm:pt-0 sm:pl-6">
                     <button
                       type="button"
                       onClick={() => setShowModelInputs((visible) => !visible)}
-                      className="rounded-lg border border-stone-600 px-3 py-2 text-sm font-medium text-stone-200 transition hover:border-stone-400 hover:bg-stone-800"
+                      className="rounded-lg border border-card-input-border px-3 py-2 text-sm font-medium text-card-muted transition hover:border-card-subtle hover:bg-card-input"
                       aria-expanded={showModelInputs}
                     >
                       {showModelInputs
@@ -883,24 +890,24 @@ export default function Home() {
                 )}
               </div>
 
-              <div className="grid gap-6 border-b border-stone-700 py-5 sm:grid-cols-2">
+              <div className="grid gap-6 border-b border-card-border py-5 sm:grid-cols-2">
                 <div className="min-w-0">
-                  <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-xs font-medium uppercase tracking-[0.15em] text-stone-400">
+                  <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-xs font-medium uppercase tracking-[0.15em] text-primary">
                     <span>
                       {resultTitle(modelInputSnapshot?.propertyType ?? propertyType)}
                     </span>
-                    <span className="font-normal normal-case tracking-normal text-stone-500">
+                    <span className="font-normal normal-case tracking-normal text-card-faint">
                       · {t("result.excludingAgencyFees")}
                     </span>
                   </p>
                   <div className="mt-2 flex flex-wrap items-end gap-x-8 gap-y-3">
                     <div>
-                      <p className="font-sans text-3xl font-semibold tracking-tight sm:text-4xl">
+                      <p className="font-sans text-3xl font-semibold tracking-tight text-primary sm:text-4xl">
                         {formatPrice(displayPrice)}
                       </p>
                       {rangeHigh > rangeLow && (
                         <label className="mt-4 block">
-                          <span className="text-xs text-stone-400">
+                          <span className="text-xs text-card-subtle">
                             {t("result.adjustWithinRange")}
                           </span>
                           <input
@@ -913,9 +920,9 @@ export default function Home() {
                             aria-valuemin={rangeLow}
                             aria-valuemax={rangeHigh}
                             aria-valuenow={displayPrice}
-                            className="mt-2 h-1.5 w-full cursor-pointer appearance-none rounded-full bg-stone-600 accent-white"
+                            className={rangeDarkClassName}
                           />
-                          <div className="mt-1 flex justify-between text-xs text-stone-500">
+                          <div className="mt-1 flex justify-between text-xs text-card-faint">
                             <span>{formatPrice(rangeLow)}</span>
                             <span>{formatPrice(rangeHigh)}</span>
                           </div>
@@ -923,7 +930,7 @@ export default function Home() {
                             <button
                               type="button"
                               onClick={() => setAdjustedPrice(modelPrice)}
-                              className="mt-2 text-xs text-stone-300 underline decoration-stone-500 underline-offset-2 transition hover:text-white"
+                              className="mt-2 text-xs text-card-muted underline decoration-card-faint underline-offset-2 transition hover:text-primary"
                             >
                               {t("result.resetToModelPrice")}
                             </button>
@@ -933,10 +940,10 @@ export default function Home() {
                     </div>
                     {pricePerSqm && (
                       <div>
-                        <p className="font-sans text-2xl font-semibold tracking-tight sm:text-3xl">
+                        <p className="font-sans text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
                           {pricePerSqm}
                         </p>
-                        <p className="mt-1 text-sm text-stone-400">
+                        <p className="mt-1 text-sm text-card-subtle">
                           {t("result.pricePerSqm")}
                         </p>
                       </div>
@@ -950,22 +957,22 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="min-w-0 border-t border-stone-700 pt-5 sm:border-t-0 sm:border-l sm:pt-0 sm:pl-6">
-                  <p className="text-xs font-medium uppercase tracking-[0.15em] text-stone-400">
+                <div className="min-w-0 border-t border-card-border pt-5 sm:border-t-0 sm:border-l sm:pt-0 sm:pl-6">
+                  <p className="text-xs font-medium uppercase tracking-[0.15em] text-card-subtle">
                     {t("result.includingAgencyFees")}
                   </p>
-                  <p className="mt-2 font-sans text-2xl font-semibold tracking-tight sm:text-3xl">
+                  <p className="mt-2 font-sans text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
                     {formatPrice(priceFai)}
                   </p>
-                  <p className="mt-2 text-sm text-stone-300">
+                  <p className="mt-2 text-sm text-card-muted">
                     {t("result.agencyFeesAmount")}{" "}
-                    <span className="font-medium text-white">
+                    <span className="font-medium text-primary">
                       {formatPrice(feeAmount)}
                     </span>
                   </p>
 
                   <div className="mt-4 flex flex-col gap-2">
-                    <span className="text-xs text-stone-400">
+                    <span className="text-xs text-card-subtle">
                       {t("result.agencyFeeMode")}
                     </span>
                     <div className="flex gap-2">
@@ -977,8 +984,8 @@ export default function Home() {
                           aria-pressed={agencyFeeMode === mode}
                           className={`flex-1 rounded-lg px-3 py-2 text-xs font-medium transition ${
                             agencyFeeMode === mode
-                              ? "bg-white text-stone-900"
-                              : "bg-stone-700 text-stone-300 hover:bg-stone-600 hover:text-white"
+                              ? modeButtonActiveClassName("dark")
+                              : modeButtonInactiveClassName("dark")
                           }`}
                         >
                           {mode === "percent"
@@ -991,7 +998,7 @@ export default function Home() {
 
                   {agencyFeeMode === "percent" ? (
                     <label className="mt-4 block">
-                      <span className="text-xs text-stone-400">
+                      <span className="text-xs text-card-subtle">
                         {t("result.agencyFeesRate", {
                           rate: formatFeeRate(agencyFeeRate),
                         })}
@@ -1006,12 +1013,12 @@ export default function Home() {
                         aria-valuemin={AGENCY_FEE_PERCENT.min}
                         aria-valuemax={AGENCY_FEE_PERCENT.max}
                         aria-valuenow={agencyFeeRate}
-                        className="mt-2 h-1.5 w-full cursor-pointer appearance-none rounded-full bg-stone-600 accent-white"
+                        className={rangeDarkClassName}
                       />
                     </label>
                   ) : (
                     <label className="mt-4 block">
-                      <span className="text-xs text-stone-400">
+                      <span className="text-xs text-card-subtle">
                         {t("result.agencyFeesFixedAmount")}
                       </span>
                       <OptionalNumberInput
@@ -1024,7 +1031,7 @@ export default function Home() {
                         className={darkInputClassName}
                       />
                       {result.price > 0 && feeAmount > 0 && (
-                        <p className="mt-2 text-xs text-stone-400">
+                        <p className="mt-2 text-xs text-card-subtle">
                           {t("result.agencyFeesEffectiveRate", {
                             rate: formatFeeRate(effectiveRate),
                           })}
@@ -1037,12 +1044,12 @@ export default function Home() {
 
               <div className="grid gap-6 pt-5 sm:grid-cols-2">
                 <div className="min-w-0">
-                  <p className="text-xs font-medium uppercase tracking-[0.15em] text-stone-400">
+                  <p className="text-xs font-medium uppercase tracking-[0.15em] text-card-subtle">
                     {t("result.notaryFeesTitle")}
                   </p>
 
                   <div className="mt-3 flex flex-col gap-2">
-                    <span className="text-xs text-stone-400">
+                    <span className="text-xs text-card-subtle">
                       {t("result.notaryPropertyAge")}
                     </span>
                     <div className="flex gap-2">
@@ -1054,8 +1061,8 @@ export default function Home() {
                           aria-pressed={notaryPropertyAge === age}
                           className={`flex-1 rounded-lg px-3 py-2 text-xs font-medium transition ${
                             notaryPropertyAge === age
-                              ? "bg-white text-stone-900"
-                              : "bg-stone-700 text-stone-300 hover:bg-stone-600 hover:text-white"
+                              ? modeButtonActiveClassName("dark")
+                              : modeButtonInactiveClassName("dark")
                           }`}
                         >
                           {age === "OLD"
@@ -1066,19 +1073,19 @@ export default function Home() {
                     </div>
                   </div>
 
-                  <p className="mt-3 text-xs text-stone-400">
+                  <p className="mt-3 text-xs text-card-subtle">
                     {notaryPropertyAge === "NEW"
                       ? t("result.notaryFeesNewRange")
                       : t("result.notaryFeesOldRange")}
                   </p>
-                  <p className="mt-2 text-sm text-stone-300">
+                  <p className="mt-2 text-sm text-card-muted">
                     {t("result.notaryFeesAmount")}{" "}
-                    <span className="font-medium text-white">
+                    <span className="font-medium text-primary">
                       {formatPrice(notaryAmount)}
                     </span>
                   </p>
                   <label className="mt-4 block">
-                    <span className="text-xs text-stone-400">
+                    <span className="text-xs text-card-subtle">
                       {t("result.notaryFeesRate", {
                         rate: formatFeeRate(notaryFeeRate),
                       })}
@@ -1093,30 +1100,30 @@ export default function Home() {
                       aria-valuemin={notaryRange.min}
                       aria-valuemax={notaryRange.max}
                       aria-valuenow={notaryFeeRate}
-                      className="mt-2 h-1.5 w-full cursor-pointer appearance-none rounded-full bg-stone-600 accent-white"
+                      className={rangeDarkClassName}
                     />
                   </label>
-                  <p className="mt-2 text-xs text-stone-500">
+                  <p className="mt-2 text-xs text-card-faint">
                     {t("result.notaryFeesBase")}
                   </p>
                 </div>
 
-                <div className="min-w-0 space-y-2 border-t border-stone-700 pt-5 sm:border-t-0 sm:border-l sm:pt-0 sm:pl-6">
-                  <p className="text-sm text-stone-300">
+                <div className="min-w-0 space-y-2 border-t border-card-border pt-5 sm:border-t-0 sm:border-l sm:pt-0 sm:pl-6">
+                  <p className="text-sm text-card-muted">
                     {t("result.totalFeesAmount")}{" "}
-                    <span className="font-medium text-white">
+                    <span className="font-medium text-primary">
                       {formatPrice(totalFeesAmount)}
                     </span>
                   </p>
                   <p>
-                    <span className="text-xs font-medium uppercase tracking-[0.15em] text-stone-400">
+                    <span className="text-xs font-medium uppercase tracking-[0.15em] text-card-subtle">
                       {t("result.totalBudget")}
                     </span>
-                    <span className="mt-2 block font-sans text-2xl font-semibold tracking-tight sm:text-3xl">
+                    <span className="mt-2 block font-sans text-2xl font-semibold tracking-tight text-primary sm:text-3xl">
                       {formatPrice(totalBudget)}
                     </span>
                   </p>
-                  <p className="text-xs text-stone-500">
+                  <p className="text-xs text-card-faint">
                     {t("result.totalBudgetHint")}
                   </p>
                 </div>
@@ -1127,7 +1134,7 @@ export default function Home() {
 
           {error && (
             <p
-              className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+              className={alertErrorClassName}
               role="alert"
             >
               {error}
@@ -1137,18 +1144,18 @@ export default function Home() {
           {(!result || formExpanded) && (
           <section
             ref={formSectionRef}
-            className="scroll-mt-24 rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8"
+            className={`scroll-mt-24 ${sectionCardClassName}`}
           >
               <form onSubmit={handleSubmit} className="flex flex-col gap-5">
                 {result && (
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <p className="rounded-lg border border-border bg-stone-50 px-3 py-2 text-sm text-muted sm:flex-1">
+                    <p className="rounded-lg border border-border bg-surface-muted px-3 py-2 text-sm text-muted sm:flex-1">
                       {t("form.editHint")}
                     </p>
                     <button
                       type="button"
                       onClick={handleNewSimulation}
-                      className="rounded-lg border border-border bg-surface px-4 py-2.5 text-sm font-medium text-foreground transition hover:border-stone-400 hover:bg-stone-50"
+                      className={btnSecondarySmClassName}
                     >
                       {t("form.newSimulation")}
                     </button>
@@ -1156,7 +1163,7 @@ export default function Home() {
                 )}
                 {wizardErrorKey && (
                   <p
-                    className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+                    className={alertErrorClassName}
                     role="alert"
                   >
                     {t(`form.${wizardErrorKey}`)}
@@ -1558,7 +1565,7 @@ export default function Home() {
 
 
           {result && (
-            <section className="rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
+            <section className={sectionCardClassName}>
               <p className="text-sm font-medium text-foreground">
                 {t("result.financeIntroTitle")}
               </p>
@@ -1567,7 +1574,7 @@ export default function Home() {
               </p>
               <Link
                 href="/analysis"
-                className="mt-5 inline-block rounded-lg bg-accent px-4 py-3 text-sm font-medium text-white transition hover:bg-stone-800"
+                className={`mt-5 inline-block ${btnPrimaryClassName}`}
               >
                 {t("result.financeIntroAction")}
               </Link>
@@ -1576,7 +1583,7 @@ export default function Home() {
 
 
           {result && (
-            <section className="rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
+            <section className={sectionCardClassName}>
               <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-foreground">
@@ -1605,7 +1612,7 @@ export default function Home() {
               href={COMPANY_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="underline decoration-stone-400 underline-offset-2 hover:text-foreground"
+              className={linkUnderlineClassName}
             >
               {t("footer.company")}
             </a>
@@ -1618,14 +1625,14 @@ export default function Home() {
               <button
                 type="button"
                 onClick={handleExpandForm}
-                className="rounded-lg border border-border bg-surface px-4 py-3 text-sm font-medium text-foreground transition hover:border-stone-400 hover:bg-stone-50 sm:flex-1"
+                className={`${btnSecondaryClassName} sm:flex-1`}
               >
                 {t("form.expandForm")}
               </button>
               <button
                 type="button"
                 onClick={handleNewSimulation}
-                className="rounded-lg bg-accent px-4 py-3 text-sm font-medium text-white transition hover:bg-stone-800 sm:flex-1"
+                className={`${btnPrimaryClassName} sm:flex-1`}
               >
                 {t("form.newSimulation")}
               </button>

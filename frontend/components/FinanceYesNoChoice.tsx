@@ -1,5 +1,10 @@
 "use client";
 
+import {
+  choiceSelectedClassName,
+  choiceUnselectedClassName,
+} from "@/lib/ui-classes";
+
 type FinanceYesNoChoiceProps = {
   value: boolean;
   yesLabel: string;
@@ -24,9 +29,7 @@ export function FinanceYesNoChoice({
             aria-pressed={selected}
             onClick={() => onChange(option)}
             className={`rounded-xl border px-4 py-4 text-sm font-medium transition ${
-              selected
-                ? "border-accent bg-stone-900 text-white shadow-sm"
-                : "border-border bg-surface text-foreground hover:border-stone-400 hover:bg-stone-50"
+              selected ? choiceSelectedClassName : choiceUnselectedClassName
             }`}
           >
             {option ? yesLabel : noLabel}

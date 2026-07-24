@@ -10,7 +10,7 @@ export function SiteHeader() {
   const { t } = useI18n();
 
   return (
-    <header className="sticky top-0 z-20 border-b border-border bg-surface/90 backdrop-blur-sm">
+    <header className="sticky top-0 z-20 border-b border-border/80 bg-surface/75 backdrop-blur-md">
       <div className="mx-auto flex h-24 max-w-7xl items-center justify-between gap-4 px-5 sm:h-28 sm:px-8">
         <Link
           href="/"
@@ -37,7 +37,7 @@ export function SiteHeader() {
         <nav className="flex shrink-0 items-center gap-3 sm:gap-5">
           <Link
             href="/about"
-            className="text-sm font-medium text-muted transition hover:text-foreground"
+            className="text-sm font-medium text-muted transition hover:text-primary"
           >
             {t("nav.about")}
           </Link>

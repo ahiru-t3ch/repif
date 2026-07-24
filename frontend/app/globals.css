@@ -1,27 +1,100 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f4f2ed;
-  --foreground: #1c1917;
+  /* Ciel — fond de page */
+  --background: #eef6fc;
+  --foreground: #0f172a;
   --surface: #ffffff;
-  --muted: #78716c;
-  --border: #e7e5e4;
-  --accent: #1c1917;
+  --surface-muted: #f0f7ff;
+  --muted: #64748b;
+  --border: #dbeafe;
+  --border-strong: #93c5fd;
+
+  /* Actions */
+  --primary: #0284c7;
+  --primary-hover: #0369a1;
+  --primary-foreground: #ffffff;
+
+  /* Carte hero (résultat estimation) — nuage flottant */
+  --card: #ffffff;
+  --card-border: #bfdbfe;
+  --card-border-subtle: #dbeafe;
+  --card-foreground: #0c4a6e;
+  --card-muted: #475569;
+  --card-subtle: #64748b;
+  --card-faint: #94a3b8;
+  --card-input: #f0f9ff;
+  --card-input-border: #bae6fd;
+  --card-elevated: #e0f2fe;
+  --card-track: #bae6fd;
+
+  /* Sémantique */
+  --warning: #d97706;
+  --warning-muted: #fffbeb;
+  --warning-foreground: #92400e;
+  --warning-on-dark: #b45309;
+  --danger: #dc2626;
+  --danger-muted: #fef2f2;
+  --danger-foreground: #b91c1c;
+  --danger-on-dark: #ef4444;
+  --success: #059669;
+
+  /* Focus */
+  --focus: #38bdf8;
+  --focus-on-dark: #0ea5e9;
+
+  --accent: var(--primary);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
   --color-muted: var(--muted);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-accent: var(--accent);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-card: var(--card);
+  --color-card-border: var(--card-border);
+  --color-card-border-subtle: var(--card-border-subtle);
+  --color-card-foreground: var(--card-foreground);
+  --color-card-muted: var(--card-muted);
+  --color-card-subtle: var(--card-subtle);
+  --color-card-faint: var(--card-faint);
+  --color-card-input: var(--card-input);
+  --color-card-input-border: var(--card-input-border);
+  --color-card-elevated: var(--card-elevated);
+  --color-card-track: var(--card-track);
+  --color-warning: var(--warning);
+  --color-warning-muted: var(--warning-muted);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-on-dark: var(--warning-on-dark);
+  --color-danger: var(--danger);
+  --color-danger-muted: var(--danger-muted);
+  --color-danger-foreground: var(--danger-foreground);
+  --color-danger-on-dark: var(--danger-on-dark);
+  --color-success: var(--success);
+  --color-focus: var(--focus);
+  --color-focus-on-dark: var(--focus-on-dark);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 body {
-  background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
+  background-color: var(--background);
+  background-image: linear-gradient(
+    180deg,
+    #c5e4ff 0%,
+    #dceeff 22%,
+    #eef6fc 50%,
+    #f8fbff 100%
+  );
+  background-attachment: fixed;
+  min-height: 100%;
 }

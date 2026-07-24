@@ -79,14 +79,15 @@ import {
   totalCreditCost,
 } from "@/lib/mortgage";
 import { notaryFeeAmount } from "@/lib/notary-fees";
+import {
+  btnPrimaryClassName,
+  btnSecondaryClassName,
+  inputClassName,
+  labelClassName,
+  sectionCardClassName,
+} from "@/lib/ui-classes";
 
-const inputClassName =
-  "w-full rounded-lg border border-border bg-surface px-3.5 py-2.5 text-sm text-foreground shadow-sm transition focus:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-200";
-
-const labelClassName = "text-xs font-medium uppercase tracking-wide text-muted";
-
-const reportSectionClassName =
-  "rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8";
+const reportSectionClassName = sectionCardClassName;
 
 function FinanceQuestionStep({
   title,
@@ -156,10 +157,10 @@ function FinanceSectionToggle({
         }}
         className={`relative mt-0.5 h-7 w-12 shrink-0 rounded-full transition ${
           disabled
-            ? "cursor-not-allowed bg-stone-200"
+            ? "cursor-not-allowed bg-border"
             : checked
-              ? "bg-stone-800"
-              : "bg-stone-300"
+              ? "bg-primary"
+              : "bg-border-strong"
         }`}
       >
         <span
@@ -485,7 +486,11 @@ export function FinanceAnalysis() {
     showVerdictSection;
 
   return (
-    <div ref={topRef} className="scroll-mt-24 flex flex-col gap-8">
+    <>
+    <div
+      ref={topRef}
+      className={`scroll-mt-24 flex flex-col gap-8${phase === "report" ? " pb-28" : ""}`}
+    >
       {phase === "wizard" ? (
         <section className={reportSectionClassName}>
           <EstimateWizard
@@ -604,7 +609,7 @@ className="mt-0.5 h-4 w-4 rounded border-border"
     <button
       type="button"
       onClick={() => removeWorkLine(line.id)}
-      className="shrink-0 rounded-lg px-2.5 py-2 text-xs text-muted transition hover:bg-stone-100 hover:text-foreground"
+      className="shrink-0 rounded-lg px-2.5 py-2 text-xs text-muted transition hover:bg-surface-muted hover:text-foreground"
       aria-label={t("result.worksRemoveLine")}
     >
       {t("result.worksRemoveLine")}
@@ -719,7 +724,7 @@ maintenanceAnnual,
 </label>
                   </div>
 
-                  <div className="mt-4 rounded-lg border border-border bg-stone-50 px-4 py-3">
+                  <div className="mt-4 rounded-lg border border-border bg-surface-muted px-4 py-3">
 <FinanceSectionToggle
   title={t("result.exceptionalChargesTitle")}
   hint={t("result.exceptionalChargesHint")}
@@ -774,7 +779,7 @@ maintenanceAnnual,
 )}
                   </div>
 
-                  <div className="mt-4 rounded-lg border border-border bg-stone-50 px-4 py-3">
+                  <div className="mt-4 rounded-lg border border-border bg-surface-muted px-4 py-3">
 <FinanceSectionToggle
   title={t("result.maintenanceTitle")}
   hint={t("result.maintenanceHint")}
@@ -1113,7 +1118,7 @@ maintenanceAnnual,
     </p>
     <p
       className={`mt-2 font-sans text-2xl font-semibold tracking-tight sm:text-3xl ${
-        overDebtLimit ? "text-red-700" : "text-foreground"
+        overDebtLimit ? "text-danger" : "text-foreground"
       }`}
     >
       {debtRatioPct !== null
@@ -1123,7 +1128,7 @@ maintenanceAnnual,
     {debtRatioPct !== null && (
       <p
         className={`mt-2 text-sm font-medium ${
-          overDebtLimit ? "text-red-700" : "text-foreground"
+          overDebtLimit ? "text-danger" : "text-foreground"
         }`}
       >
         {t("result.loanDebtRatio", {
@@ -1443,7 +1448,7 @@ modelInputSnapshot?.dpeMedian ?? dpeMedian ?? "",
   </div>
 
   {microCeilingExceeded && (
-    <p className="mt-3 text-sm text-red-700">
+    <p className="mt-3 text-sm text-danger">
       {t("result.investmentMicroCeilingWarning", {
         ceiling: formatPrice(MICRO_FONCIER_GROSS_CEILING),
       })}
@@ -1526,7 +1531,7 @@ modelInputSnapshot?.dpeMedian ?? dpeMedian ?? "",
       </p>
       <p
         className={`mt-2 font-sans text-2xl font-semibold tracking-tight sm:text-3xl ${
-          cashFlow < 0 ? "text-red-700" : "text-foreground"
+          cashFlow < 0 ? "text-danger" : "text-foreground"
         }`}
       >
         {formatPrice(Math.round(cashFlow))}
@@ -1542,7 +1547,7 @@ modelInputSnapshot?.dpeMedian ?? dpeMedian ?? "",
       <p
         className={`mt-2 font-sans text-2xl font-semibold tracking-tight sm:text-3xl ${
           cashFlowAfterTax < 0
-            ? "text-red-700"
+            ? "text-danger"
             : "text-foreground"
         }`}
       >
@@ -1560,7 +1565,7 @@ modelInputSnapshot?.dpeMedian ?? dpeMedian ?? "",
         className={`mt-2 font-sans text-2xl font-semibold tracking-tight sm:text-3xl ${
           cashOnCashAfterTax !== null &&
           cashOnCashAfterTax < 0
-            ? "text-red-700"
+            ? "text-danger"
             : "text-foreground"
         }`}
       >
@@ -2175,7 +2180,7 @@ rent: formatPrice(rentMonthly),
                         <button
                           type="button"
                           onClick={() => removeWorkLine(line.id)}
-                          className="shrink-0 rounded-lg px-2.5 py-2 text-xs text-muted transition hover:bg-stone-100 hover:text-foreground"
+                          className="shrink-0 rounded-lg px-2.5 py-2 text-xs text-muted transition hover:bg-surface-muted hover:text-foreground"
                           aria-label={t("result.worksRemoveLine")}
                         >
                           {t("result.worksRemoveLine")}
@@ -2283,7 +2288,7 @@ rent: formatPrice(rentMonthly),
                     </label>
                   </div>
 
-                  <div className="mt-4 rounded-lg border border-border bg-stone-50 px-4 py-3">
+                  <div className="mt-4 rounded-lg border border-border bg-surface-muted px-4 py-3">
                     <FinanceSectionToggle
                       title={t("result.exceptionalChargesTitle")}
                       hint={t("result.exceptionalChargesHint")}
@@ -2338,7 +2343,7 @@ rent: formatPrice(rentMonthly),
                     )}
                   </div>
 
-                  <div className="mt-4 rounded-lg border border-border bg-stone-50 px-4 py-3">
+                  <div className="mt-4 rounded-lg border border-border bg-surface-muted px-4 py-3">
                     <FinanceSectionToggle
                       title={t("result.maintenanceTitle")}
                       hint={t("result.maintenanceHint")}
@@ -2655,7 +2660,7 @@ rent: formatPrice(rentMonthly),
                         </p>
                         <p
                           className={`mt-2 font-sans text-2xl font-semibold tracking-tight sm:text-3xl ${
-                            overDebtLimit ? "text-red-700" : "text-foreground"
+                            overDebtLimit ? "text-danger" : "text-foreground"
                           }`}
                         >
                           {debtRatioPct !== null
@@ -2665,7 +2670,7 @@ rent: formatPrice(rentMonthly),
                         {debtRatioPct !== null && (
                           <p
                             className={`mt-2 text-sm font-medium ${
-                              overDebtLimit ? "text-red-700" : "text-foreground"
+                              overDebtLimit ? "text-danger" : "text-foreground"
                             }`}
                           >
                             {t("result.loanDebtRatio", {
@@ -2975,7 +2980,7 @@ rent: formatPrice(rentMonthly),
                       </div>
 
                       {microCeilingExceeded && (
-                        <p className="mt-3 text-sm text-red-700">
+                        <p className="mt-3 text-sm text-danger">
                           {t("result.investmentMicroCeilingWarning", {
                             ceiling: formatPrice(MICRO_FONCIER_GROSS_CEILING),
                           })}
@@ -3058,7 +3063,7 @@ rent: formatPrice(rentMonthly),
                           </p>
                           <p
                             className={`mt-2 font-sans text-2xl font-semibold tracking-tight sm:text-3xl ${
-                              cashFlow < 0 ? "text-red-700" : "text-foreground"
+                              cashFlow < 0 ? "text-danger" : "text-foreground"
                             }`}
                           >
                             {formatPrice(Math.round(cashFlow))}
@@ -3074,7 +3079,7 @@ rent: formatPrice(rentMonthly),
                           <p
                             className={`mt-2 font-sans text-2xl font-semibold tracking-tight sm:text-3xl ${
                               cashFlowAfterTax < 0
-                                ? "text-red-700"
+                                ? "text-danger"
                                 : "text-foreground"
                             }`}
                           >
@@ -3092,7 +3097,7 @@ rent: formatPrice(rentMonthly),
                             className={`mt-2 font-sans text-2xl font-semibold tracking-tight sm:text-3xl ${
                               cashOnCashAfterTax !== null &&
                               cashOnCashAfterTax < 0
-                                ? "text-red-700"
+                                ? "text-danger"
                                 : "text-foreground"
                             }`}
                           >
@@ -3577,24 +3582,51 @@ rent: formatPrice(rentMonthly),
             </>
           )}
 
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <button
-              type="button"
-              onClick={restartFinanceWizard}
-              className="rounded-lg border border-border bg-surface px-4 py-2.5 text-sm font-medium text-foreground transition hover:border-stone-400 hover:bg-stone-50"
-            >
-              {t("analysis.restartWizard")}
-            </button>
-            <Link
-              href="/"
-              className="rounded-lg bg-accent px-4 py-2.5 text-center text-sm font-medium text-white transition hover:bg-stone-800"
-            >
-              {t("analysis.backToEstimate")}
-            </Link>
-          </div>
+          <section className={reportSectionClassName}>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-foreground">
+                  {t("share.bottomTitle")}
+                </p>
+                <p className="mt-1 text-sm text-muted">
+                  {t("share.bottomHint")}
+                </p>
+              </div>
+              <ShareScenarioControls
+                variant="light"
+                status={shareStatus}
+                message={shareMessage}
+                onShare={() => void handleShareScenario()}
+                buttonLabel={t("share.button")}
+                creatingLabel={t("share.creating")}
+                copiedLabel={t("share.copiedShort")}
+              />
+            </div>
+          </section>
         </>
       )}
     </div>
+
+    {phase === "report" && (
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-surface/80">
+        <div className="mx-auto flex w-full max-w-4xl flex-col gap-2 sm:flex-row">
+          <button
+            type="button"
+            onClick={restartFinanceWizard}
+            className={`${btnSecondaryClassName} sm:flex-1`}
+          >
+            {t("analysis.restartWizard")}
+          </button>
+          <Link
+            href="/"
+            className={`${btnPrimaryClassName} sm:flex-1 text-center`}
+          >
+            {t("analysis.backToEstimate")}
+          </Link>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
 
