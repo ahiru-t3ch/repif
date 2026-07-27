@@ -38,14 +38,11 @@ class PredictInput(BaseModel):
         None,
         ge=0,
         le=50_000,
-        description="Land area m² (required for houses, optional for apartments)",
+        description="Land / garden area m² (optional; 0 or omit if none)",
     )
 
     @model_validator(mode="after")
     def validate_land_area(self) -> "PredictInput":
-        if self.property_type == "HOUSE":
-            if self.sterr is None or self.sterr <= 0:
-                raise ValueError("sterr is required and must be > 0 for houses")
         if self.property_type == "APARTMENT" and self.sterr is not None:
             if self.sterr > 5_000:
                 raise ValueError("sterr must be <= 5000 m² for apartments")

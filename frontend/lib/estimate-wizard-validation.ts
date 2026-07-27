@@ -45,14 +45,10 @@ export function validateEstimateWizardStep(
     }
 
     const landTrimmed = fields.sterr.trim();
-    if (fields.propertyType === "HOUSE") {
+    if (landTrimmed !== "") {
       const land = Number(landTrimmed);
-      if (!Number.isFinite(land) || land < 1) {
-        return "wizardErrorCharacteristics";
-      }
-    } else if (landTrimmed !== "") {
-      const land = Number(landTrimmed);
-      if (!Number.isFinite(land) || land < 0 || land > 5000) {
+      const landMax = fields.propertyType === "HOUSE" ? 50_000 : 5_000;
+      if (!Number.isFinite(land) || land < 0 || land > landMax) {
         return "wizardErrorCharacteristics";
       }
     }

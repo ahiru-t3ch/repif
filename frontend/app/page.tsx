@@ -148,7 +148,10 @@ function buildModelInputSummaryEntries(
   if (snapshot.sterr != null && snapshot.sterr > 0) {
     entries.push({
       key: "land",
-      label: t("form.landArea"),
+      label:
+        snapshot.propertyType === "HOUSE"
+          ? t("form.landAreaHouse")
+          : t("form.landAreaApartment"),
       value: `${new Intl.NumberFormat(intlLocale, {
         maximumFractionDigits: 0,
       }).format(snapshot.sterr)} m²`,
@@ -642,10 +645,7 @@ export default function Home() {
       address: address.trim(),
       sbati: Number(sbati),
       property_rooms: Number(propertyRooms),
-      sterr:
-        propertyType === "HOUSE" || sterr.trim() !== ""
-          ? Number(sterr)
-          : null,
+      sterr: sterr.trim() !== "" ? Number(sterr) : null,
       nblocdep: Number(nbParking) + Number(nbCave),
       dpe_median: Number(dpeMedian),
       annee_construction: Number(anneeConstruction),
@@ -680,9 +680,7 @@ export default function Home() {
 
       const data: PredictResult = await response.json();
       const parsedSterr =
-        propertyType === "HOUSE" || sterr.trim() !== ""
-          ? Number(sterr)
-          : null;
+        sterr.trim() !== "" ? Number(sterr) : null;
       const parsedFloor =
         apartmentFloorNumber.trim() === ""
           ? null
@@ -1265,7 +1263,9 @@ export default function Home() {
                           <span
                             className={`${labelClassName} flex items-center gap-1.5 normal-case`}
                           >
-                            {t("form.landArea")}
+                            {propertyType === "HOUSE"
+                              ? t("form.landAreaHouse")
+                              : t("form.landAreaApartment")}
                             <FieldHint
                               text={
                                 propertyType === "HOUSE"
@@ -1278,13 +1278,13 @@ export default function Home() {
                             type="number"
                             value={sterr}
                             onChange={(e) => setSterr(e.target.value)}
-                            min={propertyType === "HOUSE" ? 1 : 0}
+                            min={0}
                             max={propertyType === "HOUSE" ? 50000 : 5000}
                             step={1}
                             placeholder={
-                              propertyType === "APARTMENT"
-                                ? t("form.landAreaPlaceholderApartment")
-                                : undefined
+                              propertyType === "HOUSE"
+                                ? t("form.landAreaPlaceholderHouse")
+                                : t("form.landAreaPlaceholderApartment")
                             }
                             className={inputClassName}
                           />

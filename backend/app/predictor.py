@@ -236,7 +236,7 @@ def predict_price_house(
     annee_construction: int,
     *,
     property_rooms: int,
-    sterr: float,
+    sterr: float = 0.0,
 ) -> float:
     """Predict house price in euros."""
     return _predict_price(
