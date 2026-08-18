@@ -148,8 +148,8 @@ Three Coolify resources in the same **project** and **production** environment:
 | Resource | Build | Port | Domain (example) |
 |---|---|---|---|
 | PostgreSQL | Coolify database | 5432 | internal only |
-| Backend | Dockerfile `/backend` | **8000** | `https://api.hawk-prix-immo.example.com` |
-| Frontend | Dockerfile `/frontend` | **3000** | `https://www.hawk-prix-immo.example.com` |
+| Backend | Dockerfile `/backend` | **8000** | `https://api.pricelens.example.com` |
+| Frontend | Dockerfile `/frontend` | **3000** | `https://www.pricelens.example.com` |
 
 Checklist:
 

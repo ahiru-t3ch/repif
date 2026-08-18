@@ -299,16 +299,16 @@ Link the Postgres resource to the backend or paste the **internal** hostname Coo
 
 ### Custom domain and HTTPS
 
-1. **DNS** — type **A** to the VPS IP, e.g. `api.hawk-prix-immo.example.com`.
+1. **DNS** — type **A** to the VPS IP, e.g. `api.pricelens.example.com`.
 2. **Coolify → Domains:**
 
    ```
-   https://api.hawk-prix-immo.example.com
+   https://api.pricelens.example.com
    ```
 
 3. **Advanced → Force HTTPS** → Save → **Redeploy**.
 
-4. Health check: `curl https://api.hawk-prix-immo.example.com/` → `{"status":"ok"}`.
+4. Health check: `curl https://api.pricelens.example.com/` → `{"status":"ok"}`.
 
 Set the frontend’s `BACKEND_URL` to this HTTPS URL (see [frontend/README_frontend.md](../frontend/README_frontend.md#coolify-production)).
 
