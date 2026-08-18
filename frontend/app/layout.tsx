@@ -16,12 +16,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Hawk Prix Immo — estimation prix immobilier en France",
+  title: "PriceLens — estimation prix immobilier en France",
   description:
-    "Estimation indicative de prix immobilier en France (DVF+, DPE). Hawk Prix Immo.",
+    "Estimation indicative de prix immobilier en France (DVF+, DPE). PriceLens.",
   icons: {
-    icon: [{ url: "/icon.png", type: "image/png" }],
-    apple: [{ url: "/icon.png", type: "image/png" }],
+    icon: [{ url: "/icon.png?v=5", type: "image/png" }],
+    apple: [{ url: "/icon.png?v=5", type: "image/png" }],
   },
 };
 

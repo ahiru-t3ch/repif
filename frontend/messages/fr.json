@@ -1,8 +1,8 @@
 {
   "meta": {
-    "badge": "Hawk Prix Immo · France",
-    "title": "Hawk Prix Immo",
-    "subtitle": "France",
+    "badge": "PriceLens · France",
+    "title": "PriceLens",
+    "subtitle": "Estimation du prix immobilier par l'IA",
     "description": "Estimation indicative de prix immobilier à partir des données ouvertes DVF+ et DPE. Résultat non contractuel."
   },
   "nav": {
@@ -344,12 +344,12 @@
   },
   "footer": {
     "copyright": "© 2026",
-    "prefix": "Hawk Prix Immo par",
+    "prefix": "PriceLens par",
     "company": "Ahiru-T3ch"
   },
   "about": {
     "title": "À propos",
-    "intro": "Hawk Prix Immo produit une estimation indicative, non contractuelle, à partir de données ouvertes et d'un modèle statistique.",
+    "intro": "PriceLens produit une estimation indicative, non contractuelle, à partir de données ouvertes et d'un modèle statistique.",
     "modelTitle": "Modèle et données",
     "modelBody": "L'estimation repose sur un modèle XGBoost entraîné sur des ventes immobilières du DVF+ (Cerema), enrichies avec la classe DPE (ADEME). Sont prises en compte la surface, le nombre de dépendances (caves et parkings ou garages), la localisation, la classe énergétique et l'année de construction.",
     "amenitiesTitle": "Équipements, étage, ascenseur et état",

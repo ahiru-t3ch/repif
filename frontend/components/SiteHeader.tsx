@@ -16,14 +16,15 @@ export function SiteHeader() {
           href="/"
           className="flex min-w-0 items-center gap-4 rounded-lg outline-offset-4 transition hover:opacity-90"
         >
-          <div className="h-16 w-16 shrink-0 overflow-hidden rounded-full ring-1 ring-border sm:h-20 sm:w-20">
+          <div className="h-16 w-16 shrink-0 overflow-hidden rounded-full sm:h-20 sm:w-20">
             <Image
-              src="/logo.png"
-              alt=""
+              src="/logo.png?v=5"
+              alt="PriceLens"
               width={512}
               height={512}
               priority
-              className="h-full w-full object-cover"
+              unoptimized
+              className="h-full w-full object-contain"
             />
           </div>
           <div className="min-w-0 leading-snug">

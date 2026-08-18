@@ -1,8 +1,8 @@
 {
   "meta": {
-    "badge": "Hawk Prix Immo · France",
-    "title": "Hawk Prix Immo",
-    "subtitle": "France",
+    "badge": "PriceLens · France",
+    "title": "PriceLens",
+    "subtitle": "AI-powered property valuation in France",
     "description": "Indicative property price estimates from French open data (DVF+ and energy performance records). Not a formal appraisal."
   },
   "nav": {
@@ -344,12 +344,12 @@
   },
   "footer": {
     "copyright": "© 2026",
-    "prefix": "Hawk Prix Immo by",
+    "prefix": "PriceLens by",
     "company": "Ahiru-T3ch"
   },
   "about": {
     "title": "About",
-    "intro": "Hawk Prix Immo provides an indicative, non-binding estimate based on open data and a statistical model.",
+    "intro": "PriceLens provides an indicative, non-binding estimate based on open data and a statistical model.",
     "modelTitle": "Model and data",
     "modelBody": "The estimate uses an XGBoost model trained on DVF+ sales (Cerema), enriched with ADEME energy performance (DPE) data. Inputs include living area, outbuildings (cellars and parking spaces or garages), location, energy class, and year built.",
     "amenitiesTitle": "Amenities, floor, elevator and condition",

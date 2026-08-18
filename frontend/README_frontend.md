@@ -154,7 +154,7 @@ Use **Production Environment Variables** only (Preview is for PR deployments —
 ### Environment variables (Production)
 
 ```env
-BACKEND_URL=https://api.hawk-prix-immo.example.com
+BACKEND_URL=https://api.pricelens.example.com
 BACKEND_JWT_PRIVATE_KEY=<PEM private key — pair with backend public key>
 BACKEND_JWT_ISSUER=repif-frontend
 BACKEND_JWT_AUDIENCE=repif-backend
@@ -167,7 +167,7 @@ Generate the key pair from the repo root: `bash generate-jwt-keys.sh`. Set the *
 
 **JWT is mandatory in production:** the backend secures every route except `GET /` (health). The frontend signs a short-lived token for **all** BFF calls (`/api/predict/*`, `/api/geocode/suggest`, `/api/metrics`, etc.). If `BACKEND_JWT_PRIVATE_KEY` is missing or mismatched, estimates and About-page metrics will fail with 401/500.
 
-**Umami:** copy the script URL and website ID from your Umami instance (**Settings → Websites → hawk-prix-immo**). In Coolify, enable **Available at Buildtime** for both `NEXT_PUBLIC_UMAMI_*` vars, then **Redeploy** (rebuild required — runtime-only env is not enough). Verify in the browser: Network tab → `script.js` + `send`/`collect` → 200; Umami **Realtime** should show your visit.
+**Umami:** copy the script URL and website ID from your Umami instance (**Settings → Websites → pricelens**). In Coolify, enable **Available at Buildtime** for both `NEXT_PUBLIC_UMAMI_*` vars, then **Redeploy** (rebuild required — runtime-only env is not enough). Verify in the browser: Network tab → `script.js` + `send`/`collect` → 200; Umami **Realtime** should show your visit.
 
 **Exclude your own visits** (self-hosted Umami has no per-website IP UI — that is Umami Cloud Pro only):
 
@@ -211,7 +211,7 @@ The browser never calls the backend directly; Next.js route handlers fetch serve
 | Approach | Example | When |
 |---|---|---|
 | Internal (ideal) | `http://<backend-coolify-uuid>:8000` | Both apps resolve each other on the same Docker network |
-| Public HTTPS (beta fallback) | `https://api.hawk-prix-immo.example.com` | Separate Dockerfile apps often get **isolated networks** — internal hostname returns `EAI_AGAIN` / `fetch failed` |
+| Public HTTPS (beta fallback) | `https://api.pricelens.example.com` | Separate Dockerfile apps often get **isolated networks** — internal hostname returns `EAI_AGAIN` / `fetch failed` |
 
 **Recommended for two Dockerfile apps on Coolify:** use the backend’s **public HTTPS domain** in `BACKEND_URL`. Traffic stays server-to-server (BFF + JWT); the URL is not exposed in the browser bundle.
 
@@ -230,15 +230,15 @@ docker exec FRONTEND_CONTAINER wget -qO- "$BACKEND_URL/"
 
    | Host | Type | Target |
    |---|---|---|
-   | `hawk-prix-immo` | A | VPS IP |
-   | `www.hawk-prix-immo` | A | VPS IP |
-   | `api.hawk-prix-immo` | A | VPS IP |
+   | `pricelens` | A | VPS IP |
+   | `www.pricelens` | A | VPS IP |
+   | `api.pricelens` | A | VPS IP |
 
 2. **Coolify → Domains** (frontend):
 
    ```
-   https://hawk-prix-immo.example.com
-   https://www.hawk-prix-immo.example.com
+   https://pricelens.example.com
+   https://www.pricelens.example.com
    ```
 
 3. **Advanced → Force HTTPS** → Save → **Redeploy**. If HTTP is not redirected, use **Reset Coolify Generated Labels** and redeploy again.
@@ -246,7 +246,7 @@ docker exec FRONTEND_CONTAINER wget -qO- "$BACKEND_URL/"
 4. Verify redirect:
 
    ```bash
-   curl -I http://hawk-prix-immo.example.com
+   curl -I http://pricelens.example.com
    # expect: 301/302 Location: https://...
    ```
 
