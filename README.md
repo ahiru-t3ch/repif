@@ -197,4 +197,6 @@ You can also run each service on the host — see sub-project READMEs.
 
 ## License
 
-TBD.
+This project’s source code is licensed under the [MIT License](LICENSE).
+
+Training data (DVF+, DPE, etc.) remains subject to the terms of the respective open-data publishers (Cerema, ADEME, …).
