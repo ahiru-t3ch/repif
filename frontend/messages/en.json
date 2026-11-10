@@ -351,7 +351,7 @@
     "title": "About",
     "intro": "PriceLens provides an indicative, non-binding estimate based on open data and a statistical model.",
     "modelTitle": "Model and data",
-    "modelBody": "The estimate uses an XGBoost model trained on DVF+ sales (Cerema), enriched with ADEME energy performance (DPE) data. Inputs include living area, outbuildings (cellars and parking spaces or garages), location, energy class, and year built.",
+    "modelBody": "The estimate uses an XGBoost model trained on DVF+ sales (Cerema), enriched with ADEME energy performance (DPE) data. Inputs include living area, outbuildings (cellars and parking spaces or garages), location, energy class, and year built. Training data covers sales from January 1, 2023 to December 31, 2025.",
     "amenitiesTitle": "Amenities, floor, elevator and condition",
     "amenitiesBody": "These factors are not in the DVF+ model. When provided, an indicative uplift or discount is applied to the predicted price, then the result is always clamped inside the MAPE range (low and high) — it never leaves that uncertainty band.",
     "amenitiesApartment": "Apartment — amenities: balcony / terrace ≈ +9%, garden ≈ +20%, shared condo pool ≈ +6.5%. Large tower / low-demand residence ≈ −10% (liquidity, image, charges).",

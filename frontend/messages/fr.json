@@ -351,7 +351,7 @@
     "title": "À propos",
     "intro": "PriceLens produit une estimation indicative, non contractuelle, à partir de données ouvertes et d'un modèle statistique.",
     "modelTitle": "Modèle et données",
-    "modelBody": "L'estimation repose sur un modèle XGBoost entraîné sur des ventes immobilières du DVF+ (Cerema), enrichies avec la classe DPE (ADEME). Sont prises en compte la surface, le nombre de dépendances (caves et parkings ou garages), la localisation, la classe énergétique et l'année de construction.",
+    "modelBody": "L'estimation repose sur un modèle XGBoost entraîné sur des ventes immobilières du DVF+ (Cerema), enrichies avec la classe DPE (ADEME). Sont prises en compte la surface, le nombre de dépendances (caves et parkings ou garages), la localisation, la classe énergétique et l'année de construction. Les données d'entraînement couvrent les ventes réalisées du 1er janvier 2023 au 31 décembre 2025.",
     "amenitiesTitle": "Équipements, étage, ascenseur et état",
     "amenitiesBody": "Ces éléments ne sont pas dans le modèle DVF+. S'ils sont renseignés, une majoration ou décote indicative est appliquée au prix prédit, puis le résultat est toujours borné par la fourchette MAPE (bas et haut) — on ne sort jamais de cette bande d'incertitude.",
     "amenitiesApartment": "Appartement — équipements : balcon / terrasse ≈ +9 %, jardin ≈ +20 %, piscine de copropriété ≈ +6,5 %. Grande tour / résidence peu recherchée ≈ −10 % (liquidité, image, charges).",
