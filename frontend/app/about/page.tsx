@@ -84,6 +84,15 @@ export default function AboutPage() {
           {t("about.intro")}
         </p>
 
+        <div className="mt-6 rounded-lg border border-border bg-surface-muted px-4 py-4">
+          <p className="text-sm font-semibold text-foreground">
+            {t("about.disclaimerTitle")}
+          </p>
+          <p className="mt-1.5 text-sm font-medium leading-relaxed text-foreground">
+            {t("about.disclaimerBody")}
+          </p>
+        </div>
+
         <div className="mt-10 space-y-8">
           <section className="space-y-2">
             <h2 className="text-sm font-medium uppercase tracking-wide text-foreground">

@@ -350,6 +350,8 @@
   "about": {
     "title": "About",
     "intro": "PriceLens provides an indicative, non-binding estimate based on open data and a statistical model.",
+    "disclaimerTitle": "Disclaimer — not investment advice",
+    "disclaimerBody": "PriceLens provides an indicative, purely informational estimate. This service is not investment, financial or valuation advice, nor an official appraisal. Before any purchase, sale or investment decision, consult a qualified professional (real estate agent, notary, surveyor) and rely on official sources.",
     "modelTitle": "Model and data",
     "modelBody": "The estimate uses an XGBoost model trained on DVF+ sales (Cerema), enriched with ADEME energy performance (DPE) data. Inputs include living area, outbuildings (cellars and parking spaces or garages), location, energy class, and year built. Training data covers sales from January 1, 2023 to December 31, 2025.",
     "amenitiesTitle": "Amenities, floor, elevator and condition",

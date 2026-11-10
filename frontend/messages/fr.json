@@ -350,6 +350,8 @@
   "about": {
     "title": "À propos",
     "intro": "PriceLens produit une estimation indicative, non contractuelle, à partir de données ouvertes et d'un modèle statistique.",
+    "disclaimerTitle": "Avertissement — pas un conseil en investissement",
+    "disclaimerBody": "PriceLens fournit une estimation indicative à titre purement informatif. Ce service ne constitue ni un conseil en investissement immobilier ou financier, ni une expertise immobilière, ni une valeur officielle. Avant toute décision d'achat, de vente ou d'investissement, faites appel à un professionnel (agent immobilier, notaire, expert) et appuyez-vous sur les sources officielles.",
     "modelTitle": "Modèle et données",
     "modelBody": "L'estimation repose sur un modèle XGBoost entraîné sur des ventes immobilières du DVF+ (Cerema), enrichies avec la classe DPE (ADEME). Sont prises en compte la surface, le nombre de dépendances (caves et parkings ou garages), la localisation, la classe énergétique et l'année de construction. Les données d'entraînement couvrent les ventes réalisées du 1er janvier 2023 au 31 décembre 2025.",
     "amenitiesTitle": "Équipements, étage, ascenseur et état",
